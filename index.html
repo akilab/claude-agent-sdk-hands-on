@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Claude Agent SDK Learning Portal</title>
+    <meta
+      name="description"
+      content="Claude Agent SDKをPythonとuvで段階的に学ぶハンズオン学習ポータル。"
+    >
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <script src="assets/js/main.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header" id="top">
+      <a class="site-mark" href="#top" aria-label="Claude Agent SDK Learning Portal トップへ">
+        <span class="site-mark__symbol" aria-hidden="true">CA</span>
+        <span class="site-mark__text">Agent SDK Learning</span>
+      </a>
+      <nav class="site-nav" aria-label="主要ナビゲーション">
+        <a href="#roadmap">ロードマップ</a>
+        <a href="#categories">カテゴリ</a>
+        <a href="#lessons">レッスン</a>
+        <a href="#official-docs">公式リンク</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero__content">
+          <p class="eyebrow">Python + uv hands-on portal</p>
+          <h1 id="hero-title">Pythonで書きながら、Agent SDKを理解する。</h1>
+          <p class="hero__lead">
+            Claude Agent SDKを、Pythonとuvだけに絞って学ぶための学習ポータルです。
+            省略の少ないコードを書き、Pythonの基本、SDKの流れ、Skills、サブエージェントまで段階的に進めます。
+          </p>
+          <div class="hero__actions" aria-label="開始アクション">
+            <a class="button button--primary" href="#roadmap">学習ロードマップを見る</a>
+            <a class="button button--secondary" href="#official-docs">公式ドキュメントを確認</a>
+          </div>
+        </div>
+        <aside class="hero-panel" aria-label="学習前提">
+          <div class="hero-panel__item">
+            <span class="hero-panel__label">環境</span>
+            <strong>Python + uv のみ</strong>
+            <p>Pythonの書き方とuvでの実行を、教材全体の共通前提にします。</p>
+          </div>
+          <div class="hero-panel__item">
+            <span class="hero-panel__label">形式</span>
+            <strong>書いて理解する</strong>
+            <p>各レッスンでファイルを作り、コードを省略しすぎずに動かします。</p>
+          </div>
+          <div class="hero-panel__notice">
+            <strong>注意</strong>
+            <p>
+              本教材はClaude Pro以上のサブスクリプション利用を前提に構成しています。
+              認証方法、利用枠、料金の扱いは今後変更される可能性があるため、
+              実務利用前には必ず公式情報を確認してください。
+            </p>
+          </div>
+        </aside>
+      </section>
+
+      <section class="section section--compact" aria-labelledby="status-title">
+        <div class="status-strip">
+          <div>
+            <p class="eyebrow">Current curriculum status</p>
+            <h2 id="status-title">Pythonだけで、基礎からSkillsとサブエージェントまで。</h2>
+          </div>
+          <p>
+            初期カリキュラムは12レッスンに整理しました。
+            すべての章で「読む」よりも「書いて動かす」ことを優先します。
+          </p>
+        </div>
+      </section>
+
+      <section class="section" id="roadmap" aria-labelledby="roadmap-title">
+        <div class="section-heading">
+          <p class="eyebrow">Learning roadmap</p>
+          <h2 id="roadmap-title">学習ロードマップ</h2>
+          <p>
+            Pythonの基礎を補いながら、Agent SDKの実行、制御、拡張、役割分担へ進みます。
+          </p>
+        </div>
+        <ol class="roadmap-list">
+          <li>
+            <span class="step-number">01</span>
+            <div>
+              <h3>前提を整える</h3>
+              <p>Pro以上の契約、uv、Python 3.10+、APIキーとの違いを確認します。</p>
+            </div>
+          </li>
+          <li>
+            <span class="step-number">02</span>
+            <div>
+              <h3>Pythonを書き始める</h3>
+              <p>変数、関数、辞書、リスト、例外処理を小さなファイルで練習します。</p>
+            </div>
+          </li>
+          <li>
+            <span class="step-number">03</span>
+            <div>
+              <h3>最小Agentを動かす</h3>
+              <p>uvでSDKを追加し、`query()` と `async for` の基本を実行します。</p>
+            </div>
+          </li>
+          <li>
+            <span class="step-number">04</span>
+            <div>
+              <h3>出力と権限を扱う</h3>
+              <p>メッセージ、結果、ツール許可、承認の考え方をコードで確認します。</p>
+            </div>
+          </li>
+          <li>
+            <span class="step-number">05</span>
+            <div>
+              <h3>Skillsで拡張する</h3>
+              <p>繰り返し使う手順や判断をSkillとして切り出す考え方を学びます。</p>
+            </div>
+          </li>
+          <li>
+            <span class="step-number">06</span>
+            <div>
+              <h3>サブエージェント化する</h3>
+              <p>調査、実装、レビューの役割を分け、業務向けの体制にします。</p>
+            </div>
+          </li>
+        </ol>
+      </section>
+
+      <section class="section section--muted" id="categories" aria-labelledby="categories-title">
+        <div class="section-heading section-heading--row">
+          <div>
+            <p class="eyebrow">Category jump</p>
+            <h2 id="categories-title">カテゴリから探す</h2>
+          </div>
+          <p>Python中心の学習に合わせて、カテゴリも絞り直しました。</p>
+        </div>
+        <div class="category-grid" aria-label="学習カテゴリ">
+          <a href="#lessons" class="category-card" data-filter-link="foundation">
+            <span>Foundation</span>
+            <strong>前提とuv環境</strong>
+            <small>契約、Python、uv、作業フォルダ</small>
+          </a>
+          <a href="#lessons" class="category-card" data-filter-link="python">
+            <span>Python</span>
+            <strong>Python基礎</strong>
+            <small>関数、型、例外、非同期処理</small>
+          </a>
+          <a href="#lessons" class="category-card" data-filter-link="agent-sdk">
+            <span>Agent SDK</span>
+            <strong>SDK実装</strong>
+            <small>query、Options、メッセージ、出力</small>
+          </a>
+          <a href="#lessons" class="category-card" data-filter-link="extension">
+            <span>Extension</span>
+            <strong>Skillsとサブエージェント</strong>
+            <small>手順化、役割分担、並行作業</small>
+          </a>
+          <a href="#lessons" class="category-card" data-filter-link="business">
+            <span>Business</span>
+            <strong>業務活用</strong>
+            <small>小さな自動化、運用チェック</small>
+          </a>
+        </div>
+      </section>
+
+      <section class="section" id="lessons" aria-labelledby="lessons-title">
+        <div class="section-heading section-heading--row">
+          <div>
+            <p class="eyebrow">Lesson library</p>
+            <h2 id="lessons-title">レッスンカード</h2>
+          </div>
+          <p>各レッスンは、説明を読んだあとにPythonファイルを作って動かす構成です。</p>
+        </div>
+
+        <div class="filter-bar" aria-label="レッスン絞り込み">
+          <button class="filter-button is-active" type="button" data-filter="all" aria-pressed="true">すべて</button>
+          <button class="filter-button" type="button" data-filter="foundation" aria-pressed="false">前提とuv</button>
+          <button class="filter-button" type="button" data-filter="python" aria-pressed="false">Python基礎</button>
+          <button class="filter-button" type="button" data-filter="agent-sdk" aria-pressed="false">SDK実装</button>
+          <button class="filter-button" type="button" data-filter="extension" aria-pressed="false">拡張設計</button>
+          <button class="filter-button" type="button" data-filter="business" aria-pressed="false">業務活用</button>
+        </div>
+
+        <div class="lesson-grid" data-lesson-grid>
+          <article class="lesson-card" data-category="foundation">
+            <div class="lesson-card__meta">
+              <span>Lesson 01</span>
+              <span>25 min</span>
+            </div>
+            <h3>学習前提と公式情報を確認する</h3>
+            <p>Pro以上の契約前提、APIキー利用との差分、Python 3.10+、uvを使う理由を整理します。</p>
+            <a href="#" aria-label="Lesson 01 は準備中です">準備中</a>
+          </article>
+
+          <article class="lesson-card" data-category="foundation">
+            <div class="lesson-card__meta">
+              <span>Lesson 02</span>
+              <span>35 min</span>
+            </div>
+            <h3>uvでPythonプロジェクトを作る</h3>
+            <p>`uv init`、`uv add`、`uv run`を使い、教材用の作業フォルダを手で作ります。</p>
+            <a href="#" aria-label="Lesson 02 は準備中です">準備中</a>
+          </article>
+
+          <article class="lesson-card" data-category="python">
+            <div class="lesson-card__meta">
+              <span>Lesson 03</span>
+              <span>45 min</span>
+            </div>
+            <h3>Pythonの基本を小さく書く</h3>
+            <p>変数、文字列、リスト、辞書、関数を省略せずに書き、Agentの材料を作ります。</p>
+            <a href="#" aria-label="Lesson 03 は準備中です">準備中</a>
+          </article>
+
+          <article class="lesson-card" data-category="python">
+            <div class="lesson-card__meta">
+              <span>Lesson 04</span>
+              <span>45 min</span>
+            </div>
+            <h3>ファイル操作と例外処理を書く</h3>
+            <p>設定ファイルやメモを読み書きし、失敗時の扱いをPythonのコードで学びます。</p>
+            <a href="#" aria-label="Lesson 04 は準備中です">準備中</a>
+          </article>
+
+          <article class="lesson-card" data-category="python">
+            <div class="lesson-card__meta">
+              <span>Lesson 05</span>
+              <span>40 min</span>
+            </div>
+            <h3>async / await の感覚をつかむ</h3>
+            <p>Agent SDKで使う非同期処理を、短いサンプルから `async for` まで順に書きます。</p>
+            <a href="#" aria-label="Lesson 05 は準備中です">準備中</a>
+          </article>
+
+          <article class="lesson-card" data-category="agent-sdk">
+            <div class="lesson-card__meta">
+              <span>Lesson 06</span>
+              <span>50 min</span>
+            </div>
+            <h3>最初のPython Agentを動かす</h3>
+            <p>`claude_agent_sdk` の `query()` を使い、ディレクトリを読むAgentを実装します。</p>
+            <a href="#" aria-label="Lesson 06 は準備中です">準備中</a>
+          </article>
+
+          <article class="lesson-card" data-category="agent-sdk">
+            <div class="lesson-card__meta">
+              <span>Lesson 07</span>
+              <span>55 min</span>
+            </div>
+            <h3>メッセージと結果を読み分ける</h3>
+            <p>AssistantMessage、ResultMessage、ツール呼び出しを見分け、読みやすく表示します。</p>
+            <a href="#" aria-label="Lesson 07 は準備中です">準備中</a>
+          </article>
+
+          <article class="lesson-card" data-category="agent-sdk">
+            <div class="lesson-card__meta">
+              <span>Lesson 08</span>
+              <span>50 min</span>
+            </div>
+            <h3>Optionsと権限を設定する</h3>
+            <p>allowed_tools、permission_mode、作業ディレクトリ、システムプロンプトを実際に書きます。</p>
+            <a href="#" aria-label="Lesson 08 は準備中です">準備中</a>
+          </article>
+
+          <article class="lesson-card" data-category="agent-sdk">
+            <div class="lesson-card__meta">
+              <span>Lesson 09</span>
+              <span>45 min</span>
+            </div>
+            <h3>構造化出力とログを作る</h3>
+            <p>Agentの結果を後で使いやすい形に整え、簡単な実行ログを書き出します。</p>
+            <a href="#" aria-label="Lesson 09 は準備中です">準備中</a>
+          </article>
+
+          <article class="lesson-card" data-category="extension">
+            <div class="lesson-card__meta">
+              <span>Lesson 10</span>
+              <span>60 min</span>
+            </div>
+            <h3>Agent Skillsを設計する</h3>
+            <p>繰り返し使う手順、判断基準、テンプレートをSkillとして整理する練習をします。</p>
+            <a href="#" aria-label="Lesson 10 は準備中です">準備中</a>
+          </article>
+
+          <article class="lesson-card" data-category="extension">
+            <div class="lesson-card__meta">
+              <span>Lesson 11</span>
+              <span>65 min</span>
+            </div>
+            <h3>サブエージェントの役割を実装する</h3>
+            <p>調査係、実装係、レビュー係をPythonコード上で定義し、役割分担を体験します。</p>
+            <a href="#" aria-label="Lesson 11 は準備中です">準備中</a>
+          </article>
+
+          <article class="lesson-card" data-category="business">
+            <div class="lesson-card__meta">
+              <span>Lesson 12</span>
+              <span>70 min</span>
+            </div>
+            <h3>業務向けミニ自動化を完成させる</h3>
+            <p>入力、Agent処理、出力、確認手順をまとめ、実務投入前のチェックリストまで作ります。</p>
+            <a href="#" aria-label="Lesson 12 は準備中です">準備中</a>
+          </article>
+        </div>
+      </section>
+
+      <section class="section section--muted" id="official-docs" aria-labelledby="official-docs-title">
+        <div class="section-heading">
+          <p class="eyebrow">Official references</p>
+          <h2 id="official-docs-title">公式ドキュメント</h2>
+          <p>
+            Python + uv の教材として必要なページを中心に参照します。実施時点の公式情報で更新します。
+          </p>
+        </div>
+        <div class="docs-grid">
+          <a class="doc-link" href="https://code.claude.com/docs/ja/agent-sdk/overview" target="_blank" rel="noreferrer">
+            <strong>Agent SDK の概要</strong>
+            <span>SDKの全体像、Pythonでの基本例、主要機能</span>
+          </a>
+          <a class="doc-link" href="https://code.claude.com/docs/ja/agent-sdk/quickstart" target="_blank" rel="noreferrer">
+            <strong>クイックスタート</strong>
+            <span>uvでのセットアップと最初のAgent</span>
+          </a>
+          <a class="doc-link" href="https://code.claude.com/docs/ja/agent-sdk/python" target="_blank" rel="noreferrer">
+            <strong>Python SDK reference</strong>
+            <span>Python SDKの型、Options、メッセージ</span>
+          </a>
+          <a class="doc-link" href="https://code.claude.com/docs/ja/agent-sdk/skills" target="_blank" rel="noreferrer">
+            <strong>SDK の Agent Skills</strong>
+            <span>SkillsをSDKから使う考え方</span>
+          </a>
+          <a class="doc-link" href="https://code.claude.com/docs/ja/agent-sdk/subagents" target="_blank" rel="noreferrer">
+            <strong>SDK のサブエージェント</strong>
+            <span>サブエージェントの定義と役割分担</span>
+          </a>
+          <a class="doc-link" href="https://code.claude.com/docs/ja/agent-sdk/permissions" target="_blank" rel="noreferrer">
+            <strong>パーミッションの設定</strong>
+            <span>ツール権限と承認の設計</span>
+          </a>
+          <a class="doc-link" href="https://support.claude.com/ja/articles/15036540-claude-%E3%83%97%E3%83%A9%E3%83%B3%E3%81%A7-claude-agent-sdk-%E3%82%92%E4%BD%BF%E7%94%A8%E3%81%99%E3%82%8B" target="_blank" rel="noreferrer">
+            <strong>Claude プランで Agent SDK を使用する</strong>
+            <span>契約プランとAgent SDK利用条件</span>
+          </a>
+          <a class="doc-link" href="https://support.claude.com/ja/articles/11145838-pro-%E3%81%BE%E3%81%9F%E3%81%AF-max-%E3%83%97%E3%83%A9%E3%83%B3%E3%81%A7-claude-code-%E3%82%92%E4%BD%BF%E7%94%A8%E3%81%99%E3%82%8B" target="_blank" rel="noreferrer">
+            <strong>Pro または Max プランで Claude Code を使用する</strong>
+            <span>Pro/MaxプランでのClaude Code利用</span>
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>Claude Agent SDK Learning Portal</p>
+      <a href="#top">ページ上部へ戻る</a>
+    </footer>
+  </body>
+</html>
