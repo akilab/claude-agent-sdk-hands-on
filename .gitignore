@@ -1,5 +1,8 @@
 working-memory/
-python-labs/scripts/
+python-labs/outputs/*
+!python-labs/outputs/.gitkeep
+.uv-cache/
+**/.uv-cache/
 .venv/
 **/.venv/
 __pycache__/

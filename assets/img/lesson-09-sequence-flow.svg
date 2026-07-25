@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="900" viewBox="0 0 1280 900" role="img" aria-labelledby="title desc">
+  <title id="title">Lesson 09 structured output sequence</title>
+  <desc id="desc">Sequence diagram showing how Lesson 09 sends a JSON Schema output format, receives ResultMessage.structured_output, and saves structured output and run log files.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#3267b9"/>
+    </marker>
+    <style>
+      .bg { fill: #f8fbff; }
+      .header { fill: #e9f2ff; stroke: #9cb7dc; stroke-width: 2; }
+      .header-sdk { fill: #eef8f3; stroke: #7bb99e; stroke-width: 2; }
+      .header-out { fill: #fff6e6; stroke: #d29a42; stroke-width: 2; }
+      .loop { fill: rgba(238, 248, 243, 0.55); stroke: #7bb99e; stroke-width: 2; stroke-dasharray: 8 6; }
+      .alt { fill: rgba(238, 245, 255, 0.7); stroke: #9cb7dc; stroke-width: 2; stroke-dasharray: 8 6; }
+      .life { stroke: #9fb0c8; stroke-width: 2; stroke-dasharray: 7 7; }
+      .edge { fill: none; stroke: #3267b9; stroke-width: 2.5; marker-end: url(#arrow); }
+      .edge-soft { fill: none; stroke: #5e738f; stroke-width: 2; marker-end: url(#arrow); }
+      .return { fill: none; stroke: #5e738f; stroke-width: 2; stroke-dasharray: 6 5; marker-end: url(#arrow); }
+      .title { fill: #17233a; font: 700 18px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .text { fill: #17233a; font: 600 15px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .small { fill: #4c5f79; font: 13px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .label { fill: #17406f; font: 700 13px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .step { fill: #ffffff; stroke: #3267b9; stroke-width: 2; }
+      .step-text { fill: #17406f; font: 700 12px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    </style>
+  </defs>
+
+  <rect class="bg" width="1280" height="900"/>
+
+  <rect class="header" x="50" y="42" width="160" height="58" rx="8"/>
+  <text class="title" x="96" y="67">main()</text>
+  <text class="small" x="78" y="88">起動入口</text>
+
+  <rect class="header" x="260" y="42" width="176" height="58" rx="8"/>
+  <text class="title" x="296" y="67">run_agent()</text>
+  <text class="small" x="292" y="88">全体の司令塔</text>
+
+  <rect class="header" x="486" y="42" width="176" height="58" rx="8"/>
+  <text class="title" x="520" y="67">Options</text>
+  <text class="small" x="514" y="88">output_format</text>
+
+  <rect class="header-sdk" x="716" y="42" width="154" height="58" rx="8"/>
+  <text class="title" x="764" y="67">query()</text>
+  <text class="small" x="738" y="88">SDKストリーム</text>
+
+  <rect class="header" x="918" y="42" width="166" height="58" rx="8"/>
+  <text class="title" x="940" y="67">ResultMessage</text>
+  <text class="small" x="945" y="88">structured_output</text>
+
+  <rect class="header-out" x="1134" y="42" width="104" height="58" rx="8"/>
+  <text class="title" x="1161" y="67">Files</text>
+  <text class="small" x="1152" y="88">JSON logs</text>
+
+  <line class="life" x1="130" y1="100" x2="130" y2="842"/>
+  <line class="life" x1="348" y1="100" x2="348" y2="842"/>
+  <line class="life" x1="574" y1="100" x2="574" y2="842"/>
+  <line class="life" x1="793" y1="100" x2="793" y2="842"/>
+  <line class="life" x1="1001" y1="100" x2="1001" y2="842"/>
+  <line class="life" x1="1186" y1="100" x2="1186" y2="842"/>
+
+  <rect class="loop" x="320" y="414" width="716" height="250" rx="10"/>
+  <text class="label" x="340" y="442">async for message in query(...): メッセージが届くたびに処理する</text>
+
+  <rect class="alt" x="330" y="498" width="686" height="124" rx="10"/>
+  <text class="label" x="350" y="526">ResultMessage が届いたら構造化出力を取り出す</text>
+
+  <circle class="step" cx="84" cy="150" r="14"/><text class="step-text" x="80" y="154">1</text>
+  <path class="edge" d="M 130 150 L 340 150"/>
+  <text class="text" x="166" y="140">asyncio.run(run_agent())</text>
+
+  <circle class="step" cx="304" cy="214" r="14"/><text class="step-text" x="300" y="218">2</text>
+  <path class="edge-soft" d="M 348 214 C 394 194, 394 238, 350 242"/>
+  <text class="text" x="386" y="210">build_prompt()</text>
+  <text class="small" x="386" y="232">会議メモを含む依頼文を作る</text>
+
+  <circle class="step" cx="304" cy="294" r="14"/><text class="step-text" x="300" y="298">3</text>
+  <path class="edge" d="M 348 294 L 566 294"/>
+  <text class="text" x="382" y="284">build_options()</text>
+  <text class="small" x="382" y="306">output_format に JSON Schema を入れる</text>
+
+  <circle class="step" cx="304" cy="366" r="14"/><text class="step-text" x="300" y="370">4</text>
+  <path class="edge" d="M 348 366 L 785 366"/>
+  <text class="text" x="404" y="356">query(prompt, options)</text>
+  <text class="small" x="404" y="378">run_agent() が prompt と options を query() に渡す</text>
+  <text class="small" x="504" y="338">options は実行主体ではなく設定</text>
+
+  <circle class="step" cx="748" cy="474" r="14"/><text class="step-text" x="744" y="478">5</text>
+  <path class="return" d="M 793 474 L 356 474"/>
+  <text class="text" x="396" y="464">AssistantMessage が届く</text>
+  <text class="small" x="396" y="486">途中応答を必要に応じて表示</text>
+
+  <circle class="step" cx="748" cy="560" r="14"/><text class="step-text" x="744" y="564">6</text>
+  <path class="return" d="M 793 560 L 993 560"/>
+  <text class="text" x="822" y="550">ResultMessage が届く</text>
+  <text class="small" x="822" y="572">subtype と structured_output を確認</text>
+
+  <circle class="step" cx="956" cy="646" r="14"/><text class="step-text" x="952" y="650">7</text>
+  <path class="return" d="M 1001 646 L 356 646"/>
+  <text class="text" x="394" y="636">message.structured_output</text>
+  <text class="small" x="394" y="658">ResultMessage の属性を直接読む</text>
+
+  <circle class="step" cx="304" cy="724" r="14"/><text class="step-text" x="300" y="728">8</text>
+  <path class="edge-soft" d="M 348 724 C 394 704, 394 748, 350 750"/>
+  <text class="text" x="386" y="720">build_run_log()</text>
+  <text class="small" x="386" y="742">実行時刻、subtype、turn数などを記録</text>
+
+  <circle class="step" cx="304" cy="804" r="14"/><text class="step-text" x="300" y="808">9</text>
+  <path class="edge" d="M 348 804 L 1178 804"/>
+  <text class="text" x="388" y="794">save_outputs()</text>
+  <text class="small" x="388" y="816">structured_output.json と run_log.json を保存</text>
+</svg>

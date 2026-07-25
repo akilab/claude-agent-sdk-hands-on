@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lesson 02 | uvでPythonプロジェクトを作る</title>
+    <meta
+      name="description"
+      content="Claude Agent SDKをPythonで学ぶために、uvで教材用プロジェクトを初期化し、pyproject.toml、.venv、uv.lock、依存関係の意味を確認するレッスン。"
+    >
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <script src="../assets/js/main.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header" id="top">
+      <a class="site-mark" href="../index.html" aria-label="Claude Agent SDK Learning Portal トップへ">
+        <span class="site-mark__symbol" aria-hidden="true">CA</span>
+        <span class="site-mark__text">Claude Agent SDK Learning</span>
+      </a>
+      <nav class="site-nav" aria-label="主要ナビゲーション">
+        <a href="../index.html#roadmap">ロードマップ</a>
+        <a href="../index.html#categories">カテゴリ</a>
+        <a href="../index.html#lessons">レッスン</a>
+        <a href="../index.html#official-docs">公式リンク</a>
+      </nav>
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="ダークモードに切り替え" aria-pressed="false">
+        <span class="theme-toggle__track" aria-hidden="true">
+          <span class="theme-toggle__thumb"></span>
+        </span>
+      </button>
+    </header>
+
+    <main>
+      <section class="lesson-hero" aria-labelledby="lesson-title">
+        <div class="breadcrumb" aria-label="パンくず">
+          <a href="../index.html">トップ</a>
+          <span aria-hidden="true">/</span>
+          <span>Lesson 02</span>
+        </div>
+        <p class="eyebrow">Lesson 02 / Foundation</p>
+        <h1 id="lesson-title">uvでPythonプロジェクトを作る</h1>
+        <p>
+          このレッスンでは、教材用の `python-labs/` をuvプロジェクトとして初期化します。
+          `pyproject.toml`、`.venv`、`uv.lock` の役割を理解し、最後にプロジェクト状態を確認するPythonスクリプトを書きます。
+        </p>
+      </section>
+
+      <div class="lesson-shell">
+        <aside class="lesson-sidebar" aria-label="レッスン目次">
+          <div class="lesson-sidebar__box">
+            <span class="lesson-sidebar__label">所要時間</span>
+            <strong>35分</strong>
+          </div>
+          <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
+            <a href="#goal">ゴール</a>
+            <a href="#why-bare">なぜ最小構成で作るか</a>
+            <a href="#initialize">uvプロジェクトを作る</a>
+            <a href="#write-script">Pythonで状態を確認する</a>
+            <a href="#review">確認問題</a>
+          </nav>
+        </aside>
+
+        <article class="lesson-main">
+          <section class="lesson-section" id="goal">
+            <p class="eyebrow">Goal</p>
+            <h2>このレッスンのゴール</h2>
+            <p class="lesson-one-liner">
+              <span>このレッスンを一言で</span>
+              uvでPython実習環境を作り、依存関係と仮想環境を教材内で再現できる状態にします。
+            </p>
+            <ul class="check-list">
+              <li>`python-labs/` をuvプロジェクトとして初期化できる</li>
+              <li>`pyproject.toml` が何を管理するファイルか説明できる</li>
+              <li>`.venv` が作られるタイミングと、Gitに入れない理由を説明できる</li>
+              <li>`uv.lock` をGitに入れる理由を説明できる</li>
+              <li>プロジェクト状態を確認するPythonスクリプトを書ける</li>
+            </ul>
+          </section>
+
+          <section class="lesson-section" id="why-bare">
+            <p class="eyebrow">Project shape</p>
+            <h2>なぜ最小構成で作るか</h2>
+            <p>
+              uvの通常の `uv init` は、新しいプロジェクト用に `.git/`、`.gitignore`、`.python-version`、`README.md`、
+              `main.py`、`pyproject.toml` を作ります。今回はすでに学習サイトのGitリポジトリ内に `python-labs/` があるため、
+              その中に別のGitリポジトリや不要なサンプルファイルを作らない構成にします。
+            </p>
+            <p>
+              公式ドキュメントでは、最小構成にしたい場合は `--bare` を使うと `pyproject.toml` だけを作れると説明されています。
+              この教材では、既存のフォルダ構成を保つために `uv init --bare` を使います。
+            </p>
+            <div class="callout">
+              <strong>この教材での方針</strong>
+              <p>
+                実習で自由に書き換える `scripts/` はGit対象外にしています。一方で、依存関係を再現するための
+                `pyproject.toml` と `uv.lock` はGitに入れる前提で扱います。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="initialize">
+            <p class="eyebrow">Hands-on</p>
+            <h2>uvプロジェクトを作る</h2>
+            <p>
+              まず、教材リポジトリのルートから `python-labs/` に移動します。
+              すでにLesson 01のスクリプトを実行している場合は、`python-labs/` にいるかもしれません。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>PowerShell</span>
+              </div>
+              <pre><code>cd python-labs</code></pre>
+            </div>
+
+            <p>
+              次に、既存フォルダを最小構成のuvプロジェクトとして初期化します。
+              `--bare` は余計なファイルを作らないための指定です。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>PowerShell</span>
+              </div>
+              <pre><code>uv init --bare --name agent-sdk-learning</code></pre>
+            </div>
+
+            <p>`pyproject.toml` が作成されたら、中身を確認します。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>PowerShell</span>
+              </div>
+              <pre><code>Get-Content pyproject.toml</code></pre>
+            </div>
+
+            <p>表示される内容はuvやPythonのバージョンによって少し変わりますが、おおむね次の形になります。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>pyproject.toml</span>
+              </div>
+              <pre><code>[project]
+name = "agent-sdk-learning"
+version = "0.1.0"
+requires-python = "&gt;=3.10"
+dependencies = []</code></pre>
+            </div>
+
+            <div class="callout callout--warning">
+              <strong>`requires-python` は自分の環境に合わせて確認します</strong>
+              <p>
+                uvが生成する `requires-python` は、手元のPythonバージョンに影響されることがあります。
+                この教材はPython 3.10以上を前提にするため、必要に応じて `requires-python = "&gt;=3.10"` に調整してください。
+              </p>
+            </div>
+
+            <p>
+              この段階で `uv run` を使ってPythonを実行します。公式ドキュメントでは、最初の `uv run`、`uv sync`、
+              `uv lock` のタイミングで仮想環境と `uv.lock` が作られると説明されています。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>PowerShell</span>
+              </div>
+              <pre><code>uv run python --version</code></pre>
+            </div>
+
+            <p>
+              ここで `.venv/` が作られても正常です。`.venv/` は依存パッケージやPython実行環境を入れる作業用フォルダなので、
+              サイズが大きく、利用者の環境差も出ます。そのため、このリポジトリでは `.gitignore` で除外しています。
+            </p>
+
+            <p>
+              まだAgent SDKは呼び出しませんが、依存関係の管理を体験するために公式クイックスタートと同じパッケージを追加します。
+              ネットワークに接続できる環境で実行してください。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>PowerShell</span>
+              </div>
+              <pre><code>uv add claude-agent-sdk</code></pre>
+            </div>
+
+            <p>
+              `uv add` の後に `pyproject.toml` をもう一度見ると、`dependencies` に `claude-agent-sdk` が追加されます。
+              さらに `uv.lock` には、実際に解決された正確な依存関係が記録されます。
+            </p>
+
+            <div class="reference-list">
+              <a href="https://code.claude.com/docs/ja/agent-sdk/quickstart" target="_blank" rel="noreferrer">Claude Agent SDK クイックスタート</a>
+              <a href="https://docs.astral.sh/uv/guides/projects/" target="_blank" rel="noreferrer">uv: Working on projects</a>
+              <a href="https://docs.astral.sh/uv/concepts/projects/init/" target="_blank" rel="noreferrer">uv: Creating projects</a>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="write-script">
+            <p class="eyebrow">Hands-on</p>
+            <h2>Pythonで状態を確認する</h2>
+            <p>
+              `python-labs/practice/lesson_02_check_uv_project.py` を作り、次のコードを自分で入力してください。
+              このスクリプトでは、`Path`、関数、リスト、簡単な文字列検索を使って、uvプロジェクトの状態を確認します。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>python-labs/practice/lesson_02_check_uv_project.py</span>
+              </div>
+              <pre><code>from pathlib import Path
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PYPROJECT_PATH = PROJECT_ROOT / "pyproject.toml"
+LOCK_PATH = PROJECT_ROOT / "uv.lock"
+VENV_PATH = PROJECT_ROOT / ".venv"
+
+
+# 見出しを区切り線つきで表示する関数です。
+def print_section(title: str) -&gt; None:
+    print()
+    print("=" * 72)
+    print(title)
+    print("=" * 72)
+
+
+# テキストファイルを読み込み、行のリストとして返す関数です。
+def read_text_lines(path: Path) -&gt; list[str]:
+    if not path.exists():
+        return []
+
+    text = path.read_text(encoding="utf-8")
+    return text.splitlines()
+
+
+# 指定した文字列で始まる行を探し、見つからなければNoneを返す関数です。
+def find_line(lines: list[str], starts_with: str) -&gt; str | None:
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith(starts_with):
+            return stripped
+
+    return None
+
+
+# 複数行の中に指定したキーワードが含まれるか確認する関数です。
+def contains_text(lines: list[str], keyword: str) -&gt; bool:
+    for line in lines:
+        if keyword in line:
+            return True
+
+    return False
+
+
+# pyproject.tomlがあり、基本項目が書かれているか確認する関数です。
+def check_pyproject() -&gt; bool:
+    print_section("pyproject.toml")
+
+    if not PYPROJECT_PATH.exists():
+        print(f"NG: {PYPROJECT_PATH} was not found.")
+        print("Run: uv init --bare --name agent-sdk-learning")
+        return False
+
+    lines = read_text_lines(PYPROJECT_PATH)
+    name_line = find_line(lines, "name =")
+    python_line = find_line(lines, "requires-python =")
+    has_dependency = contains_text(lines, "claude-agent-sdk")
+
+    print(f"OK: found {PYPROJECT_PATH}")
+    print(f"Project name: {name_line or 'not found'}")
+    print(f"Python requirement: {python_line or 'not found'}")
+
+    if has_dependency:
+        print("OK: claude-agent-sdk is listed in dependencies.")
+    else:
+        print("INFO: claude-agent-sdk is not listed yet.")
+        print("Run it when you are ready: uv add claude-agent-sdk")
+
+    return name_line is not None and python_line is not None
+
+
+# uv.lockが作成されているか確認する関数です。
+def check_lockfile() -&gt; bool:
+    print_section("uv.lock")
+
+    if LOCK_PATH.exists():
+        print(f"OK: found {LOCK_PATH}")
+        print("This file records exact dependency versions.")
+        return True
+
+    print("INFO: uv.lock was not found yet.")
+    print("Run: uv run python --version")
+    return False
+
+
+# .venvが作成されているか確認する関数です。
+def check_virtual_environment() -&gt; bool:
+    print_section(".venv")
+
+    if VENV_PATH.exists():
+        print(f"OK: found {VENV_PATH}")
+        print(".venv is local to your machine and should not be committed.")
+        return True
+
+    print("INFO: .venv was not found yet.")
+    print("uv can create it when you run a project command.")
+    return False
+
+
+# 学習用フォルダが揃っているか確認する関数です。
+def check_learning_folders() -&gt; bool:
+    print_section("Learning folders")
+
+    expected_dirs = [
+        PROJECT_ROOT / "scripts",
+        PROJECT_ROOT / "src" / "agent_sdk_learning",
+        PROJECT_ROOT / "data",
+        PROJECT_ROOT / "outputs",
+    ]
+
+    all_found = True
+    for directory in expected_dirs:
+        if directory.exists():
+            print(f"OK: {directory.relative_to(PROJECT_ROOT)}")
+        else:
+            print(f"NG: missing {directory.relative_to(PROJECT_ROOT)}")
+            all_found = False
+
+    return all_found
+
+
+# 各確認結果をOKまたは要確認としてまとめて表示する関数です。
+def print_summary(results: dict[str, bool]) -&gt; None:
+    print_section("Summary")
+
+    for label, ok in results.items():
+        status = "OK" if ok else "要確認"
+        print(f"{label}: {status}")
+
+
+# Lesson 02の確認処理を順番に実行する関数です。
+def main() -&gt; None:
+    print("Claude Agent SDK Hands-on / Lesson 02")
+    print(f"Project root: {PROJECT_ROOT}")
+
+    results = {
+        "pyproject.toml": check_pyproject(),
+        "uv.lock": check_lockfile(),
+        ".venv": check_virtual_environment(),
+        "learning folders": check_learning_folders(),
+    }
+
+    print_summary(results)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre>
+            </div>
+
+            <p>保存したら、`python-labs/` から実行します。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>PowerShell</span>
+              </div>
+              <pre><code>uv run python practice/lesson_02_check_uv_project.py</code></pre>
+            </div>
+
+            <p>表示例です。`claude-agent-sdk` をまだ追加していない場合は、その部分だけ `INFO` になります。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>出力例</span>
+              </div>
+              <pre><code>Claude Agent SDK Hands-on / Lesson 02
+Project root: D:\Claude\agent-sdk\python-labs
+
+========================================================================
+pyproject.toml
+========================================================================
+OK: found D:\Claude\agent-sdk\python-labs\pyproject.toml
+Project name: name = "agent-sdk-learning"
+Python requirement: requires-python = "&gt;=3.10"
+OK: claude-agent-sdk is listed in dependencies.
+
+========================================================================
+uv.lock
+========================================================================
+OK: found D:\Claude\agent-sdk\python-labs\uv.lock
+This file records exact dependency versions.
+
+========================================================================
+Summary
+========================================================================
+pyproject.toml: OK
+uv.lock: OK
+.venv: OK
+learning folders: OK</code></pre>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="review">
+            <p class="eyebrow">Review</p>
+            <h2>確認問題</h2>
+            <ol class="review-list">
+              <li>通常の `uv init` ではなく `uv init --bare` を使った理由を説明してください。</li>
+              <li>`pyproject.toml` と `uv.lock` の役割の違いを1文ずつ書いてください。</li>
+              <li>`.venv/` をGitに入れない理由を説明してください。</li>
+              <li>`uv run` が実行前に確認してくれることは何ですか。</li>
+              <li>`uv add claude-agent-sdk` を実行すると、どのファイルが更新されますか。</li>
+            </ol>
+          </section>
+
+          <nav class="lesson-nav-bottom" aria-label="レッスン移動">
+            <a href="lesson-01.html">前へ: 学習前提と公式情報を確認する</a>
+            <a href="lesson-03.html">次へ: Pythonの基本を小さく書く</a>
+          </nav>
+        </article>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <p>Claude Agent SDK Learning Portal</p>
+      <a href="#top">ページ上部へ戻る</a>
+    </footer>
+  </body>
+</html>
+

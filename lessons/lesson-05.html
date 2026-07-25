@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lesson 05 | async / await の感覚をつかむ</title>
+    <meta
+      name="description"
+      content="Claude Agent SDKの非同期処理に備えて、Pythonのasync、await、async for、asyncio.gatherを小さな実行シミュレーションで学ぶレッスン。"
+    >
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <script src="../assets/js/main.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header" id="top">
+      <a class="site-mark" href="../index.html" aria-label="Claude Agent SDK Learning Portal トップへ">
+        <span class="site-mark__symbol" aria-hidden="true">CA</span>
+        <span class="site-mark__text">Claude Agent SDK Learning</span>
+      </a>
+      <nav class="site-nav" aria-label="主要ナビゲーション">
+        <a href="../index.html#roadmap">ロードマップ</a>
+        <a href="../index.html#categories">カテゴリ</a>
+        <a href="../index.html#lessons">レッスン</a>
+        <a href="../index.html#official-docs">公式リンク</a>
+      </nav>
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="ダークモードに切り替え" aria-pressed="false">
+        <span class="theme-toggle__track" aria-hidden="true">
+          <span class="theme-toggle__thumb"></span>
+        </span>
+      </button>
+    </header>
+
+    <main>
+      <section class="lesson-hero" aria-labelledby="lesson-title">
+        <div class="breadcrumb" aria-label="パンくず">
+          <a href="../index.html">トップ</a>
+          <span aria-hidden="true">/</span>
+          <span>Lesson 05</span>
+        </div>
+        <p class="eyebrow">Lesson 05 / Python</p>
+        <h1 id="lesson-title">async / await の感覚をつかむ</h1>
+        <p>
+          Agent SDKのPythonサンプルでは、非同期処理と `async for` が登場します。
+          このレッスンではSDKを呼ぶ前に、待つ処理、順番に流れるメッセージ、並行実行の感覚をPythonだけで練習します。
+        </p>
+      </section>
+
+      <div class="lesson-shell">
+        <aside class="lesson-sidebar" aria-label="レッスン目次">
+          <div class="lesson-sidebar__box">
+            <span class="lesson-sidebar__label">所要時間</span>
+            <strong>40分</strong>
+          </div>
+          <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
+            <a href="#goal">ゴール</a>
+            <a href="#concepts">今回使うPython</a>
+            <a href="#write-script">非同期の流れを書く</a>
+            <a href="#run">実行して読み解く</a>
+            <a href="#review">確認問題</a>
+          </nav>
+        </aside>
+
+        <article class="lesson-main">
+          <section class="lesson-section" id="goal">
+            <p class="eyebrow">Goal</p>
+            <h2>このレッスンのゴール</h2>
+            <p class="lesson-one-liner">
+              <span>このレッスンを一言で</span>
+              Agent SDKで必須になる非同期処理を、async / await / async for の流れとして理解します。
+            </p>
+            <ul class="check-list">
+              <li>`async def` が非同期関数を定義する構文だと説明できる</li>
+              <li>`await` が「待てる処理の完了を待つ」ための構文だと説明できる</li>
+              <li>`async for` で、少しずつ届く結果を順に処理できる</li>
+              <li>`asyncio.gather()` で複数の処理を並行して待てる</li>
+              <li>Agent SDKの `query()` を読む準備ができる</li>
+            </ul>
+          </section>
+
+          <section class="lesson-section" id="concepts">
+            <p class="eyebrow">Python concepts</p>
+            <h2>今回使うPython</h2>
+            <div class="info-grid">
+              <div class="info-card">
+                <span>Coroutine</span>
+                <strong>async def</strong>
+                <p>すぐに結果を返さず、イベントループの中で進む処理を定義します。</p>
+              </div>
+              <div class="info-card">
+                <span>Await</span>
+                <strong>await</strong>
+                <p>待ち時間のある処理を、他の処理を止めすぎずに待ちます。</p>
+              </div>
+              <div class="info-card">
+                <span>Stream</span>
+                <strong>async for</strong>
+                <p>Agentから少しずつ届くメッセージのような流れを順に受け取ります。</p>
+              </div>
+            </div>
+            <div class="reference-list">
+              <a href="https://docs.python.org/ja/3/library/asyncio.html" target="_blank" rel="noreferrer">asyncio</a>
+              <a href="https://docs.python.org/ja/3/library/asyncio-task.html" target="_blank" rel="noreferrer">コルーチンとタスク</a>
+              <a href="https://code.claude.com/docs/ja/agent-sdk/quickstart" target="_blank" rel="noreferrer">Agent SDK クイックスタート</a>
+              <a href="https://code.claude.com/docs/ja/agent-sdk/python" target="_blank" rel="noreferrer">Python SDK reference</a>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="write-script">
+            <p class="eyebrow">Hands-on</p>
+            <h2>非同期の流れを書く</h2>
+            <p>
+              `python-labs/practice/lesson_05_async_basics.py` を作り、次のコードを入力してください。
+              ここではAgentの代わりに、少しずつメッセージを返す処理を自分で作ります。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>python-labs/practice/lesson_05_async_basics.py</span>
+              </div>
+              <pre><code>import asyncio
+from datetime import datetime
+
+
+LESSON_STEPS = [
+    "入力を確認する",
+    "必要なファイルを読む",
+    "Agentに渡す文脈を組み立てる",
+    "結果を保存する",
+]
+
+
+# 現在時刻をログに表示しやすい文字列にする関数です。
+def now_text() -&gt; str:
+    return datetime.now().strftime("%H:%M:%S")
+
+
+# 見出しを区切り線つきで表示する関数です。
+def print_section(title: str) -&gt; None:
+    print()
+    print("=" * 72)
+    print(title)
+    print("=" * 72)
+
+
+# 指定した秒数だけ待ち、処理完了メッセージを返す非同期関数です。
+async def wait_for_step(step_name: str, seconds: float) -&gt; str:
+    print(f"[{now_text()}] start: {step_name}")
+    await asyncio.sleep(seconds)
+    print(f"[{now_text()}] done : {step_name}")
+    return f"{step_name} が完了しました"
+
+
+# Agentのように、メッセージを少しずつ返す非同期ジェネレータ関数です。
+async def stream_agent_like_messages(topic: str):
+    messages = [
+        f"{topic} の目的を確認しています",
+        "関連する入力を読み取っています",
+        "回答の下書きを組み立てています",
+        "最終結果を返します",
+    ]
+
+    for message in messages:
+        await asyncio.sleep(0.3)
+        yield message
+
+
+# awaitを使って、複数の処理を順番に待つ関数です。
+async def run_steps_in_order() -&gt; None:
+    print_section("await: 順番に待つ")
+
+    for step_name in LESSON_STEPS:
+        result = await wait_for_step(step_name, 0.2)
+        print(f"result: {result}")
+
+
+# async forを使って、少しずつ届くメッセージを読む関数です。
+async def run_stream() -&gt; None:
+    print_section("async for: 少しずつ届く結果を読む")
+
+    async for message in stream_agent_like_messages("Lesson 05"):
+        print(f"message: {message}")
+
+
+# asyncio.gatherを使って、複数の処理を並行して待つ関数です。
+async def run_steps_in_parallel() -&gt; None:
+    print_section("asyncio.gather: 複数の確認を並行して待つ")
+
+    tasks = [
+        wait_for_step("Python環境を確認する", 0.5),
+        wait_for_step("学習ログを確認する", 0.3),
+        wait_for_step("次のレッスンを確認する", 0.4),
+    ]
+
+    results = await asyncio.gather(*tasks)
+
+    print()
+    print("Parallel results:")
+    for result in results:
+        print(f"- {result}")
+
+
+# Lesson 05の非同期処理を順番に実行する関数です。
+async def main_async() -&gt; None:
+    print("Claude Agent SDK Hands-on / Lesson 05")
+    await run_steps_in_order()
+    await run_stream()
+    await run_steps_in_parallel()
+
+
+# 非同期のmain_async関数をイベントループで実行する関数です。
+def main() -&gt; None:
+    asyncio.run(main_async())
+
+
+if __name__ == "__main__":
+    main()
+</code></pre>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="run">
+            <p class="eyebrow">Run</p>
+            <h2>実行して読み解く</h2>
+            <p>`python-labs/` から実行します。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>PowerShell</span>
+              </div>
+              <pre><code>uv run python practice/lesson_05_async_basics.py</code></pre>
+            </div>
+
+            <p>表示例です。時刻は環境によって変わります。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>出力例</span>
+              </div>
+              <pre><code>Claude Agent SDK Hands-on / Lesson 05
+
+========================================================================
+await: 順番に待つ
+========================================================================
+[10:00:00] start: 入力を確認する
+[10:00:00] done : 入力を確認する
+result: 入力を確認する が完了しました
+
+========================================================================
+async for: 少しずつ届く結果を読む
+========================================================================
+message: Lesson 05 の目的を確認しています
+message: 関連する入力を読み取っています
+message: 回答の下書きを組み立てています
+message: 最終結果を返します
+
+========================================================================
+asyncio.gather: 複数の確認を並行して待つ
+========================================================================
+[10:00:02] start: Python環境を確認する
+[10:00:02] start: 学習ログを確認する
+[10:00:02] start: 次のレッスンを確認する</code></pre>
+            </div>
+
+            <div class="callout">
+              <strong>Agent SDKにつながる見方</strong>
+              <p>
+                次のLesson 06では、Agent SDKの `query()` が返す結果を `async for` で読みます。
+                このレッスンの `stream_agent_like_messages()` は、その前に非同期の形だけを練習するための小さな模型です。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="review">
+            <p class="eyebrow">Review</p>
+            <h2>確認問題</h2>
+            <ol class="review-list">
+              <li>`async def` で定義した関数は、普通の関数と何が違いますか。</li>
+              <li>`await asyncio.sleep(0.3)` は何を待っていますか。</li>
+              <li>`async for` が、Agentのメッセージ処理に向いている理由を説明してください。</li>
+              <li>`asyncio.gather()` で並行実行したとき、出力順が完全に固定されない理由は何ですか。</li>
+              <li>Lesson 06でAgent SDKを読むとき、今回のどの関数が一番近い形になりますか。</li>
+            </ol>
+          </section>
+
+          <nav class="lesson-nav-bottom" aria-label="レッスン移動">
+            <a href="lesson-04.html">前へ: ファイル操作と例外処理を書く</a>
+            <a href="lesson-06.html">次へ: 最初のPython Agentを動かす</a>
+          </nav>
+        </article>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <p>Claude Agent SDK Learning Portal</p>
+      <a href="#top">ページ上部へ戻る</a>
+    </footer>
+  </body>
+</html>
+

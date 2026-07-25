@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lesson 10 | Agent Skillsを設計する</title>
+    <meta
+      name="description"
+      content="Claude Agent SDKでProject Skillを作成し、setting_sourcesとskillsオプションでPython Agentから利用するレッスン。"
+    >
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <script src="../assets/js/main.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header" id="top">
+      <a class="site-mark" href="../index.html" aria-label="Claude Agent SDK Learning Portal トップへ">
+        <span class="site-mark__symbol" aria-hidden="true">CA</span>
+        <span class="site-mark__text">Claude Agent SDK Learning</span>
+      </a>
+      <nav class="site-nav" aria-label="主要ナビゲーション">
+        <a href="../index.html#roadmap">ロードマップ</a>
+        <a href="../index.html#categories">カテゴリ</a>
+        <a href="../index.html#lessons">レッスン</a>
+        <a href="../index.html#official-docs">公式リンク</a>
+      </nav>
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="ダークモードに切り替え" aria-pressed="false">
+        <span class="theme-toggle__track" aria-hidden="true">
+          <span class="theme-toggle__thumb"></span>
+        </span>
+      </button>
+    </header>
+
+    <main>
+      <section class="lesson-hero" aria-labelledby="lesson-title">
+        <div class="breadcrumb" aria-label="パンくず">
+          <a href="../index.html">トップ</a>
+          <span aria-hidden="true">/</span>
+          <span>Lesson 10</span>
+        </div>
+        <p class="eyebrow">Lesson 10 / Extension</p>
+        <h1 id="lesson-title">Agent Skillsを設計する</h1>
+        <p>
+          Lesson 10では、繰り返し使う判断基準やレビュー手順をSkillとして外出しします。
+          Pythonコードに長い指示を埋め込むのではなく、`.claude/skills/&lt;name&gt;/SKILL.md` に置いた手順をAgent SDKから読み込ませます。
+        </p>
+      </section>
+
+      <div class="lesson-shell">
+        <aside class="lesson-sidebar" aria-label="レッスン目次">
+          <div class="lesson-sidebar__box">
+            <span class="lesson-sidebar__label">所要時間</span>
+            <strong>65分</strong>
+          </div>
+          <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
+            <a href="#goal">ゴール</a>
+            <a href="#before-run">実行前の確認</a>
+            <a href="#concepts">初出APIの見方</a>
+            <a href="#skill-file">SKILL.mdの読み方</a>
+            <a href="#sequence">シーケンス図</a>
+            <a href="#mental-model">処理の流れ</a>
+            <a href="#write-script">Skillを読み込んで使う</a>
+            <a href="#run">実行して確認</a>
+            <a href="#review">確認問題</a>
+          </nav>
+        </aside>
+
+        <article class="lesson-main">
+          <section class="lesson-section" id="goal">
+            <p class="eyebrow">Goal</p>
+            <h2>このレッスンのゴール</h2>
+            <p class="lesson-one-liner">
+              <span>このレッスンを一言で</span>
+              `.claude/skills/` に置いた `SKILL.md` を、`skills` オプションでAgentに使わせます。
+            </p>
+            <ul class="check-list">
+              <li>SkillはPython関数ではなく、ファイルシステム上の `SKILL.md` であると説明できる</li>
+              <li>Project Skillの置き場所 `.claude/skills/&lt;name&gt;/SKILL.md` を説明できる</li>
+              <li>`setting_sources=["project"]` がProject Skillの検出に関係することを説明できる</li>
+              <li>`skills=["faq-review"]` と `skills="all"` の違いを説明できる</li>
+              <li>Skillの `description` が、Claudeが使う場面を判断する手がかりだと理解できる</li>
+            </ul>
+          </section>
+
+          <section class="lesson-section" id="before-run">
+            <p class="eyebrow">Before run</p>
+            <h2>実行前の確認</h2>
+            <p>
+              Lesson 10も `python-labs/` のuv環境で動かします。
+              このレッスンでは、先に `python-labs/.claude/skills/faq-review/SKILL.md` を作成し、その後Pythonコードから読み込ませます。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Windows / macOS / Linux</span>
+              </div>
+              <pre><code>uv run python -c "import claude_agent_sdk; print('claude_agent_sdk OK')"</code></pre>
+            </div>
+
+            <div class="callout callout--warning">
+              <strong>Skillはサンドボックスではありません</strong>
+              <p>
+                公式ドキュメントでは、`skills` オプションはコンテキストフィルタであり、サンドボックスではないと説明されています。
+                Skillを絞っても、ファイル自体はディスク上に残ります。ツール権限は `allowed_tools`、`disallowed_tools`、`permission_mode` で別に設計します。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="concepts">
+            <p class="eyebrow">SDK concepts</p>
+            <h2>初めて出てくる設定とファイル</h2>
+            <p>
+              Lesson 10の主役は、Pythonの新しい関数ではなく、Agent SDKが読み込むファイルシステム設定です。
+              Skillは「呼び出す関数」ではなく、Claudeが必要なときに読む専門手順として考えます。
+            </p>
+
+            <div class="table-wrap" role="region" aria-label="Lesson 10で扱う要素">
+              <table class="api-table">
+                <thead>
+                  <tr>
+                    <th>名前</th>
+                    <th>分類</th>
+                    <th>インスタンス生成</th>
+                    <th>Lesson 10での使い方</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>SKILL.md</code></td>
+                    <td>Markdownファイル</td>
+                    <td>不要。ファイルとして作成する</td>
+                    <td>専門手順、判断基準、説明をMarkdownで書く。SDKに登録するPython APIはない。</td>
+                  </tr>
+                  <tr>
+                    <td><code>description</code></td>
+                    <td>YAML frontmatterの項目</td>
+                    <td>不要。文字列として書く</td>
+                    <td>Claudeが「このSkillを使うべき場面か」を判断するための説明。</td>
+                  </tr>
+                  <tr>
+                    <td><code>setting_sources</code></td>
+                    <td><code>ClaudeAgentOptions</code> の引数</td>
+                    <td>不要。リストを渡す</td>
+                    <td><code>"project"</code> を含めると、プロジェクトの `.claude/` 設定を読み込む。</td>
+                  </tr>
+                  <tr>
+                    <td><code>skills</code></td>
+                    <td><code>ClaudeAgentOptions</code> の引数</td>
+                    <td>不要。リスト、<code>"all"</code>、または <code>[]</code> を渡す</td>
+                    <td>今回のセッションで使えるSkillを絞る。指定するとSDKがSkill toolを有効化する。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="reference-list">
+              <a href="https://code.claude.com/docs/ja/agent-sdk/skills" target="_blank" rel="noreferrer">SDK の Agent Skills</a>
+              <a href="https://code.claude.com/docs/ja/agent-sdk/claude-code-features" target="_blank" rel="noreferrer">SDK で Claude Code 機能を使用する</a>
+              <a href="https://code.claude.com/docs/ja/agent-sdk/python" target="_blank" rel="noreferrer">Python SDK reference</a>
+            </div>
+
+            <div class="callout">
+              <strong>`skills="all"` と `skills=["faq-review"]` は形が違います</strong>
+              <p>
+                検出されたすべてのSkillを有効にする場合は、文字列で `skills="all"` と書きます。
+                特定のSkillだけを有効にする場合は、Skill名のリストで `skills=["faq-review"]` と書きます。
+                `skills=["all"]` は「all」という名前のSkillを指定する形になり得るため、全Skill有効化とは別物です。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="skill-file">
+            <p class="eyebrow">Skill file</p>
+            <h2>`SKILL.md` を作成する</h2>
+            <p>
+              Skillは、YAML frontmatterとMarkdown本文を持つファイルです。
+              `name` はSkillの名前、`description` はClaudeが使うタイミングを判断する説明、本文は実際の手順です。
+            </p>
+            <p>
+              まず `python-labs/.claude/skills/faq-review/` フォルダを作り、その中に `SKILL.md` を作成します。
+              Pythonコードの中でSkill本文を生成しないため、Agentを動かすコードは短く読みやすくなります。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>PowerShell</span>
+              </div>
+              <pre><code>New-Item -ItemType Directory -Force .claude/skills/faq-review</code></pre>
+            </div>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>macOS / Linux</span>
+              </div>
+              <pre><code>mkdir -p .claude/skills/faq-review</code></pre>
+            </div>
+
+            <p>`python-labs/.claude/skills/faq-review/SKILL.md` に、次の内容を書きます。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>python-labs/.claude/skills/faq-review/SKILL.md</span>
+              </div>
+              <pre><code>---
+name: faq-review
+description: 社内FAQやサポート記事の公開前レビューで、表現の明確さ、リスク、担当チームの次アクションを確認するときに使います。
+---
+
+# FAQレビューSkill
+
+あなたは、社内FAQ原稿を公開前に確認するレビュー担当です。
+
+このSkillが関連する場合は、次の観点で確認します。
+
+1. FAQの目的を日本語で短く要約する。
+2. 断定が強すぎる表現や、誤解を招きそうな表現を見つける。
+3. 担当チームごとの次アクションを分けて整理する。
+4. ビジネス向けポータルに適した、慎重で具体的な言い換えを提案する。
+5. 回答は簡潔に、見出しつきで整理する。</code></pre>
+            </div>
+
+            <div class="callout">
+              <strong>`description` は厳密な条件式ではありません</strong>
+              <p>
+                `description` は、ClaudeがSkillの利用場面を判断するための自然言語の説明です。
+                「この単語が入ったら必ず起動」のようなif文ではありません。曖昧な説明にすると、期待した場面で使われないことがあります。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="sequence">
+            <p class="eyebrow">Sequence</p>
+            <h2>Skillが使われる順番を図で見る</h2>
+            <p>
+              `Options` は実行主体ではありません。
+              `run_agent()` が `query(prompt, options)` を呼び、Agent loopの中でClaudeが必要だと判断したときにSkill toolが `SKILL.md` を読みます。
+            </p>
+
+            <figure class="diagram-figure">
+              <button class="diagram-zoom" type="button" data-diagram-open aria-label="Lesson 10のSkillシーケンス図を拡大表示">
+                <img src="../assets/img/lesson-10-skill-sequence.svg" alt="Lesson 10のSkillシーケンス図。run_agentが事前に作成したSKILL.mdの存在を確認し、setting_sourcesとskillsを設定したOptionsをqueryに渡し、Agent loop内でSkill toolがSKILL.mdを読んでレビュー結果を返す。" />
+                <span class="diagram-zoom__hint">クリックして拡大</span>
+              </button>
+              <figcaption>
+                SkillはPython関数ではなく、Agentが必要時に読むMarkdown指示です。
+              </figcaption>
+            </figure>
+          </section>
+
+          <section class="lesson-section" id="mental-model">
+            <p class="eyebrow">Before coding</p>
+            <h2>コードを書く前に処理の流れを読む</h2>
+            <p>
+              Lesson 10では、Pythonコード、Skillファイル、Agent SDKの設定が分かれます。
+              関係を先に整理してからコードを書くと、似た形の `query()` でも目的が見えます。
+            </p>
+            <ol class="review-list">
+              <li>事前に `.claude/skills/faq-review/SKILL.md` を作る</li>
+              <li>`ensure_skill_file()` がSkillファイルの存在を確認する</li>
+              <li>`build_options()` が `setting_sources=["project"]` と `skills=["faq-review"]` を設定する</li>
+              <li>`build_prompt()` がFAQ原稿とレビュー依頼を作る</li>
+              <li>`query(prompt=..., options=...)` でAgentを起動する</li>
+              <li>Claudeが依頼内容とSkillの `description` を見て、必要ならSkillを使う</li>
+              <li>`AssistantMessage` と `ResultMessage` を読み、レビュー結果を保存する</li>
+            </ol>
+          </section>
+
+          <section class="lesson-section" id="write-script">
+            <p class="eyebrow">Hands-on</p>
+            <h2>Skillを読み込んでAgentから使う</h2>
+            <p>
+              `python-labs/practice/lesson_10_agent_skills.py` を作り、次のコードを入力してください。
+              今回のコードは、事前に作ったSkillファイルを確認し、Skillを有効化してAgentを呼ぶ処理だけを書きます。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>python-labs/practice/lesson_10_agent_skills.py</span>
+              </div>
+              <pre><code>import asyncio
+
+from claude_agent_sdk import (
+    AssistantMessage,
+    ClaudeAgentOptions,
+    ResultMessage,
+    query,
+)
+
+from shared.display import print_section
+from shared.files import write_text_lines
+from shared.messages import append_result_message, print_assistant_message
+from shared.paths import PROJECT_ROOT
+
+
+SKILL_PATH = PROJECT_ROOT / ".claude" / "skills" / "faq-review" / "SKILL.md"
+OUTPUT_PATH = PROJECT_ROOT / "outputs" / "lesson_10_skill_review.txt"
+
+
+# Agentに確認してもらうFAQ原稿です。
+# ファイルに保存せず、プロンプト内の文字列として渡します。
+FAQ_DRAFT = """
+FAQ: 新しい請求書ダウンロード機能について
+
+Q. いつから請求書をダウンロードできますか？
+A. 来月から必ず利用できます。
+
+Q. 過去の請求書も確認できますか？
+A. すべての過去請求書を確認できます。
+
+Q. 問い合わせ先はどこですか？
+A. 不明点はサポートチームへ連絡してください。
+""".strip()
+
+
+# Skillファイルが事前に作成されているか確認する関数です。
+def ensure_skill_file() -&gt; None:
+    if SKILL_PATH.exists():
+        return
+
+    raise FileNotFoundError(
+        "Skill file was not found. "
+        "Create python-labs/.claude/skills/faq-review/SKILL.md first."
+    )
+
+
+# Agentに依頼するプロンプトを作る関数です。
+def build_prompt() -&gt; str:
+    return f"""
+faq-review Skillを使って、次の社内FAQ原稿を公開前レビューしてください。
+
+確認してほしい観点:
+- 断定が強すぎる表現
+- 法務確認が必要そうな箇所
+- 担当チームごとの次アクション
+- より安全な言い換え
+
+FAQ原稿:
+{FAQ_DRAFT}
+""".strip()
+
+
+# Project Skillを読み込むためのOptionsを作る関数です。
+def build_options() -&gt; ClaudeAgentOptions:
+    return ClaudeAgentOptions(
+        cwd=str(PROJECT_ROOT),
+        max_turns=4,
+        # projectを含めると、cwd配下の .claude/skills/ が読み込まれます。
+        setting_sources=["project"],
+        # 今回は事前に用意したfaq-reviewだけを有効にします。
+        # すべてのSkillを有効にしたい場合は、リストではなく skills="all" と書きます。
+        # skills=["all"] は、「all」という名前のSkillを指定する形になり得るため別物です。
+        skills=["faq-review"],
+        # FAQ原稿はプロンプトに入れるので、ファイル読み書きやコマンド実行は不要です。
+        disallowed_tools=["Read", "Glob", "Edit", "Write", "Bash"],
+    )
+
+
+# 事前に作成したSkillを有効化し、Agentを実行する関数です。
+async def run_agent() -&gt; None:
+    ensure_skill_file()
+
+    options = build_options()
+    prompt = build_prompt()
+    output_lines = []
+
+    print_section("Skill file")
+    print(SKILL_PATH)
+
+    print_section("Prompt")
+    print(prompt)
+
+    print_section("Agent output")
+    async for message in query(
+        prompt=prompt,
+        options=options,
+    ):
+        if isinstance(message, AssistantMessage):
+            print_assistant_message(message, output_lines)
+        elif isinstance(message, ResultMessage):
+            append_result_message(message, output_lines)
+
+    write_text_lines(OUTPUT_PATH, output_lines)
+
+    print_section("Saved output")
+    print(OUTPUT_PATH)
+
+
+# 非同期のrun_agent関数をイベントループで実行する関数です。
+def main() -&gt; None:
+    asyncio.run(run_agent())
+
+
+if __name__ == "__main__":
+    main()</code></pre>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="run">
+            <p class="eyebrow">Run</p>
+            <h2>実行して確認する</h2>
+            <p>
+              `python-labs/` から実行します。
+              実行すると、事前に作成した `python-labs/.claude/skills/faq-review/SKILL.md` を読み込み、`outputs/lesson_10_skill_review.txt` に結果を保存します。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Windows / macOS / Linux</span>
+              </div>
+              <pre><code>uv run python practice/lesson_10_agent_skills.py</code></pre>
+            </div>
+
+            <p>Skillファイルと保存された出力を確認します。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>PowerShell</span>
+              </div>
+              <pre><code>Get-Content .claude/skills/faq-review/SKILL.md
+Get-Content outputs/lesson_10_skill_review.txt</code></pre>
+            </div>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>macOS / Linux</span>
+              </div>
+              <pre><code>cat .claude/skills/faq-review/SKILL.md
+cat outputs/lesson_10_skill_review.txt</code></pre>
+            </div>
+
+            <p>出力例です。実際の文章は、実行時のAgentの判断で変わります。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>出力例</span>
+              </div>
+              <pre><code>Tool: Skill
+
+1. FAQの目的
+請求書ダウンロード機能の公開前案内を整理するFAQです。
+
+2. 注意すべき表現
+- 「必ず利用できます」は断定が強いため、公開時期が確定していない場合は避けます。
+- 「すべての過去請求書」は対象範囲が未確認ならリスクがあります。
+
+Done: success</code></pre>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="review">
+            <p class="eyebrow">Review</p>
+            <h2>確認問題</h2>
+            <ol class="review-list">
+              <li>SkillはPython関数ですか。それともファイルですか。</li>
+              <li>Project Skillはどのフォルダに置きますか。</li>
+              <li>`setting_sources=["project"]` は何を読み込むための設定ですか。</li>
+              <li>`skills=["faq-review"]` と `skills="all"` の違いを説明してください。</li>
+              <li>`skills` オプションがサンドボックスではない、とはどういう意味ですか。</li>
+            </ol>
+            <p>
+              Skillsを使うと、繰り返し使う判断基準や手順をPythonコードから切り離せます。
+              次のLesson 11では、役割そのものを分けるサブエージェントへ進みます。
+            </p>
+          </section>
+
+          <nav class="lesson-nav-bottom" aria-label="レッスン移動">
+            <a href="lesson-09.html">前へ: 構造化出力とログを保存する</a>
+            <a href="lesson-11.html">次へ: サブエージェントの役割を実装する</a>
+          </nav>
+        </article>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <p>Claude Agent SDK Learning Portal</p>
+      <a href="#top">ページ上部へ戻る</a>
+    </footer>
+  </body>
+</html>
+

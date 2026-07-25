@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lesson 11 | サブエージェントの役割を実装する</title>
+    <meta
+      name="description"
+      content="Claude Agent SDKでAgentDefinitionを使い、親Agentからサブエージェントへ役割を分けて依頼するPythonレッスン。"
+    >
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <script src="../assets/js/main.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header" id="top">
+      <a class="site-mark" href="../index.html" aria-label="Claude Agent SDK Learning Portal トップへ">
+        <span class="site-mark__symbol" aria-hidden="true">CA</span>
+        <span class="site-mark__text">Claude Agent SDK Learning</span>
+      </a>
+      <nav class="site-nav" aria-label="主要ナビゲーション">
+        <a href="../index.html#roadmap">ロードマップ</a>
+        <a href="../index.html#categories">カテゴリ</a>
+        <a href="../index.html#lessons">レッスン</a>
+        <a href="../index.html#official-docs">公式リンク</a>
+      </nav>
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="ダークモードに切り替え" aria-pressed="false">
+        <span class="theme-toggle__track" aria-hidden="true">
+          <span class="theme-toggle__thumb"></span>
+        </span>
+      </button>
+    </header>
+
+    <main>
+      <section class="lesson-hero" aria-labelledby="lesson-title">
+        <div class="breadcrumb" aria-label="パンくず">
+          <a href="../index.html">トップ</a>
+          <span aria-hidden="true">/</span>
+          <span>Lesson 11</span>
+        </div>
+        <p class="eyebrow">Lesson 11 / Extension</p>
+        <h1 id="lesson-title">サブエージェントの役割を実装する</h1>
+        <p>
+          Lesson 11では、親Agentにすべてを背負わせず、専門のサブエージェントへ一部の判断を任せます。
+          `AgentDefinition` で役割を定義し、親Agentが `Agent` ツールを使ってレビュー担当へ依頼する流れを書きます。
+        </p>
+      </section>
+
+      <div class="lesson-shell">
+        <aside class="lesson-sidebar" aria-label="レッスン目次">
+          <div class="lesson-sidebar__box">
+            <span class="lesson-sidebar__label">所要時間</span>
+            <strong>70分</strong>
+          </div>
+          <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
+            <a href="#goal">ゴール</a>
+            <a href="#before-run">実行前の確認</a>
+            <a href="#concepts">初出APIの見方</a>
+            <a href="#definition-detail">AgentDefinitionの読み方</a>
+            <a href="#sequence">シーケンス図</a>
+            <a href="#mental-model">処理の流れ</a>
+            <a href="#write-script">サブエージェントを書く</a>
+            <a href="#run">実行して確認</a>
+            <a href="#review">確認問題</a>
+          </nav>
+        </aside>
+
+        <article class="lesson-main">
+          <section class="lesson-section" id="goal">
+            <p class="eyebrow">Goal</p>
+            <h2>このレッスンのゴール</h2>
+            <p class="lesson-one-liner">
+              <span>このレッスンを一言で</span>
+              `AgentDefinition` で専門役を定義し、親Agentから `Agent` ツールで呼び出します。
+            </p>
+            <ul class="check-list">
+              <li>サブエージェントは「役割を持つ別Agent」であり、単なる関数呼び出しではないと説明できる</li>
+              <li>`AgentDefinition` の `description`、`prompt`、`tools`、`maxTurns` を説明できる</li>
+              <li>`ClaudeAgentOptions(agents=...)` でサブエージェントを登録できる</li>
+              <li>親Agentがサブエージェントを使うには `Agent` ツールが必要だと説明できる</li>
+              <li>サブエージェントに渡す役割とツール権限を小さく設計できる</li>
+            </ul>
+          </section>
+
+          <section class="lesson-section" id="before-run">
+            <p class="eyebrow">Before run</p>
+            <h2>実行前の確認</h2>
+            <p>
+              Lesson 11も `python-labs/` のuv環境で動かします。
+              サブエージェントはSDKの機能なので、追加ファイルは不要です。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Windows / macOS / Linux</span>
+              </div>
+              <pre><code>uv run python -c "from claude_agent_sdk import AgentDefinition; print('AgentDefinition OK')"</code></pre>
+            </div>
+
+            <div class="callout callout--warning">
+              <strong>サブエージェントにも権限設計が必要です</strong>
+              <p>
+                サブエージェントは便利ですが、何でも任せる相手ではありません。
+                今回はFAQ原稿を読むだけなので、サブエージェントの `tools=[]` とし、親Agentにも `Agent` 以外のツールを使わせません。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="concepts">
+            <p class="eyebrow">SDK concepts</p>
+            <h2>初めて出てくる関数・クラス・設定</h2>
+            <p>
+              Lesson 11では、`AgentDefinition` が初登場します。
+              Lesson 10のSkillはファイルでしたが、サブエージェントはPythonコード内で役割定義を書きます。
+            </p>
+
+            <div class="table-wrap" role="region" aria-label="Lesson 11で扱う要素">
+              <table class="api-table">
+                <thead>
+                  <tr>
+                    <th>名前</th>
+                    <th>分類</th>
+                    <th>インスタンス生成</th>
+                    <th>Lesson 11での使い方</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>AgentDefinition</code></td>
+                    <td>SDKのクラス</td>
+                    <td>必要。<code>AgentDefinition(...)</code> で作る</td>
+                    <td>サブエージェントの説明、専用プロンプト、使えるツール、最大ターン数を定義する。</td>
+                  </tr>
+                  <tr>
+                    <td><code>agents</code></td>
+                    <td><code>ClaudeAgentOptions</code> の引数</td>
+                    <td>不要。辞書を渡す</td>
+                    <td>サブエージェント名と <code>AgentDefinition</code> を対応づけて親Agentへ渡す。</td>
+                  </tr>
+                  <tr>
+                    <td><code>Agent</code></td>
+                    <td>SDK側のツール名</td>
+                    <td>不要。文字列として権限に書く</td>
+                    <td>親Agentがサブエージェントを呼び出すために使うツール。<code>allowed_tools=["Agent"]</code> で許可する。</td>
+                  </tr>
+                  <tr>
+                    <td><code>maxTurns</code></td>
+                    <td><code>AgentDefinition</code> の項目</td>
+                    <td>不要。数値を渡す</td>
+                    <td>サブエージェント側のターン上限。<code>ClaudeAgentOptions.max_turns</code> とは名前の形が違う。</td>
+                  </tr>
+                  <tr>
+                    <td><code>skills</code></td>
+                    <td><code>AgentDefinition</code> の項目</td>
+                    <td>不要。リストを渡す</td>
+                    <td>サブエージェント起動時に、指定したSkill内容を事前に読み込ませる。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="reference-list">
+              <a href="https://code.claude.com/docs/ja/agent-sdk/subagents" target="_blank" rel="noreferrer">SDK のサブエージェント</a>
+              <a href="https://code.claude.com/docs/ja/agent-sdk/python" target="_blank" rel="noreferrer">Python SDK reference</a>
+              <a href="https://code.claude.com/docs/ja/agent-sdk/permissions" target="_blank" rel="noreferrer">パーミッションの設定</a>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="definition-detail">
+            <p class="eyebrow">Definition detail</p>
+            <h2>`AgentDefinition` を読む</h2>
+            <p>
+              サブエージェントは、親Agentから呼び出される専門役です。
+              `description` は親Agentが使う場面を判断する手がかり、`prompt` はサブエージェント自身の役割指示です。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Lesson 11で使うAgentDefinition</span>
+              </div>
+              <pre><code>"faq-risk-reviewer": AgentDefinition(
+    description=(
+        "公開前の日本語FAQを読み、断定が強すぎる表現、"
+        "未確定仕様、法務確認が必要そうな箇所をレビューします。"
+    ),
+    prompt=(
+        "あなたは公開前FAQのリスクレビュー担当です。"
+        "原稿を読み、断定が強すぎる表現、未確定に見える仕様、"
+        "法務確認が必要そうな箇所、より安全な言い換えを日本語で整理してください。"
+    ),
+    tools=[],
+    maxTurns=2,
+)</code></pre>
+            </div>
+
+            <div class="table-wrap" role="region" aria-label="AgentDefinitionの主な項目">
+              <table class="api-table">
+                <thead>
+                  <tr>
+                    <th>項目</th>
+                    <th>意味</th>
+                    <th>今回の値</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>description</code></td>
+                    <td>親Agentが、どのサブエージェントを使うべきか判断するための説明。</td>
+                    <td>公開前FAQのリスクレビュー担当であることを説明。</td>
+                  </tr>
+                  <tr>
+                    <td><code>prompt</code></td>
+                    <td>サブエージェント自身に与える役割指示。</td>
+                    <td>断定表現、未確定仕様、法務確認、言い換えを確認するよう指示。</td>
+                  </tr>
+                  <tr>
+                    <td><code>tools</code></td>
+                    <td>サブエージェントが使えるツール。</td>
+                    <td><code>[]</code>。今回はプロンプト内の文章だけを読むため、ツールなし。</td>
+                  </tr>
+                  <tr>
+                    <td><code>maxTurns</code></td>
+                    <td>サブエージェントのターン上限。</td>
+                    <td><code>2</code>。短いレビューに限定する。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="callout">
+              <strong>`maxTurns` はcamelCaseです</strong>
+              <p>
+                `ClaudeAgentOptions` では `max_turns` を使いましたが、`AgentDefinition` では公式例に合わせて `maxTurns` を使います。
+                似た意味でも、クラスによって項目名の形が違う点に注意します。
+              </p>
+            </div>
+
+            <div class="callout">
+              <strong>サブエージェントは親のSkill利用状況をそのまま引き継ぎません</strong>
+              <p>
+                サブエージェントは新しい会話として起動します。
+                親Agentで使ったSkillの本文や、親の会話履歴が丸ごと渡るわけではありません。
+                サブエージェントにSkillを使わせたい場合は、`AgentDefinition` 側で明示します。
+              </p>
+            </div>
+
+            <div class="table-wrap" role="region" aria-label="サブエージェントでSkillを使う設定">
+              <table class="api-table">
+                <thead>
+                  <tr>
+                    <th>設定</th>
+                    <th>意味</th>
+                    <th>使う場面</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>skills=["faq-review"]</code></td>
+                    <td>サブエージェント起動時に、指定したSkillの内容を文脈へ事前投入する。</td>
+                    <td>レビュー担当に、最初からレビュー手順を持たせたい場合。</td>
+                  </tr>
+                  <tr>
+                    <td><code>tools=["Skill"]</code></td>
+                    <td>サブエージェントが実行中にSkill toolを呼び出せるようにする。</td>
+                    <td>必要に応じてSkillを選ばせたい場合。</td>
+                  </tr>
+                  <tr>
+                    <td><code>tools=[]</code></td>
+                    <td>サブエージェントにツールを使わせない。</td>
+                    <td>今回のように、渡された文章だけを短くレビューさせたい場合。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>サブエージェントにSkillを事前投入する例</span>
+              </div>
+              <pre><code>"faq-risk-reviewer": AgentDefinition(
+    description="公開前FAQをレビューします。",
+    prompt="あなたはFAQレビュー担当です。",
+    tools=["Skill"],
+    skills=["faq-review"],
+    maxTurns=2,
+)</code></pre>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="sequence">
+            <p class="eyebrow">Sequence</p>
+            <h2>親Agentとサブエージェントの流れを図で見る</h2>
+            <p>
+              `AgentDefinition` は実行主体ではありません。
+              `run_agent()` がOptionsへサブエージェント定義を渡し、親Agentが `Agent` ツールで必要な仕事だけを依頼します。
+            </p>
+
+            <figure class="diagram-figure">
+              <button class="diagram-zoom" type="button" data-diagram-open aria-label="Lesson 11のサブエージェントシーケンス図を拡大表示">
+                <img src="../assets/img/lesson-11-subagent-sequence.svg" alt="Lesson 11のサブエージェントシーケンス図。run_agentがAgentDefinitionでfaq-risk-reviewerを定義し、OptionsにagentsとAgentツール許可を渡し、親AgentがAgent toolでサブエージェントへレビューを依頼して結果を保存する。" />
+                <span class="diagram-zoom__hint">クリックして拡大</span>
+              </button>
+              <figcaption>
+                親Agentは全体を進行し、サブエージェントは限定された役割だけを担当します。
+              </figcaption>
+            </figure>
+          </section>
+
+          <section class="lesson-section" id="mental-model">
+            <p class="eyebrow">Before coding</p>
+            <h2>コードを書く前に処理の流れを読む</h2>
+            <p>
+              Lesson 11では、親Agentとサブエージェントの責務を分けます。
+              `query()` の形はこれまでと似ていますが、今回の主役は `agents` と `Agent` ツールです。
+            </p>
+            <ol class="review-list">
+              <li>`build_agents()` が `faq-risk-reviewer` サブエージェントを定義する</li>
+              <li>`build_options()` が `agents=...` と `allowed_tools=["Agent"]` を設定する</li>
+              <li>`build_prompt()` が親Agentへの依頼文を作る</li>
+              <li>`query(prompt=..., options=...)` で親Agentを起動する</li>
+              <li>親Agentが必要だと判断したら、`Agent` ツールでサブエージェントへ依頼する</li>
+              <li>サブエージェントのレビュー結果を親Agentがまとめる</li>
+              <li>`ResultMessage` として完了状態を受け取り、出力を保存する</li>
+            </ol>
+          </section>
+
+          <section class="lesson-section" id="write-script">
+            <p class="eyebrow">Hands-on</p>
+            <h2>サブエージェントを書く</h2>
+            <p>
+              `python-labs/practice/lesson_11_subagents.py` を作り、次のコードを入力してください。
+              役割分担を学ぶため、サブエージェント定義、親AgentのOptions、プロンプトを分けて書きます。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>python-labs/practice/lesson_11_subagents.py</span>
+              </div>
+              <pre><code>import asyncio
+
+from claude_agent_sdk import (
+    AgentDefinition,
+    AssistantMessage,
+    ClaudeAgentOptions,
+    ResultMessage,
+    query,
+)
+
+from shared.display import print_section
+from shared.files import write_text_lines
+from shared.messages import append_result_message, print_assistant_message
+from shared.paths import PROJECT_ROOT
+
+
+OUTPUT_PATH = PROJECT_ROOT / "outputs" / "lesson_11_subagent_review.txt"
+
+
+# サブエージェントにレビューしてもらうFAQ原稿です。
+# 今回も、教材を短く保つためファイルではなく文字列として渡します。
+FAQ_DRAFT = """
+FAQ: 請求書ダウンロード機能
+
+Q. 新しい機能はいつ使えますか？
+A. 来月から必ず全ユーザーが使えます。
+
+Q. 過去の請求書も見られますか？
+A. すべての過去請求書を確認できます。
+
+Q. ダウンロードできない場合はどうしますか？
+A. サポートチームに連絡してください。
+""".strip()
+
+
+# この実行で使うサブエージェント定義を作る関数です。
+def build_agents() -&gt; dict[str, AgentDefinition]:
+    return {
+        "faq-risk-reviewer": AgentDefinition(
+            description=(
+                "公開前の日本語FAQを読み、断定が強すぎる表現、"
+                "未確定仕様、法務確認が必要そうな箇所をレビューします。"
+            ),
+            prompt=(
+                "あなたは公開前FAQのリスクレビュー担当です。"
+                "原稿を読み、断定が強すぎる表現、未確定に見える仕様、"
+                "法務確認が必要そうな箇所、より安全な言い換えを日本語で整理してください。"
+                "必要以上に長くせず、実務担当者が次に動ける形で答えてください。"
+            ),
+            # サブエージェントにツールを使わせない設定です。
+            # 今回はプロンプトに入れた文章だけをレビューするため、ツールは不要です。
+            tools=[],
+            # AgentDefinitionでは、公式ドキュメントに合わせてmaxTurnsのようなcamelCaseを使います。
+            maxTurns=2,
+        ),
+    }
+
+
+# 親Agentに依頼するプロンプトを作る関数です。
+def build_prompt() -&gt; str:
+    return f"""
+faq-risk-reviewer サブエージェントを使って、次のFAQ原稿を公開前レビューしてください。
+
+親Agentの役割:
+- サブエージェントにレビューを依頼する
+- 返ってきた指摘を、担当者が読みやすい形で短くまとめる
+
+FAQ原稿:
+{FAQ_DRAFT}
+""".strip()
+
+
+# サブエージェントを使うためのOptionsを作る関数です。
+def build_options() -&gt; ClaudeAgentOptions:
+    return ClaudeAgentOptions(
+        cwd=str(PROJECT_ROOT),
+        max_turns=6,
+        # Agent toolを許可すると、親Agentがサブエージェントを呼び出せます。
+        allowed_tools=["Agent"],
+        # 今回はファイル操作やコマンド実行は不要です。
+        disallowed_tools=["Read", "Glob", "Edit", "Write", "Bash"],
+        permission_mode="dontAsk",
+        agents=build_agents(),
+    )
+
+
+# 親Agentを起動し、サブエージェントのレビュー結果を保存する関数です。
+async def run_agent() -&gt; None:
+    options = build_options()
+    prompt = build_prompt()
+    output_lines = []
+
+    print_section("Prompt")
+    print(prompt)
+
+    print_section("Agent output")
+    async for message in query(
+        prompt=prompt,
+        options=options,
+    ):
+        if isinstance(message, AssistantMessage):
+            print_assistant_message(message, output_lines)
+        elif isinstance(message, ResultMessage):
+            append_result_message(message, output_lines)
+
+    write_text_lines(OUTPUT_PATH, output_lines)
+
+    print_section("Saved output")
+    print(OUTPUT_PATH)
+
+
+# 非同期のrun_agent関数をイベントループで実行する関数です。
+def main() -&gt; None:
+    asyncio.run(run_agent())
+
+
+if __name__ == "__main__":
+    main()</code></pre>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="run">
+            <p class="eyebrow">Run</p>
+            <h2>実行して確認する</h2>
+            <p>
+              `python-labs/` から実行します。
+              成功すると、親Agentがサブエージェントを呼び出し、レビュー結果を `outputs/lesson_11_subagent_review.txt` に保存します。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Windows / macOS / Linux</span>
+              </div>
+              <pre><code>uv run python practice/lesson_11_subagents.py</code></pre>
+            </div>
+
+            <p>保存された出力を確認します。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>PowerShell</span>
+              </div>
+              <pre><code>Get-Content outputs/lesson_11_subagent_review.txt</code></pre>
+            </div>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>macOS / Linux</span>
+              </div>
+              <pre><code>cat outputs/lesson_11_subagent_review.txt</code></pre>
+            </div>
+
+            <p>出力例です。実際の文章やツール表示は、実行時のAgentの判断で変わります。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>出力例</span>
+              </div>
+              <pre><code>Tool: Agent
+
+1. 注意すべき表現
+- 「必ず全ユーザーが使えます」は断定が強いため、公開時期と対象範囲の確認が必要です。
+- 「すべての過去請求書」は範囲が広く、実装仕様や保存期間と矛盾する可能性があります。
+
+2. 次アクション
+- 開発チーム: 対象ユーザーと過去請求書の範囲を確認する
+- 法務チーム: 断定表現の妥当性を確認する
+
+Done: success</code></pre>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="review">
+            <p class="eyebrow">Review</p>
+            <h2>確認問題</h2>
+            <ol class="review-list">
+              <li>Skillとサブエージェントの違いを説明してください。</li>
+              <li>`AgentDefinition.description` と `AgentDefinition.prompt` は、それぞれ誰のための情報ですか。</li>
+              <li>親Agentがサブエージェントを呼ぶために、なぜ `allowed_tools=["Agent"]` が必要ですか。</li>
+              <li>今回、サブエージェントの `tools=[]` にした理由を説明してください。</li>
+              <li>`max_turns` と `maxTurns` の違いに注意すべき理由を説明してください。</li>
+            </ol>
+            <p>
+              サブエージェントを使えると、調査、レビュー、実装補助のような役割を分けられます。
+              次のLesson 12では、ここまでの要素を組み合わせて業務向けミニ自動化を完成させます。
+            </p>
+          </section>
+
+          <nav class="lesson-nav-bottom" aria-label="レッスン移動">
+            <a href="lesson-10.html">前へ: Agent Skillsを設計する</a>
+            <a href="lesson-12.html">次へ: 業務向けミニ自動化を完成させる</a>
+          </nav>
+        </article>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <p>Claude Agent SDK Learning Portal</p>
+      <a href="#top">ページ上部へ戻る</a>
+    </footer>
+  </body>
+</html>
+

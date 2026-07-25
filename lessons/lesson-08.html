@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lesson 08 | Optionsと権限を設定する</title>
+    <meta
+      name="description"
+      content="Claude Agent SDKのClaudeAgentOptions、allowed_tools、disallowed_tools、permission_modeを使い、Pythonで読み取り専用Agentを作るレッスン。"
+    >
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <script src="../assets/js/main.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header" id="top">
+      <a class="site-mark" href="../index.html" aria-label="Claude Agent SDK Learning Portal トップへ">
+        <span class="site-mark__symbol" aria-hidden="true">CA</span>
+        <span class="site-mark__text">Claude Agent SDK Learning</span>
+      </a>
+      <nav class="site-nav" aria-label="主要ナビゲーション">
+        <a href="../index.html#roadmap">ロードマップ</a>
+        <a href="../index.html#categories">カテゴリ</a>
+        <a href="../index.html#lessons">レッスン</a>
+        <a href="../index.html#official-docs">公式リンク</a>
+      </nav>
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="ダークモードに切り替え" aria-pressed="false">
+        <span class="theme-toggle__track" aria-hidden="true">
+          <span class="theme-toggle__thumb"></span>
+        </span>
+      </button>
+    </header>
+
+    <main>
+      <section class="lesson-hero" aria-labelledby="lesson-title">
+        <div class="breadcrumb" aria-label="パンくず">
+          <a href="../index.html">トップ</a>
+          <span aria-hidden="true">/</span>
+          <span>Lesson 08</span>
+        </div>
+        <p class="eyebrow">Lesson 08 / Agent SDK</p>
+        <h1 id="lesson-title">Optionsと権限を設定する</h1>
+        <p>
+          Lesson 08では、`ClaudeAgentOptions` を使ってAgentの作業範囲とツール権限を設計します。
+          読み取り専用Agentを作り、`allowed_tools`、`disallowed_tools`、`permission_mode` の違いを手で確認します。
+        </p>
+      </section>
+
+      <div class="lesson-shell">
+        <aside class="lesson-sidebar" aria-label="レッスン目次">
+          <div class="lesson-sidebar__box">
+            <span class="lesson-sidebar__label">所要時間</span>
+            <strong>60分</strong>
+          </div>
+          <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
+            <a href="#goal">ゴール</a>
+            <a href="#before-run">実行前の確認</a>
+            <a href="#concepts">初出APIの見方</a>
+            <a href="#options-detail">Optionsの読み方</a>
+            <a href="#permission-flow">権限フロー図</a>
+            <a href="#mental-model">処理の流れ</a>
+            <a href="#write-script">読み取り専用Agentを書く</a>
+            <a href="#run">実行して確認</a>
+            <a href="#review">確認問題</a>
+          </nav>
+        </aside>
+
+        <article class="lesson-main">
+          <section class="lesson-section" id="goal">
+            <p class="eyebrow">Goal</p>
+            <h2>このレッスンのゴール</h2>
+            <p class="lesson-one-liner">
+              <span>このレッスンを一言で</span>
+              `ClaudeAgentOptions` で、Agentに許可する作業範囲とツール権限を設計します。
+            </p>
+            <ul class="check-list">
+              <li>`allowed_tools` は「ツールを自動承認する設定」であり、それだけでは完全な制限ではないと説明できる</li>
+              <li>`disallowed_tools` で使わせたくないツールを明示できる</li>
+              <li>`permission_mode="dontAsk"` を使い、未承認ツールを質問せず拒否する設定を書ける</li>
+              <li>`system_prompt`、`cwd`、`max_turns` を組み合わせて、Agentの作業範囲を読み取り専用に寄せられる</li>
+              <li>読み取り専用Agentで教材ファイルを読み、結果を `outputs/` に保存できる</li>
+            </ul>
+          </section>
+
+          <section class="lesson-section" id="before-run">
+            <p class="eyebrow">Before run</p>
+            <h2>実行前の確認</h2>
+            <p>
+              Lesson 08は、Lesson 06とLesson 07で使った `claude-agent-sdk` と同じ環境で動かします。
+              `python-labs/` で次の確認が通る状態にしてください。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Windows / macOS / Linux</span>
+              </div>
+              <pre><code>uv run python -c "import claude_agent_sdk; print('claude_agent_sdk OK')"</code></pre>
+            </div>
+
+            <div class="callout callout--warning">
+              <strong>このレッスンで扱う権限は安全性に直結します</strong>
+              <p>
+                `allowed_tools`、`disallowed_tools`、`permission_mode` は、Agentがツールをどう使えるかに影響します。
+                実務では、最初から広い権限を渡すのではなく、必要な読み取りや確認から小さく始めます。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="concepts">
+            <p class="eyebrow">SDK concepts</p>
+            <h2>初めて出てくる設定の見方</h2>
+            <p>
+              このレッスンで中心になるのは、`ClaudeAgentOptions` の引数です。
+              関数やクラスの分類だけでなく、各設定が「Agentの振る舞い」「ツール承認」「作業範囲」のどこに効くかを見ます。
+            </p>
+
+            <div class="table-wrap" role="region" aria-label="Lesson 08で扱うSDK要素">
+              <table class="api-table">
+                <thead>
+                  <tr>
+                    <th>名前</th>
+                    <th>分類</th>
+                    <th>インスタンス生成</th>
+                    <th>Lesson 08での使い方</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>ClaudeAgentOptions</code></td>
+                    <td>クラス</td>
+                    <td>必要。<code>ClaudeAgentOptions(...)</code> で設定オブジェクトを作る</td>
+                    <td>Agentの作業フォルダ、システムプロンプト、最大ターン数、ツール権限をまとめる。</td>
+                  </tr>
+                  <tr>
+                    <td><code>query</code></td>
+                    <td>関数</td>
+                    <td>不要。呼び出して使う</td>
+                    <td><code>prompt</code> と <code>options</code> を渡し、権限設定つきでAgentを実行する。</td>
+                  </tr>
+                  <tr>
+                    <td><code>AssistantMessage</code></td>
+                    <td>クラス</td>
+                    <td>不要。SDKから返ってくる</td>
+                    <td>Agentの途中応答やツール利用を表示する。</td>
+                  </tr>
+                  <tr>
+                    <td><code>ResultMessage</code></td>
+                    <td>クラス</td>
+                    <td>不要。SDKから返ってくる</td>
+                    <td>実行完了状態、ターン数、セッションID、最終結果を表示する。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <p>
+              `allowed_tools` や `permission_mode` は、Pythonの関数ではなく `ClaudeAgentOptions` に渡す引数です。
+              つまり、個別に呼び出すものではなく、Agentを起動する前に「この条件で動いてください」と設定するものです。
+            </p>
+
+            <div class="reference-list">
+              <a href="https://code.claude.com/docs/en/agent-sdk/python" target="_blank" rel="noreferrer">Agent SDK reference - Python</a>
+              <a href="https://code.claude.com/docs/en/agent-sdk/permissions" target="_blank" rel="noreferrer">Configure permissions</a>
+              <a href="https://code.claude.com/docs/en/agent-sdk/agent-loop" target="_blank" rel="noreferrer">How the agent loop works</a>
+              <a href="https://support.claude.com/ja/articles/15036540-claude-%E3%83%97%E3%83%A9%E3%83%B3%E3%81%A7-claude-agent-sdk-%E3%82%92%E4%BD%BF%E7%94%A8%E3%81%99%E3%82%8B" target="_blank" rel="noreferrer">Claude プランで Agent SDK を使用する</a>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="options-detail">
+            <p class="eyebrow">Options detail</p>
+            <h2>読み取り専用AgentのOptionsを読む</h2>
+            <p>
+              今回の実習では、Agentに教材ファイルを読ませます。
+              ただし、ファイル編集やコマンド実行は不要です。
+              そのため、読み取りに必要なツールだけを自動承認し、不要なツールを明示的に禁止します。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Lesson 08で使う設定</span>
+              </div>
+              <pre><code>options = ClaudeAgentOptions(
+    cwd=str(PROJECT_ROOT),
+    max_turns=4,
+    system_prompt=(
+        "あなたは社内文書の確認を支援するアシスタントです。"
+        "ファイルの内容を読み、要点と注意点を簡潔に整理してください。"
+        "ファイルの作成、編集、削除、コマンド実行は行いません。"
+    ),
+    allowed_tools=["Read", "Glob"],
+    disallowed_tools=["Edit", "Write", "Bash"],
+    permission_mode="dontAsk",
+)</code></pre>
+            </div>
+
+            <div class="table-wrap" role="region" aria-label="Lesson 08で使うClaudeAgentOptionsの引数">
+              <table class="api-table">
+                <thead>
+                  <tr>
+                    <th>引数</th>
+                    <th>Lesson 08での値</th>
+                    <th>何を設定するか</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>cwd</code></td>
+                    <td><code>str(PROJECT_ROOT)</code></td>
+                    <td>Agentの基準フォルダです。今回のAgentは `python-labs/` を基準にファイルを探します。</td>
+                  </tr>
+                  <tr>
+                    <td><code>max_turns</code></td>
+                    <td><code>4</code></td>
+                    <td>Agentic loopの上限です。ファイルを探して読み、整理する程度なら小さめで十分です。</td>
+                  </tr>
+                  <tr>
+                    <td><code>system_prompt</code></td>
+                    <td>社内文書確認アシスタントとしての前提</td>
+                    <td>Agentの役割と禁止方針を先に固定します。毎回の依頼文ではなく、動作の前提として扱います。</td>
+                  </tr>
+                  <tr>
+                    <td><code>allowed_tools</code></td>
+                    <td><code>["Read", "Glob"]</code></td>
+                    <td>`Read` と `Glob` を自動承認します。これは「この2つだけが存在する」という意味ではありません。</td>
+                  </tr>
+                  <tr>
+                    <td><code>disallowed_tools</code></td>
+                    <td><code>["Edit", "Write", "Bash"]</code></td>
+                    <td>編集、書き込み、コマンド実行を禁止します。使わせたくないツールは明示的に閉じます。</td>
+                  </tr>
+                  <tr>
+                    <td><code>permission_mode</code></td>
+                    <td><code>"dontAsk"</code></td>
+                    <td>未承認のツールを、ユーザーに質問せず拒否します。固定されたツール面にしたいときに使います。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="callout callout--warning">
+              <strong>`allowed_tools` だけで読み取り専用になるわけではありません</strong>
+              <p>
+                公式ドキュメントでは、`allowed_tools` は指定ツールを自動承認する設定として説明されています。
+                未指定のツールが完全に消えるわけではなく、権限モードや承認処理へ回る可能性があります。
+                読み取り専用に寄せたい場合は、`disallowed_tools` と `permission_mode="dontAsk"` も合わせて考えます。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="permission-flow">
+            <p class="eyebrow">Permission flow</p>
+            <h2>権限設定の流れを図で見る</h2>
+            <p>
+              Lesson 08の設定は、Agentに「読んでよいもの」と「使わせないもの」を分けて伝えます。
+              図では、`Read` と `Glob` だけを通し、編集やコマンド実行を止める考え方を確認します。
+            </p>
+
+            <figure class="diagram-figure">
+              <button class="diagram-zoom" type="button" data-diagram-open aria-label="Lesson 08の権限設定図を拡大表示">
+                <img src="../assets/img/lesson-08-permission-flow.svg" alt="Lesson 08の読み取り専用Agentの権限設定図。allowed_toolsでReadとGlobを自動承認し、disallowed_toolsでEdit、Write、Bashを禁止し、permission_mode dontAskで未承認ツールを拒否する。" />
+                <span class="diagram-zoom__hint">クリックして拡大</span>
+              </button>
+              <figcaption>
+                `allowed_tools`、`disallowed_tools`、`permission_mode="dontAsk"` を組み合わせて、読み取り専用に近いAgentにします。
+              </figcaption>
+            </figure>
+          </section>
+
+          <section class="lesson-section" id="mental-model">
+            <p class="eyebrow">Before coding</p>
+            <h2>コードを書く前に処理の流れを読む</h2>
+            <p>
+              Lesson 08のコードは、Agentを動かす前に教材ファイルとOptionsを準備します。
+              Pythonスクリプト自身がファイルを作る処理と、Agentがファイルを読む処理を分けて読むのがポイントです。
+            </p>
+            <ol class="review-list">
+              <li>`prepare_policy_file()` でAgentに読ませる教材ファイルを用意する</li>
+              <li>`build_options()` で読み取り専用に寄せたOptionsを作る</li>
+              <li>`build_prompt()` で、読む対象ファイルと整理形式を指定する</li>
+              <li>`query(prompt=..., options=...)` でAgentを呼び出す</li>
+              <li>`AssistantMessage` なら本文やツール名を表示する</li>
+              <li>`ResultMessage` なら完了状態、ターン数、セッションIDを表示する</li>
+              <li>表示した内容を `outputs/lesson_08_permission_review.txt` に保存する</li>
+            </ol>
+          </section>
+
+          <section class="lesson-section" id="write-script">
+            <p class="eyebrow">Hands-on</p>
+            <h2>読み取り専用Agentを書く</h2>
+            <p>
+              `python-labs/practice/lesson_08_options_permissions.py` を作り、次のコードを入力してください。
+              基本は自分で書いて理解しますが、詰まった場合はコピーして進めても構いません。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>python-labs/data/lesson_08_policy.txt</span>
+              </div>
+              <pre><code>社内FAQ公開ルール
+
+- 公開前に法務チームが表現を確認する。
+- 顧客名、個人情報、契約金額はFAQに掲載しない。
+- 未確定の仕様は「予定」と明記する。
+- 公開後の修正依頼はサポートチームが受け付ける。
+- 緊急の修正は開発チームと法務チームの両方に連絡する。</code></pre>
+            </div>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>python-labs/practice/lesson_08_options_permissions.py</span>
+              </div>
+              <pre><code>import asyncio
+
+from claude_agent_sdk import (
+    AssistantMessage,
+    ClaudeAgentOptions,
+    ResultMessage,
+    query,
+)
+
+from shared.display import print_section
+from shared.files import write_text_lines
+from shared.messages import append_result_message, print_assistant_message
+from shared.paths import PROJECT_ROOT
+
+
+POLICY_PATH = PROJECT_ROOT / "data" / "lesson_08_policy.txt"
+OUTPUT_PATH = PROJECT_ROOT / "outputs" / "lesson_08_permission_review.txt"
+
+
+POLICY_TEXT = """
+社内FAQ公開ルール
+
+- 公開前に法務チームが表現を確認する。
+- 顧客名、個人情報、契約金額はFAQに掲載しない。
+- 未確定の仕様は「予定」と明記する。
+- 公開後の修正依頼はサポートチームが受け付ける。
+- 緊急の修正は開発チームと法務チームの両方に連絡する。
+""".strip()
+
+
+# Agentが読むための教材ファイルを用意する関数です。
+def prepare_policy_file() -&gt; None:
+    POLICY_PATH.parent.mkdir(parents=True, exist_ok=True)
+    POLICY_PATH.write_text(POLICY_TEXT + "\n", encoding="utf-8")
+
+
+# 読み取り専用Agentとして動かすためのOptionsを作る関数です。
+def build_options() -&gt; ClaudeAgentOptions:
+    return ClaudeAgentOptions(
+        cwd=str(PROJECT_ROOT),
+        max_turns=4,
+        system_prompt=(
+            "あなたは社内文書の確認を支援するアシスタントです。"
+            "ファイルの内容を読み、要点と注意点を簡潔に整理してください。"
+            "ファイルの作成、編集、削除、コマンド実行は行いません。"
+        ),
+        allowed_tools=["Read", "Glob"],
+        disallowed_tools=["Edit", "Write", "Bash"],
+        permission_mode="dontAsk",
+    )
+
+
+# Agentに依頼するプロンプトを作る関数です。
+def build_prompt() -&gt; str:
+    relative_path = POLICY_PATH.relative_to(PROJECT_ROOT)
+    return f"""
+`{relative_path}` を読んで、次の形式で日本語で整理してください。
+
+1. 重要なルール
+2. 公開前に確認すべき注意点
+3. 担当チームごとの見るべきポイント
+
+ファイルの変更やコマンド実行は不要です。
+""".strip()
+
+
+# queryを呼び出し、読み取り専用設定でAgentを動かす関数です。
+async def run_agent() -&gt; None:
+    prepare_policy_file()
+    options = build_options()
+    prompt = build_prompt()
+    output_lines = []
+
+    print_section("Policy file")
+    print(POLICY_PATH)
+
+    print_section("Prompt")
+    print(prompt)
+
+    print_section("Agent output")
+    async for message in query(
+        prompt=prompt,
+        options=options,
+    ):
+        if isinstance(message, AssistantMessage):
+            print_assistant_message(message, output_lines)
+        elif isinstance(message, ResultMessage):
+            print_section("Result")
+            append_result_message(message, output_lines)
+
+    write_text_lines(OUTPUT_PATH, output_lines)
+
+    print_section("Saved output")
+    print(f"Saved: {OUTPUT_PATH}")
+
+
+# 非同期のrun_agent関数をイベントループで実行する関数です。
+def main() -&gt; None:
+    asyncio.run(run_agent())
+
+
+if __name__ == "__main__":
+    main()</code></pre>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="run">
+            <p class="eyebrow">Run</p>
+            <h2>実行して確認する</h2>
+            <p>`python-labs/` から実行します。Agentが `data/lesson_08_policy.txt` を読み、整理結果を表示します。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Windows / macOS / Linux</span>
+              </div>
+              <pre><code>uv run python practice/lesson_08_options_permissions.py</code></pre>
+            </div>
+
+            <p>保存された出力も確認します。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>PowerShell</span>
+              </div>
+              <pre><code>Get-Content outputs/lesson_08_permission_review.txt</code></pre>
+            </div>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>macOS / Linux</span>
+              </div>
+              <pre><code>cat outputs/lesson_08_permission_review.txt</code></pre>
+            </div>
+
+            <p>出力例です。実際の文章やツール利用の順番は、実行時の環境やAgentの判断で変わります。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>出力例</span>
+              </div>
+              <pre><code>========================================================================
+Agent output
+========================================================================
+Tool: Read
+1. 重要なルール
+- 公開前に法務チームが表現を確認する
+- 顧客名、個人情報、契約金額はFAQに掲載しない
+
+========================================================================
+Result
+========================================================================
+Done: success
+Turns: 2
+Session: ...</code></pre>
+            </div>
+
+            <div class="callout">
+              <strong>もしツールが拒否された場合</strong>
+              <p>
+                `Read` や `Glob` が必要な場面で拒否される場合は、`allowed_tools` の名前、`permission_mode`、
+                `cwd` の位置を確認します。逆に、編集やコマンド実行が拒否されるのは、このレッスンでは期待通りです。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="review">
+            <p class="eyebrow">Review</p>
+            <h2>確認問題</h2>
+            <ol class="review-list">
+              <li>`allowed_tools` だけでは完全なツール制限にならない理由を説明してください。</li>
+              <li>`permission_mode="dontAsk"` を使うと、未承認ツールはどう扱われますか。</li>
+              <li>`disallowed_tools=["Edit", "Write", "Bash"]` は何を防ぐための設定ですか。</li>
+              <li>`cwd` を `python-labs/` に固定する理由を説明してください。</li>
+              <li>実務で `bypassPermissions` を安易に使うべきでない理由を説明してください。</li>
+            </ol>
+            <p>
+              Optionsと権限を設計できると、Agentに任せる範囲を明確にできます。
+              次のLesson 09では、実行結果をより扱いやすくするための構造化出力とログを扱います。
+            </p>
+          </section>
+
+          <nav class="lesson-nav-bottom" aria-label="レッスン移動">
+            <a href="lesson-07.html">前へ: メッセージと結果を読み分ける</a>
+            <a href="lesson-09.html">次へ: 構造化出力とログを保存する</a>
+          </nav>
+        </article>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <p>Claude Agent SDK Learning Portal</p>
+      <a href="#top">ページ上部へ戻る</a>
+    </footer>
+  </body>
+</html>
+

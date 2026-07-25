@@ -1,0 +1,741 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lesson 06 | 最初のPython Agentを動かす</title>
+    <meta
+      name="description"
+      content="Claude Agent SDKのquery、ClaudeAgentOptions、AssistantMessage、ResultMessageを使い、Pythonで最初のツールなしAgentを動かすレッスン。"
+    >
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <script src="../assets/js/main.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header" id="top">
+      <a class="site-mark" href="../index.html" aria-label="Claude Agent SDK Learning Portal トップへ">
+        <span class="site-mark__symbol" aria-hidden="true">CA</span>
+        <span class="site-mark__text">Claude Agent SDK Learning</span>
+      </a>
+      <nav class="site-nav" aria-label="主要ナビゲーション">
+        <a href="../index.html#roadmap">ロードマップ</a>
+        <a href="../index.html#categories">カテゴリ</a>
+        <a href="../index.html#lessons">レッスン</a>
+        <a href="../index.html#official-docs">公式リンク</a>
+      </nav>
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="ダークモードに切り替え" aria-pressed="false">
+        <span class="theme-toggle__track" aria-hidden="true">
+          <span class="theme-toggle__thumb"></span>
+        </span>
+      </button>
+    </header>
+
+    <main>
+      <section class="lesson-hero" aria-labelledby="lesson-title">
+        <div class="breadcrumb" aria-label="パンくず">
+          <a href="../index.html">トップ</a>
+          <span aria-hidden="true">/</span>
+          <span>Lesson 06</span>
+        </div>
+        <p class="eyebrow">Lesson 06 / Agent SDK</p>
+        <h1 id="lesson-title">最初のPython Agentを動かす</h1>
+        <p>
+          ここからClaude Agent SDKを実際に呼び出します。
+          Lesson 06では、ツールを使わない小さなAgentを作り、`query()` から届くメッセージを `async for` で表示します。
+        </p>
+      </section>
+
+      <div class="lesson-shell">
+        <aside class="lesson-sidebar" aria-label="レッスン目次">
+          <div class="lesson-sidebar__box">
+            <span class="lesson-sidebar__label">所要時間</span>
+            <strong>50分</strong>
+          </div>
+          <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
+            <a href="#goal">ゴール</a>
+            <a href="#before-run">実行前の確認</a>
+            <a href="#concepts">初出APIの見方</a>
+            <a href="#options-detail">Optionsの読み方</a>
+            <a href="#mental-model">処理の流れ</a>
+            <a href="#function-flow">関数呼び出し図</a>
+            <a href="#write-script">最初のAgentを書く</a>
+            <a href="#run">実行して読み解く</a>
+            <a href="#review">確認問題</a>
+          </nav>
+        </aside>
+
+        <article class="lesson-main">
+          <section class="lesson-section" id="goal">
+            <p class="eyebrow">Goal</p>
+            <h2>このレッスンのゴール</h2>
+            <p class="lesson-one-liner">
+              <span>このレッスンを一言で</span>
+              `query()` を使って最小のPython Agentを起動し、最終結果を受け取ります。
+            </p>
+            <ul class="check-list">
+              <li>`claude_agent_sdk` から `query()` を呼び出せる</li>
+              <li>`ClaudeAgentOptions` で作業フォルダ、ターン数、使わせないツールを設定できる</li>
+              <li>`async for` でAgentから届くメッセージを順番に読める</li>
+              <li>`AssistantMessage` と `ResultMessage` を分けて表示できる</li>
+              <li>最初のAgentは、ツール利用よりも「Pythonから呼べた」流れを優先して確認できる</li>
+            </ul>
+          </section>
+
+          <section class="lesson-section" id="before-run">
+            <p class="eyebrow">Before run</p>
+            <h2>実行前の確認</h2>
+            <p>
+              Lesson 02で `claude-agent-sdk` を追加していない場合は、`python-labs/` で次を実行します。
+              すでに追加済みなら、この手順は飛ばして構いません。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>PowerShell</span>
+              </div>
+              <pre><code>uv add claude-agent-sdk</code></pre>
+            </div>
+
+            <p>次に、Pythonとパッケージの読み込みだけを小さく確認します。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>PowerShell</span>
+              </div>
+              <pre><code>uv run python --version
+uv run python -c "import claude_agent_sdk; print('claude_agent_sdk OK')"</code></pre>
+            </div>
+
+            <div class="callout callout--warning">
+              <strong>認証方法は必ず最新の公式情報を確認します</strong>
+              <p>
+                公式クイックスタートではAPIキーを使う手順が案内されています。
+                この教材ではClaude Pro以上のサブスクリプション利用を前提にしていますが、Agent SDK、Claude Code、
+                利用枠、認証方法は変更される可能性があります。実務利用前には公式情報を確認してください。
+                2026年7月25日時点では、Agent SDK利用はサブスクリプション使用制限から差し引かれる扱いとして案内されています。
+              </p>
+            </div>
+
+            <p>
+              Lesson 01で確認した通り、`ANTHROPIC_API_KEY` が設定されているとAPIキー認証が使われる可能性があります。
+              サブスクリプション前提で学ぶ場合は、値を表示せず、設定有無だけ確認します。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>PowerShell</span>
+              </div>
+              <pre><code>uv run python scripts/lesson_01_check_environment.py</code></pre>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="concepts">
+            <p class="eyebrow">SDK concepts</p>
+            <h2>初めて出てくるSDK部品の見方</h2>
+            <p>
+              ここで初めてClaude Agent SDKの部品が出てきます。
+              Pythonに慣れていない人にも読めるようにしますが、説明の粒度は実務でSDKを読むときに使える水準にします。
+              まず「これは関数なのか、クラスなのか」「自分でインスタンスを作るのか、SDKから返ってくるのか」「どの属性やメソッドを使うのか」を整理します。
+            </p>
+
+            <div class="table-wrap" role="region" aria-label="Lesson 06で初めて出てくるSDK部品">
+              <table class="api-table">
+                <thead>
+                  <tr>
+                    <th>名前</th>
+                    <th>分類</th>
+                    <th>インスタンス生成</th>
+                    <th>Lesson 06での使い方</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>query</code></td>
+                    <td>関数</td>
+                    <td>不要。呼び出して使う</td>
+                    <td><code>prompt</code> と <code>options</code> を渡し、Agentから届くメッセージの流れを <code>async for</code> で読む。</td>
+                  </tr>
+                  <tr>
+                    <td><code>ClaudeAgentOptions</code></td>
+                    <td>クラス</td>
+                    <td>必要。<code>ClaudeAgentOptions(...)</code> で設定オブジェクトを作る</td>
+                    <td>作業フォルダ、最大ターン数、禁止ツールなどをまとめ、<code>query</code> に渡す。</td>
+                  </tr>
+                  <tr>
+                    <td><code>AssistantMessage</code></td>
+                    <td>クラス</td>
+                    <td>不要。SDKから返ってくる</td>
+                    <td>Claudeの途中応答を表す。<code>isinstance</code> で判定し、<code>content</code> を読む。</td>
+                  </tr>
+                  <tr>
+                    <td><code>ResultMessage</code></td>
+                    <td>クラス</td>
+                    <td>不要。SDKから返ってくる</td>
+                    <td>Agent実行の最終状態を表す。<code>subtype</code> や <code>result</code> を確認する。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <p>
+              重要なのは、`query()` が最終回答の文字列を1つ返す関数ではないことです。
+              SDKは、Agentが動いている間に複数のメッセージを順番に返します。
+              そのためコードでは、戻り値を普通の文字列として受け取るのではなく、`async for` で1件ずつ処理します。
+            </p>
+
+            <h3>query は関数です</h3>
+            <p>
+              `query` は、PythonコードからClaude Agent SDKへ依頼を送る入口です。
+              Lesson 06では、`query(prompt=prompt, options=options)` の形で呼び出します。
+              `prompt` にはAgentへ依頼する文字列、`options` には `ClaudeAgentOptions` のインスタンスを渡します。
+            </p>
+            <div class="table-wrap" role="region" aria-label="query関数の引数と戻り値">
+              <table class="api-table">
+                <thead>
+                  <tr>
+                    <th>項目</th>
+                    <th>Lesson 06での値</th>
+                    <th>意味</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>prompt</code></td>
+                    <td><code>str</code></td>
+                    <td>Agentへの依頼文です。今回は会議メモを整理する指示を渡します。</td>
+                  </tr>
+                  <tr>
+                    <td><code>options</code></td>
+                    <td><code>ClaudeAgentOptions</code></td>
+                    <td>Agentの実行条件です。作業場所、最大ターン数、禁止ツールなどを指定します。</td>
+                  </tr>
+                  <tr>
+                    <td>戻り値</td>
+                    <td>非同期に読めるメッセージ列</td>
+                    <td><code>AssistantMessage</code> や <code>ResultMessage</code> などが順番に届きます。通常の <code>for</code> ではなく <code>async for</code> で読みます。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h3>AssistantMessage と ResultMessage はSDKが返すクラスです</h3>
+            <p>
+              `AssistantMessage` と `ResultMessage` は、こちらが自分で作るためのクラスではなく、`query()` の実行中にSDKから返ってくるメッセージ型です。
+              そのため `AssistantMessage(...)` のようにインスタンスを生成する必要はありません。
+              コード側では、届いた `message` がどの型なのかを `isinstance(message, AssistantMessage)` のように判定して、型に応じて読む属性を変えます。
+            </p>
+            <div class="table-wrap" role="region" aria-label="メッセージ型で読む属性">
+              <table class="api-table">
+                <thead>
+                  <tr>
+                    <th>型</th>
+                    <th>主に読む属性</th>
+                    <th>Lesson 06での扱い</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>AssistantMessage</code></td>
+                    <td><code>content</code></td>
+                    <td>Claudeが途中で返した内容です。本文テキストだけでなく、ツール利用などの部品が含まれることがあります。</td>
+                  </tr>
+                  <tr>
+                    <td><code>ResultMessage</code></td>
+                    <td><code>subtype</code>, <code>result</code></td>
+                    <td><code>subtype</code> と <code>result</code> は、どちらも <code>ResultMessage</code> が持つ属性です。<code>subtype</code> の中に <code>result</code> が入っているわけではありません。<code>subtype</code> で完了状態を見て、<code>message.result</code> があれば最終結果テキストとして表示します。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <p>
+              `AssistantMessage.content` の中身は、単なる文字列ではなく「本文」「ツール利用」などのcontent blockのリストとして届きます。
+              Lesson 06のコードでは、content blockに `text` があれば本文として表示し、`name` があればツール名として表示します。
+              この構造はLesson 07でさらに詳しく読みます。
+            </p>
+
+            <div class="reference-list">
+              <a href="https://code.claude.com/docs/ja/agent-sdk/quickstart" target="_blank" rel="noreferrer">Agent SDK クイックスタート</a>
+              <a href="https://code.claude.com/docs/en/agent-sdk/python" target="_blank" rel="noreferrer">Agent SDK reference - Python</a>
+              <a href="https://code.claude.com/docs/en/agent-sdk/permissions" target="_blank" rel="noreferrer">Configure permissions</a>
+              <a href="https://support.claude.com/ja/articles/15036540-claude-%E3%83%97%E3%83%A9%E3%83%B3%E3%81%A7-claude-agent-sdk-%E3%82%92%E4%BD%BF%E7%94%A8%E3%81%99%E3%82%8B" target="_blank" rel="noreferrer">Claude プランで Agent SDK を使用する</a>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="options-detail">
+            <p class="eyebrow">Options detail</p>
+            <h2>ClaudeAgentOptionsは設定用のクラスです</h2>
+            <p>
+              `ClaudeAgentOptions` は、Agentの「作業場所」「使える道具」「実行量」「会話の続け方」などを決める設定です。
+              つまり、プロンプトが「何をしてほしいか」だとすると、`ClaudeAgentOptions` は「どの範囲で、どの条件で動いてよいか」を決める操作盤です。
+              これはクラスなので、`ClaudeAgentOptions(...)` と呼び出してインスタンスを生成し、そのインスタンスを `query()` の `options` 引数へ渡します。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Lesson 06で使う設定</span>
+              </div>
+              <pre><code>options = ClaudeAgentOptions(
+    disallowed_tools=["Read", "Glob", "Edit", "Write", "Bash"],
+    cwd=str(PROJECT_ROOT),
+    max_turns=2,
+)</code></pre>
+            </div>
+
+            <p>
+              この3つは、初回のAgent実行で特に大事です。
+              `cwd` で作業範囲を固定し、`max_turns` で長く走り続けることを防ぎ、`disallowed_tools` で今回は不要なツールを外します。
+              先に制約を小さくしておくと、エラーが出たときにも原因を追いやすくなります。
+            </p>
+
+            <div class="table-wrap" role="region" aria-label="Lesson 06で使うClaudeAgentOptionsの引数">
+              <table class="api-table">
+                <thead>
+                  <tr>
+                    <th>引数</th>
+                    <th>型の目安</th>
+                    <th>Lesson 06での値</th>
+                    <th>何を設定するか</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>cwd</code></td>
+                    <td><code>str</code> またはパス</td>
+                    <td><code>str(PROJECT_ROOT)</code></td>
+                    <td>Agentの基準フォルダです。相対パスの解釈、設定ファイルの読み込み、ツールが見る範囲の起点に影響します。</td>
+                  </tr>
+                  <tr>
+                    <td><code>max_turns</code></td>
+                    <td><code>int</code></td>
+                    <td><code>2</code></td>
+                    <td>Agentic loopの上限です。回答の文字数ではなく、考える、必要ならツールを使う、結果を読む、という往復の上限です。</td>
+                  </tr>
+                  <tr>
+                    <td><code>disallowed_tools</code></td>
+                    <td><code>list[str]</code></td>
+                    <td><code>["Read", "Glob", "Edit", "Write", "Bash"]</code></td>
+                    <td>指定したツールを禁止します。Lesson 06ではファイル読み取りや編集を使わせず、会議メモの文章整理だけに集中します。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <p>
+              `max_turns` は「回答の長さ」ではなく、Agentic loopの回数です。
+              ツールを使うAgentでは、調査、ツール実行、結果確認の往復が増えるため、上限が小さいと `error_max_turns` で終わることがあります。
+              そのためLesson 06では、ツールが不要な会議メモ整理にして、`max_turns=2` でも終わりやすくしています。
+            </p>
+
+            <div class="callout callout--warning">
+              <strong>`allowed_tools` は「それだけに制限する」設定ではありません</strong>
+              <p>
+                `allowed_tools=["Read"]` と書くと、Readだけを使えるように見えますが、公式には「指定したツールを自動承認する」設定です。
+                未指定のツールが完全に消えるわけではありません。使わせたくないツールは `disallowed_tools` で明示します。
+                「Readだけを許可し、それ以外は聞かずに拒否したい」ような厳しい運用では、`allowed_tools` と `permission_mode="dontAsk"` を組み合わせる考え方が必要です。
+              </p>
+            </div>
+
+            <p>今後よく使う設定も、用途ごとに見ておきます。ここでは暗記ではなく「どの場面で気にするか」をつかめれば十分です。</p>
+            <div class="table-wrap" role="region" aria-label="今後よく使うClaudeAgentOptionsの引数">
+              <table class="api-table">
+                <thead>
+                  <tr>
+                    <th>引数</th>
+                    <th>主な用途</th>
+                    <th>読み方</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>system_prompt</code></td>
+                    <td>Agentの役割や振る舞いを固定する</td>
+                    <td>業務用Agentでは、回答の粒度、文体、判断基準、禁止事項をここに置きます。プロンプト本文に毎回混ぜるより、役割の前提として分けると保守しやすくなります。</td>
+                  </tr>
+                  <tr>
+                    <td><code>allowed_tools</code></td>
+                    <td>指定ツールを自動承認する</td>
+                    <td>「このツールだけに制限する」ではありません。未指定のツールも、権限モードや承認処理に回る可能性があります。</td>
+                  </tr>
+                  <tr>
+                    <td><code>permission_mode</code></td>
+                    <td>ツール承認の全体ルールを決める</td>
+                    <td><code>default</code>、<code>dontAsk</code>、<code>plan</code>、<code>acceptEdits</code>、<code>bypassPermissions</code> などがあります。安全運用に直結するためLesson 08で扱います。</td>
+                  </tr>
+                  <tr>
+                    <td><code>model</code></td>
+                    <td>使用モデルを指定する</td>
+                    <td>未指定なら環境やClaude Code側の既定に従います。教材では契約や環境差を吸収しやすいよう、最初は固定しません。</td>
+                  </tr>
+                  <tr>
+                    <td><code>continue_conversation</code> / <code>resume</code></td>
+                    <td>以前の会話を続ける</td>
+                    <td><code>continue_conversation</code> は直近の会話を続け、<code>resume</code> はセッションIDを指定して再開します。Lesson 06では毎回新規実行にします。</td>
+                  </tr>
+                  <tr>
+                    <td><code>max_budget_usd</code></td>
+                    <td>推定コストの上限を置く</td>
+                    <td>クライアント側の推定コストが指定額に達したら停止します。Pro以上サブスクリプション前提でも、将来の扱い変更や業務利用を考えると重要な安全弁です。</td>
+                  </tr>
+                  <tr>
+                    <td><code>include_partial_messages</code></td>
+                    <td>途中断片を受け取る</td>
+                    <td><code>True</code> にすると、完成したメッセージだけでなく途中の断片も受け取れます。進捗表示には便利ですが、処理が複雑になるため初回は扱いません。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>設定を広げるときの例</span>
+              </div>
+              <pre><code>options = ClaudeAgentOptions(
+    cwd=str(PROJECT_ROOT),
+    max_turns=6,
+    system_prompt="あなたは業務文書を読み、決定事項とTODOを正確に整理するアシスタントです。",
+    allowed_tools=["Read", "Glob"],
+    permission_mode="dontAsk",
+)</code></pre>
+            </div>
+
+            <p>
+              この例では `Read` と `Glob` を自動承認し、`permission_mode="dontAsk"` によって未承認のツールは確認せず拒否します。
+              ファイルを読む必要があるLessonでは便利ですが、Lesson 06ではまだ使いません。
+              初回は、ツール許可よりも「Agentから返ってくるメッセージを読めるようになる」ことを優先します。
+            </p>
+
+            <div class="callout">
+              <strong>Lesson 06であえて使わない設定</strong>
+              <p>
+                `permission_mode`、`allowed_tools`、`system_prompt`、`model` などは便利ですが、最初から全部入れると何が効いているのか分かりにくくなります。
+                まずは `cwd`、`max_turns`、`disallowed_tools` の3つで、安全に小さく動かします。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="mental-model">
+            <p class="eyebrow">Before coding</p>
+            <h2>コードを書く前に処理の流れを読む</h2>
+            <p>
+              Lesson 06の処理は、上から順に見ると次の流れです。
+              初めてのSDKコードでは、細部の属性名を暗記するよりも、どの関数が呼び出し口で、どのクラスが設定で、どのクラスが結果なのかを分けて読むことが大切です。
+            </p>
+            <ol class="review-list">
+              <li>`build_prompt()` でAgentに依頼する文章を作る</li>
+              <li>`ClaudeAgentOptions` で作業フォルダ、ターン数、使わせないツールを設定する</li>
+              <li>`query(prompt=..., options=...)` でAgentを呼び出す</li>
+              <li>`async for` で届いたメッセージを1件ずつ読む</li>
+              <li>`AssistantMessage` なら途中応答として表示する</li>
+              <li>`ResultMessage` なら最後の状態として表示する</li>
+              <li>表示した内容を `outputs/` に保存する</li>
+            </ol>
+
+            <div class="callout">
+              <strong>最初は細部より流れを優先します</strong>
+              <p>
+                このレッスンでは、SDKのメッセージ構造を完全に網羅しません。
+                ただし、初めて出てくる関数とクラスが「呼び出すもの」「設定として渡すもの」「SDKから返ってくるもの」のどれなのかは、ごまかさずに押さえます。
+                Lesson 07で、`AssistantMessage.content` と `ResultMessage` の中身をさらに詳しく読みます。
+              </p>
+            </div>
+
+            <div class="callout callout--warning">
+              <strong>`error_max_turns` が出た場合</strong>
+              <p>
+                Agentが指定ターン数の中で終われなかった状態です。
+                最初の教材ではツール利用が増えると混乱しやすいため、Lesson 06はツールを使わないプロンプトにしています。
+                ファイル読み取りやツール利用は、メッセージ構造を理解した後のレッスンで扱います。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="function-flow">
+            <p class="eyebrow">Function flow</p>
+            <h2>関数が呼ばれる順番を図で見る</h2>
+            <p>
+              Lesson 06のコードは関数が多く見えますが、役割は大きく4つに分かれます。
+              `main()` は起動入口、`run_agent()` は全体の司令塔、`print_assistant_message()` と `print_result_message()` はメッセージ型ごとの表示、`save_output()` は最後の保存です。
+              まず関数同士の関係を見て、そのあと実行順をシーケンス図で確認します。
+            </p>
+
+            <figure class="diagram-figure">
+              <button class="diagram-zoom" type="button" data-diagram-open aria-label="関数呼び出し図を拡大表示">
+                <img src="../assets/img/lesson-06-function-flow.svg" alt="Lesson 06の関数呼び出し順を示すフロー図。mainからrun_agentを実行し、queryから届くメッセージをAssistantMessageとResultMessageに分岐して処理し、最後にsave_outputで保存する。" />
+                <span class="diagram-zoom__hint">クリックして拡大</span>
+              </button>
+              <figcaption>
+                関係図: `run_agent()` の中で準備、Agent呼び出し、メッセージ分岐、保存までをまとめて制御します。
+              </figcaption>
+            </figure>
+
+            <figure class="diagram-figure">
+              <button class="diagram-zoom" type="button" data-diagram-open aria-label="関数呼び出しのシーケンス図を拡大表示">
+                <img src="../assets/img/lesson-06-sequence-flow.svg" alt="Lesson 06の実行順を示すシーケンス図。main、asyncio.run、run_agent、query、message handler、outputの順に、実行時の呼び出し順を上から下へ示す。" />
+                <span class="diagram-zoom__hint">クリックして拡大</span>
+              </button>
+              <figcaption>
+                シーケンス図: 上から下へ読むと、`main()` から保存処理までの実行順が追えます。
+              </figcaption>
+            </figure>
+          </section>
+
+          <section class="lesson-section" id="write-script">
+            <p class="eyebrow">Hands-on</p>
+            <h2>最初のAgentを書く</h2>
+            <p>
+              `python-labs/practice/lesson_06_first_agent.py` を作り、次のコードを入力してください。
+              最初のAgentなので、ファイル読み取り、編集、コマンド実行は避け、会議メモを整理してもらうだけに絞ります。
+              このコードでは、Agentに依頼する文を作り、返ってくるメッセージを順に表示し、最後に `outputs/` へ保存します。
+            </p>
+
+            <p>まず、SDKから使う部品を読み込みます。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Python import</span>
+              </div>
+              <pre><code>from claude_agent_sdk import (
+    AssistantMessage,
+    ClaudeAgentOptions,
+    ResultMessage,
+    query,
+)</code></pre>
+            </div>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>python-labs/practice/lesson_06_first_agent.py</span>
+              </div>
+              <pre><code>import asyncio
+from pathlib import Path
+
+from claude_agent_sdk import (
+    AssistantMessage,
+    ClaudeAgentOptions,
+    ResultMessage,
+    query,
+)
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+OUTPUT_PATH = PROJECT_ROOT / "outputs" / "lesson_06_agent_output.txt"
+
+
+MEETING_MEMO = """
+社内FAQページの公開に向けて打ち合わせを行った。
+公開日は来月第2週を目標にする。
+営業チームは、よくある質問を10件選ぶ。
+法務チームは、公開前に表現を確認する。
+開発チームは、検索しやすいページ構成を検討する。
+""".strip()
+
+
+# 見出しを区切り線つきで表示する関数です。
+def print_section(title: str) -&gt; None:
+    print()
+    print("=" * 72)
+    print(title)
+    print("=" * 72)
+
+
+# Agentに依頼する内容を、会議メモつきで組み立てる関数です。
+def build_prompt() -&gt; str:
+    return f"""
+あなたは業務メモを整理するアシスタントです。
+次の会議メモを、決定事項とTODOに分けて日本語で整理してください。
+TODOは担当チームが分かるようにしてください。
+
+会議メモ:
+{MEETING_MEMO}
+
+制約:
+- ファイルを読まないでください。
+- ファイルを変更しないでください。
+- コマンドを実行しないでください。
+- 短く、初学者にも分かる言葉で整理してください。
+""".strip()
+
+
+# 画面に表示した内容を、保存用のリストにも追加する関数です。
+def record_line(output_lines: list[str], text: str) -&gt; None:
+    print(text)
+    output_lines.append(text)
+
+
+# AssistantMessageの中から、人が読みやすいテキストやツール名を表示する関数です。
+def print_assistant_message(
+    message: AssistantMessage,
+    output_lines: list[str],
+) -&gt; None:
+    for block in message.content:
+        text = getattr(block, "text", None)
+        name = getattr(block, "name", None)
+
+        if text:
+            record_line(output_lines, text)
+        elif name:
+            record_line(output_lines, f"Tool: {name}")
+
+
+# ResultMessageから、Agentの最終状態を表示する関数です。
+def print_result_message(
+    message: ResultMessage,
+    output_lines: list[str],
+) -&gt; None:
+    print_section("Result")
+    record_line(output_lines, f"Done: {message.subtype}")
+
+    result = getattr(message, "result", None)
+    if result:
+        record_line(output_lines, str(result))
+
+
+# Agentの出力をoutputsフォルダに保存する関数です。
+def save_output(output_lines: list[str]) -&gt; None:
+    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    OUTPUT_PATH.write_text("\n".join(output_lines) + "\n", encoding="utf-8")
+
+    print_section("Saved output")
+    print(f"Saved: {OUTPUT_PATH}")
+
+
+# queryを呼び出し、Agentから届くメッセージを順番に処理する関数です。
+async def run_agent() -&gt; None:
+    options = ClaudeAgentOptions(
+        disallowed_tools=["Read", "Glob", "Edit", "Write", "Bash"],
+        cwd=str(PROJECT_ROOT),
+        max_turns=2,
+    )
+    prompt = build_prompt()
+    output_lines = []
+
+    print_section("Prompt")
+    print(prompt)
+
+    print_section("Agent output")
+    async for message in query(
+        prompt=prompt,
+        options=options,
+    ):
+        if isinstance(message, AssistantMessage):
+            print_assistant_message(message, output_lines)
+        elif isinstance(message, ResultMessage):
+            print_result_message(message, output_lines)
+
+    save_output(output_lines)
+
+
+# 非同期のrun_agent関数をイベントループで実行する関数です。
+def main() -&gt; None:
+    asyncio.run(run_agent())
+
+
+if __name__ == "__main__":
+    main()
+</code></pre>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="run">
+            <p class="eyebrow">Run</p>
+            <h2>実行して読み解く</h2>
+            <p>`python-labs/` から実行します。初回は認証や利用枠の確認で時間がかかることがあります。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>PowerShell</span>
+              </div>
+              <pre><code>uv run python practice/lesson_06_first_agent.py</code></pre>
+            </div>
+
+            <p>
+              出力には、プロンプト、Agentの途中応答、使われたツール名、最後の `Done: ...` が表示されます。
+              実際の文章や順番は、実行時の環境やAgentの判断によって変わります。
+              最初は返答の良し悪しよりも、PythonからAgentを呼び出し、結果を受け取れたことを確認できれば十分です。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>出力例</span>
+              </div>
+              <pre><code>========================================================================
+Prompt
+========================================================================
+あなたはClaude Agent SDKを学ぶ受講者を支援するアシスタントです。
+...
+
+========================================================================
+Agent output
+========================================================================
+決定事項:
+- 社内FAQページは来月第2週の公開を目標にする
+
+TODO:
+- 営業チーム: よくある質問を10件選ぶ
+- 法務チーム: 公開前に表現を確認する
+- 開発チーム: 検索しやすいページ構成を検討する
+
+========================================================================
+Result
+========================================================================
+Done: success</code></pre>
+            </div>
+
+            <p>保存された出力も確認します。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>PowerShell</span>
+              </div>
+              <pre><code>Get-Content outputs/lesson_06_agent_output.txt</code></pre>
+            </div>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>macOS / Linux</span>
+              </div>
+              <pre><code>cat outputs/lesson_06_agent_output.txt</code></pre>
+            </div>
+
+            <div class="callout">
+              <strong>うまく動かないときの確認</strong>
+              <p>
+                `claude-agent-sdk` が見つからない場合は `uv add claude-agent-sdk` を確認します。
+                認証に関するエラーが出た場合は、Claude Code / Claudeのログイン状態、Pro以上の契約前提、
+                `ANTHROPIC_API_KEY` の有無、公式ドキュメントの最新条件を順に確認します。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="review">
+            <p class="eyebrow">Review</p>
+            <h2>確認問題</h2>
+            <ol class="review-list">
+              <li>`query()` が返すものを、なぜ `async for` で読むのでしょうか。</li>
+              <li>`disallowed_tools` でツール利用を避けた理由を説明してください。</li>
+              <li>`AssistantMessage` と `ResultMessage` の役割の違いを説明してください。</li>
+              <li>このレッスンで `Read`、`Glob`、`Edit`、`Bash` を避けた理由は何ですか。</li>
+              <li>Agentに渡すプロンプトの「制約」には、どのような効果がありますか。</li>
+            </ol>
+            <p>
+              Agentの返答には、実は複数種類のメッセージが含まれます。
+              次のLesson 07では、それらを整理して読み取ります。
+            </p>
+          </section>
+
+          <nav class="lesson-nav-bottom" aria-label="レッスン移動">
+            <a href="lesson-05.html">前へ: async / await の感覚をつかむ</a>
+            <a href="lesson-06-ex.html">次へ: Lesson 6EX 共通関数へ整理する</a>
+          </nav>
+        </article>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <p>Claude Agent SDK Learning Portal</p>
+      <a href="#top">ページ上部へ戻る</a>
+    </footer>
+  </body>
+</html>
+

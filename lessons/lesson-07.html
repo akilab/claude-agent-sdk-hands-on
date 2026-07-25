@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lesson 07 | メッセージと結果を読み分ける</title>
+    <meta
+      name="description"
+      content="Claude Agent SDKのqueryが返すメッセージの流れを、AssistantMessage、ResultMessage、content blockに分けて読み取るレッスン。"
+    >
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <script src="../assets/js/main.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header" id="top">
+      <a class="site-mark" href="../index.html" aria-label="Claude Agent SDK Learning Portal トップへ">
+        <span class="site-mark__symbol" aria-hidden="true">CA</span>
+        <span class="site-mark__text">Claude Agent SDK Learning</span>
+      </a>
+      <nav class="site-nav" aria-label="主要ナビゲーション">
+        <a href="../index.html#roadmap">ロードマップ</a>
+        <a href="../index.html#categories">カテゴリ</a>
+        <a href="../index.html#lessons">レッスン</a>
+        <a href="../index.html#official-docs">公式リンク</a>
+      </nav>
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="ダークモードに切り替え" aria-pressed="false">
+        <span class="theme-toggle__track" aria-hidden="true">
+          <span class="theme-toggle__thumb"></span>
+        </span>
+      </button>
+    </header>
+
+    <main>
+      <section class="lesson-hero" aria-labelledby="lesson-title">
+        <div class="breadcrumb" aria-label="パンくず">
+          <a href="../index.html">トップ</a>
+          <span aria-hidden="true">/</span>
+          <span>Lesson 07</span>
+        </div>
+        <p class="eyebrow">Lesson 07 / Agent SDK</p>
+        <h1 id="lesson-title">メッセージと結果を読み分ける</h1>
+        <p>
+          Lesson 06では、PythonからAgentを呼び出して返答を受け取りました。
+          このレッスンでは、`query()` から流れてくるメッセージを観察し、途中応答と最終結果を分けて保存します。
+        </p>
+      </section>
+
+      <div class="lesson-shell">
+        <aside class="lesson-sidebar" aria-label="レッスン目次">
+          <div class="lesson-sidebar__box">
+            <span class="lesson-sidebar__label">所要時間</span>
+            <strong>55分</strong>
+          </div>
+          <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
+            <a href="#goal">ゴール</a>
+            <a href="#concepts">今回見るメッセージ</a>
+            <a href="#write-script">読み分けコードを書く</a>
+            <a href="#run">実行して観察する</a>
+            <a href="#review">確認問題</a>
+          </nav>
+        </aside>
+
+        <article class="lesson-main">
+          <section class="lesson-section" id="goal">
+            <p class="eyebrow">Goal</p>
+            <h2>このレッスンのゴール</h2>
+            <p class="lesson-one-liner">
+              <span>このレッスンを一言で</span>
+              `query()` から流れてくる途中メッセージと最終結果を、型で読み分けます。
+            </p>
+            <ul class="check-list">
+              <li>`query()` が文字列ではなく、メッセージの流れを返すと説明できる</li>
+              <li>`type(message).__name__` で、学習用にメッセージ型を表示できる</li>
+              <li>`isinstance()` で `AssistantMessage` と `ResultMessage` を分岐できる</li>
+              <li>`AssistantMessage.content` がcontent blockのリストだと理解できる</li>
+              <li>最終結果と実行サマリーを `outputs/` に保存できる</li>
+            </ul>
+          </section>
+
+          <section class="lesson-section" id="concepts">
+            <p class="eyebrow">Message concepts</p>
+            <h2>今回見るメッセージ</h2>
+            <p>
+              `query()` は、最終回答の文字列を直接返す関数ではありません。
+              Agentが動いている間に届く複数のメッセージを、`async for` で順番に読みます。
+            </p>
+            <div class="info-grid">
+              <div class="info-card">
+                <span>Assistant</span>
+                <strong>AssistantMessage</strong>
+                <p>Claudeの途中応答です。本文は `content` の中に複数の部品として入ります。</p>
+              </div>
+              <div class="info-card">
+                <span>Result</span>
+                <strong>ResultMessage</strong>
+                <p>実行の最後に届く結果です。成功状態、ターン数、最終テキストなどを確認します。</p>
+              </div>
+              <div class="info-card">
+                <span>Blocks</span>
+                <strong>Content blocks</strong>
+                <p>テキスト、ツール利用、ツール結果など、応答の中身を構成する部品です。</p>
+              </div>
+            </div>
+            <p>
+              Lesson 07では、すべてのメッセージ型を暗記しません。
+              まずは `AssistantMessage` と `ResultMessage` を読み分け、デバッグしやすい表示と保存を作ります。
+              `SystemMessage` は状態管理やデバッグ用、`UserMessage` は人間の発話だけでなくツール結果側にも現れることがあります。
+            </p>
+            <p>
+              `ResultMessage` はAgent loopの終了を表します。ただし、後続のシステムイベントが届く場合もあるため、
+              コードでは `ResultMessage` を見つけても `break` せず、`async for` を自然に最後まで読み切ります。
+            </p>
+            <div class="reference-list">
+              <a href="https://code.claude.com/docs/en/agent-sdk/python" target="_blank" rel="noreferrer">Agent SDK reference - Python</a>
+              <a href="https://code.claude.com/docs/en/agent-sdk/agent-loop" target="_blank" rel="noreferrer">How the agent loop works</a>
+              <a href="https://code.claude.com/docs/en/agent-sdk/streaming-output" target="_blank" rel="noreferrer">Stream responses in real-time</a>
+              <a href="https://docs.python.org/ja/3/library/functions.html#isinstance" target="_blank" rel="noreferrer">Python: isinstance</a>
+              <a href="https://docs.python.org/ja/3/library/json.html" target="_blank" rel="noreferrer">Python: json</a>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="write-script">
+            <p class="eyebrow">Hands-on</p>
+            <h2>読み分けコードを書く</h2>
+            <p>
+              `python-labs/practice/lesson_07_read_messages.py` を作り、次のコードを入力してください。
+              会議メモを題材にし、返答内容の品質評価ではなく、どんなメッセージが流れているかを観察します。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>python-labs/practice/lesson_07_read_messages.py</span>
+              </div>
+              <pre><code>import asyncio
+
+from claude_agent_sdk import (
+    AssistantMessage,
+    ClaudeAgentOptions,
+    ResultMessage,
+    TextBlock,
+    ToolResultBlock,
+    ToolUseBlock,
+    query,
+)
+
+from shared.display import print_section
+from shared.files import write_json_file
+from shared.paths import PROJECT_ROOT
+
+
+OUTPUT_PATH = PROJECT_ROOT / "outputs" / "lesson_07_message_records.json"
+
+
+MEETING_MEMO = """
+新しい社内FAQページについて打ち合わせを行った。
+公開日は来月第2週を目標にする。
+営業チームはよくある質問を10件選ぶ。
+法務チームは公開前に表現を確認する。
+開発チームは検索しやすいページ構成を検討する。
+""".strip()
+
+
+# Agentに依頼するプロンプトを作る関数です。
+def build_prompt() -&gt; str:
+    return f"""
+次の会議メモを、決定事項とTODOに分けて日本語で整理してください。
+TODOは担当チームが分かるようにしてください。
+
+会議メモ:
+{MEETING_MEMO}
+""".strip()
+
+
+# content blockをJSON保存しやすい辞書へ変換する関数です。
+def block_to_record(block: object) -&gt; dict[str, object]:
+    block_type = type(block).__name__
+
+    if isinstance(block, TextBlock):
+        return {
+            "block_type": block_type,
+            "text": block.text,
+        }
+
+    if isinstance(block, ToolUseBlock):
+        return {
+            "block_type": block_type,
+            "tool_name": block.name,
+            "tool_input": block.input,
+        }
+
+    if isinstance(block, ToolResultBlock):
+        return {
+            "block_type": block_type,
+            "tool_use_id": block.tool_use_id,
+            "is_error": block.is_error,
+            "content": block.content,
+        }
+
+    return {
+        "block_type": block_type,
+        "summary": str(block),
+    }
+
+
+# AssistantMessageの内容を表示し、保存用の辞書へ変換する関数です。
+def handle_assistant_message(message: AssistantMessage) -&gt; dict[str, object]:
+    print_section("AssistantMessage")
+    print(f"message type: {type(message).__name__}")
+    print(f"model: {message.model}")
+
+    blocks = []
+    for index, block in enumerate(message.content, start=1):
+        record = block_to_record(block)
+        blocks.append(record)
+
+        print(f"block {index}: {record['block_type']}")
+        if "text" in record:
+            print(record["text"])
+        elif "tool_name" in record:
+            print(f"tool: {record['tool_name']}")
+
+    return {
+        "message_type": type(message).__name__,
+        "model": message.model,
+        "blocks": blocks,
+    }
+
+
+# ResultMessageの内容を表示し、保存用の辞書へ変換する関数です。
+def handle_result_message(message: ResultMessage) -&gt; dict[str, object]:
+    print_section("ResultMessage")
+    print(f"message type: {type(message).__name__}")
+    print(f"subtype: {message.subtype}")
+    print(f"is_error: {message.is_error}")
+    print(f"num_turns: {message.num_turns}")
+    print(f"duration_ms: {message.duration_ms}")
+    print(f"session_id: {message.session_id}")
+
+    if message.result:
+        print()
+        print(message.result)
+
+    return {
+        "message_type": type(message).__name__,
+        "subtype": message.subtype,
+        "is_error": message.is_error,
+        "num_turns": message.num_turns,
+        "duration_ms": message.duration_ms,
+        "session_id": message.session_id,
+        "total_cost_usd": message.total_cost_usd,
+        "usage": message.usage,
+        "result": message.result,
+    }
+
+
+# 届いたメッセージの型に応じて、処理する関数を切り替える関数です。
+def handle_message(message: object) -&gt; dict[str, object]:
+    message_type = type(message).__name__
+
+    if isinstance(message, AssistantMessage):
+        return handle_assistant_message(message)
+
+    if isinstance(message, ResultMessage):
+        return handle_result_message(message)
+
+    print_section(message_type)
+    print("このレッスンでは詳細表示しないメッセージです。")
+    return {
+        "message_type": message_type,
+        "summary": str(message),
+    }
+
+
+# メッセージ型ごとの件数を表示する関数です。
+def print_summary(records: list[dict[str, object]]) -&gt; None:
+    counts = {}
+    for record in records:
+        message_type = str(record["message_type"])
+        counts[message_type] = counts.get(message_type, 0) + 1
+
+    print_section("Summary")
+    for message_type, count in counts.items():
+        print(f"{message_type}: {count}")
+
+
+# queryを呼び出し、メッセージごとの詳細を保存する関数です。
+async def run_agent() -&gt; None:
+    options = ClaudeAgentOptions(
+        cwd=str(PROJECT_ROOT),
+        max_turns=5,
+        disallowed_tools=["Edit", "Write", "Bash"],
+    )
+    prompt = build_prompt()
+    records = []
+
+    print_section("Prompt")
+    print(prompt)
+
+    async for message in query(
+        prompt=prompt,
+        options=options,
+    ):
+        record = handle_message(message)
+        records.append(record)
+
+    write_json_file(OUTPUT_PATH, records)
+
+    print_section("Saved Records")
+    print(f"Saved: {OUTPUT_PATH}")
+    print_summary(records)
+
+
+# 非同期のrun_agent関数をイベントループで実行する関数です。
+def main() -&gt; None:
+    asyncio.run(run_agent())
+
+
+if __name__ == "__main__":
+    main()</code></pre>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="run">
+            <p class="eyebrow">Run</p>
+            <h2>実行して観察する</h2>
+            <p>`python-labs/` から実行します。Lesson 06と同じ認証状態で動かします。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>PowerShell</span>
+              </div>
+              <pre><code>uv run python practice/lesson_07_read_messages.py</code></pre>
+            </div>
+
+            <p>保存されたJSONも確認します。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>PowerShell</span>
+              </div>
+              <pre><code>Get-Content outputs/lesson_07_message_records.json</code></pre>
+            </div>
+
+            <p>出力例です。実際の文章やメッセージ数は実行ごとに変わることがあります。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>出力例</span>
+              </div>
+              <pre><code>========================================================================
+AssistantMessage
+========================================================================
+message type: AssistantMessage
+model: claude-sonnet-4-...
+block 1: TextBlock
+決定事項:
+- 社内FAQページを来月第2週に公開する
+
+TODO:
+- 営業チーム: よくある質問を10件選ぶ
+
+========================================================================
+ResultMessage
+========================================================================
+message type: ResultMessage
+subtype: success
+is_error: False
+num_turns: 1</code></pre>
+            </div>
+
+            <div class="callout">
+              <strong>うまく動かないときの確認</strong>
+              <p>
+                `uv run` で実行しているか、`claude-agent-sdk` が入っているか、VSCodeが `.venv` を見ているか、
+                Claude Code / Claudeの認証状態が有効か、`ANTHROPIC_API_KEY` が意図せず優先されていないかを確認します。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="review">
+            <p class="eyebrow">Review</p>
+            <h2>確認問題</h2>
+            <ol class="review-list">
+              <li>`query()` は最終回答の文字列を直接返しますか。それとも別の形ですか。</li>
+              <li>`async for` を使っている理由を説明してください。</li>
+              <li>`AssistantMessage.content` は文字列ですか。それともリストですか。</li>
+              <li>最終結果を見るときに注目するメッセージ型は何ですか。</li>
+              <li>メッセージ型を表示・保存できると、なぜデバッグしやすくなりますか。</li>
+            </ol>
+            <p>
+              メッセージを読めるようになると、Agentの動きが見えやすくなります。
+              次のLesson 08では、安全に動かすためのOptionsと権限設定を足していきます。
+            </p>
+          </section>
+
+          <nav class="lesson-nav-bottom" aria-label="レッスン移動">
+            <a href="lesson-06-ex.html">前へ: Lesson 6EX 共通関数へ整理する</a>
+            <a href="lesson-08.html">次へ: Optionsと権限を設定する</a>
+          </nav>
+        </article>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <p>Claude Agent SDK Learning Portal</p>
+      <a href="#top">ページ上部へ戻る</a>
+    </footer>
+  </body>
+</html>
+

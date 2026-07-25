@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lesson 13 | ClaudeSDKClient編で学ぶこと</title>
+    <meta
+      name="description"
+      content="Claude Agent SDKのClaudeSDKClient編に入る前に、queryとの違い、継続会話、セッション管理、複数ユーザー相当の会話分離、ストリーミングの学習項目を整理するレッスン。"
+    >
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <script src="../assets/js/main.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header" id="top">
+      <a class="site-mark" href="../index.html" aria-label="Claude Agent SDK Learning Portal トップへ">
+        <span class="site-mark__symbol" aria-hidden="true">CA</span>
+        <span class="site-mark__text">Claude Agent SDK Learning</span>
+      </a>
+      <nav class="site-nav" aria-label="主要ナビゲーション">
+        <a href="../index.html#roadmap">ロードマップ</a>
+        <a href="../index.html#categories">カテゴリ</a>
+        <a href="../index.html#lessons">レッスン</a>
+        <a href="../index.html#official-docs">公式リンク</a>
+      </nav>
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="ダークモードに切り替え" aria-pressed="false">
+        <span class="theme-toggle__track" aria-hidden="true">
+          <span class="theme-toggle__thumb"></span>
+        </span>
+      </button>
+    </header>
+
+    <main>
+      <section class="lesson-hero" aria-labelledby="lesson-title">
+        <div class="breadcrumb" aria-label="パンくず">
+          <a href="../index.html">トップ</a>
+          <span aria-hidden="true">/</span>
+          <span>Lesson 13</span>
+        </div>
+        <p class="eyebrow">Lesson 13 / ClaudeSDKClient</p>
+        <h1 id="lesson-title">ClaudeSDKClient編で学ぶこと</h1>
+        <p>
+          ここからは `query()` の単発実行から一歩進み、`ClaudeSDKClient` で会話を続ける考え方を学びます。
+          FastAPIやWeb UIはまだ混ぜず、SDK単体で継続会話、セッション管理、複数ユーザー相当の分離、ストリーミングを整理します。
+        </p>
+      </section>
+
+      <div class="lesson-shell">
+        <aside class="lesson-sidebar" aria-label="レッスン目次">
+          <div class="lesson-sidebar__box">
+            <span class="lesson-sidebar__label">所要時間</span>
+            <strong>35分</strong>
+          </div>
+          <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
+            <a href="#goal">ゴール</a>
+            <a href="#before-run">実行前の確認</a>
+            <a href="#why-client">なぜClient編に進むか</a>
+            <a href="#roadmap-client">この章のロードマップ</a>
+            <a href="#concepts">初出APIの見方</a>
+            <a href="#session-model">セッションの考え方</a>
+            <a href="#write-script">確認コードを書く</a>
+            <a href="#review">確認問題</a>
+          </nav>
+        </aside>
+
+        <article class="lesson-main">
+          <section class="lesson-section" id="goal">
+            <p class="eyebrow">Goal</p>
+            <h2>このレッスンのゴール</h2>
+            <p class="lesson-one-liner">
+              <span>このレッスンを一言で</span>
+              `query()` から `ClaudeSDKClient` へ進む理由と、この章で学ぶ会話管理の全体像を整理します。
+            </p>
+            <ul class="check-list">
+              <li>`query()` と `ClaudeSDKClient` の使い分けを説明できる</li>
+              <li>継続会話、セッションID、resume、複数ユーザー相当の分離の関係を説明できる</li>
+              <li>ストリーミング表示を学ぶ前に、どのメッセージを読む必要があるか見通しを持てる</li>
+              <li>Web化の前にSDK単体で理解すべき項目を整理できる</li>
+            </ul>
+          </section>
+
+          <section class="lesson-section" id="before-run">
+            <p class="eyebrow">Before run</p>
+            <h2>実行前の確認</h2>
+            <p>
+              このレッスンではAgentを実行しません。
+              まず `ClaudeSDKClient` をimportできることだけ確認します。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Windows / macOS / Linux</span>
+              </div>
+              <pre><code>uv run python -c "from claude_agent_sdk import ClaudeSDKClient; print('ClaudeSDKClient OK')"</code></pre>
+            </div>
+
+            <div class="callout">
+              <strong>FastAPIはまだ扱いません</strong>
+              <p>
+                Webインターフェースに進む前に、SDK単体で会話を続ける仕組みを理解します。
+                ここを分けておくと、後でFastAPI、WebSocket、DB保存を足したときに原因を切り分けやすくなります。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="why-client">
+            <p class="eyebrow">Why client</p>
+            <h2>なぜ `ClaudeSDKClient` 編に進むのか</h2>
+            <p>
+              Lesson 06〜12では、主に `query()` を使いました。
+              `query()` は、1つの依頼を送り、Agentから返るメッセージを最後まで読む用途に向いています。
+              一方で、チャットUIや複数回のやり取りでは、同じ会話の文脈を保ったまま次の質問を送りたくなります。
+            </p>
+
+            <div class="table-wrap" role="region" aria-label="queryとClaudeSDKClientの違い">
+              <table class="api-table">
+                <thead>
+                  <tr>
+                    <th>観点</th>
+                    <th><code>query()</code></th>
+                    <th><code>ClaudeSDKClient</code></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>向いている用途</td>
+                    <td>単発タスク。フォローアップしない処理。</td>
+                    <td>同じプロセス内で続くマルチターン会話。</td>
+                  </tr>
+                  <tr>
+                    <td>会話の継続</td>
+                    <td>基本は新しい実行。必要なら `continue_conversation` や `resume` を使う。</td>
+                    <td>同じclientに対する `client.query()` が、同じセッションを自動的に続ける。</td>
+                  </tr>
+                  <tr>
+                    <td>接続の扱い</td>
+                    <td>関数呼び出しの中でSDKが管理する。</td>
+                    <td>`async with ClaudeSDKClient(...)` で開始と終了を明示する。</td>
+                  </tr>
+                  <tr>
+                    <td>応答の読み方</td>
+                    <td><code>async for message in query(...)</code></td>
+                    <td><code>await client.query(...)</code> の後に <code>client.receive_response()</code> を読む。</td>
+                  </tr>
+                  <tr>
+                    <td>中断</td>
+                    <td>扱いにくい。</td>
+                    <td><code>client.interrupt()</code> を使える。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="reference-list">
+              <a href="https://code.claude.com/docs/ja/agent-sdk/sessions" target="_blank" rel="noreferrer">セッションの操作</a>
+              <a href="https://code.claude.com/docs/ja/agent-sdk/python" target="_blank" rel="noreferrer">Python SDK reference</a>
+              <a href="https://code.claude.com/docs/ja/agent-sdk/streaming-output" target="_blank" rel="noreferrer">リアルタイムでレスポンスをストリーミングする</a>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="roadmap-client">
+            <p class="eyebrow">Section roadmap</p>
+            <h2>この章で学ぶこと</h2>
+            <p>
+              ClaudeSDKClient編では、Webアプリに進む前の「会話管理の芯」を小さく学びます。
+              いきなりチャット画面を作らず、まずCLIで観察できる形にします。
+            </p>
+
+            <div class="table-wrap" role="region" aria-label="ClaudeSDKClient編のロードマップ">
+              <table class="api-table">
+                <thead>
+                  <tr>
+                    <th>順番</th>
+                    <th>学ぶこと</th>
+                    <th>なぜ必要か</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>1</td>
+                    <td><code>ClaudeSDKClient</code> の最小構成</td>
+                    <td>`async with`、`client.query()`、`client.receive_response()` の基本形を作る。</td>
+                  </tr>
+                  <tr>
+                    <td>2</td>
+                    <td>同じclientでフォローアップする</td>
+                    <td>2回目の質問が1回目の文脈を持つことを確認する。</td>
+                  </tr>
+                  <tr>
+                    <td>3</td>
+                    <td><code>session_id</code> を保存する</td>
+                    <td>あとで特定の会話に戻るための識別子を保存する。</td>
+                  </tr>
+                  <tr>
+                    <td>4</td>
+                    <td><code>resume</code> で再開する</td>
+                    <td>プロセスを終了しても、保存済みセッションへ戻れるようにする。</td>
+                  </tr>
+                  <tr>
+                    <td>5</td>
+                    <td>複数ユーザー相当の会話を分ける</td>
+                    <td>`user_id` と `session_id` の対応を保存し、会話を混ぜない。</td>
+                  </tr>
+                  <tr>
+                    <td>6</td>
+                    <td>ストリーミング表示の基礎</td>
+                    <td>`AssistantMessage` の途中応答を逐次表示し、CLIでチャット感を出す。</td>
+                  </tr>
+                  <tr>
+                    <td>7</td>
+                    <td>中断とエラー時の扱い</td>
+                    <td>`interrupt()`、`subtype`、`is_error`、保存タイミングを理解する。</td>
+                  </tr>
+                  <tr>
+                    <td>8</td>
+                    <td>ミニチャットCLIを作る</td>
+                    <td>入力、履歴、セッション、終了コマンドを組み合わせる。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="concepts">
+            <p class="eyebrow">SDK concepts</p>
+            <h2>この章で初めて出てくる関数・クラス・メソッド</h2>
+            <p>
+              まずは分類だけを押さえます。
+              詳細な引数や戻り値は、実際に使うレッスンで表に分けて説明します。
+            </p>
+
+            <div class="table-wrap" role="region" aria-label="ClaudeSDKClient編で出てくる要素">
+              <table class="api-table">
+                <thead>
+                  <tr>
+                    <th>名前</th>
+                    <th>分類</th>
+                    <th>インスタンス生成</th>
+                    <th>この章での見方</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>ClaudeSDKClient</code></td>
+                    <td>SDKのクラス</td>
+                    <td>必要。<code>ClaudeSDKClient(options=...)</code> のように作る</td>
+                    <td>同じ会話セッションを保ったまま、複数回の問い合わせを送るためのclient。</td>
+                  </tr>
+                  <tr>
+                    <td><code>async with ClaudeSDKClient(...)</code></td>
+                    <td>非同期コンテキストマネージャー</td>
+                    <td>clientを作って接続・終了を管理する</td>
+                    <td>接続開始と終了を明示し、会話のライフサイクルを読みやすくする。</td>
+                  </tr>
+                  <tr>
+                    <td><code>client.query()</code></td>
+                    <td>メソッド</td>
+                    <td>clientインスタンスから呼び出す</td>
+                    <td>現在のclientに対してプロンプトを送る。応答本体はこの戻り値ではなく、次の `receive_response()` で読む。</td>
+                  </tr>
+                  <tr>
+                    <td><code>client.receive_response()</code></td>
+                    <td>メソッド</td>
+                    <td>clientインスタンスから呼び出す</td>
+                    <td>現在の問い合わせに対する `AssistantMessage` や `ResultMessage` を順に受け取る。</td>
+                  </tr>
+                  <tr>
+                    <td><code>resume</code></td>
+                    <td><code>ClaudeAgentOptions</code> の設定</td>
+                    <td>不要。セッションIDを渡す</td>
+                    <td>最新ではなく、特定の過去セッションへ戻るときに使う。</td>
+                  </tr>
+                  <tr>
+                    <td><code>continue_conversation</code></td>
+                    <td><code>ClaudeAgentOptions</code> の設定</td>
+                    <td>不要。真偽値を渡す</td>
+                    <td>現在のディレクトリで最新のセッションを続けるときに使う。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="session-model">
+            <p class="eyebrow">Session model</p>
+            <h2>セッションの考え方</h2>
+            <p>
+              公式ドキュメントでは、セッションはAgentが動作する間にSDKが蓄積する会話履歴として説明されています。
+              プロンプト、ツール呼び出し、ツール結果、レスポンスが含まれ、SDKはそれをディスクに保存します。
+            </p>
+
+            <div class="callout callout--warning">
+              <strong>セッションは会話を保持し、ファイルシステムは保持しません</strong>
+              <p>
+                セッションに戻ると、Agentは以前の会話文脈を持ちます。
+                ただし、ファイル変更をスナップショットして戻す機能とは別です。
+                ここを混同すると、resumeすれば作業ディレクトリも戻る、という誤解につながります。
+              </p>
+            </div>
+
+            <div class="table-wrap" role="region" aria-label="会話管理で分けるもの">
+              <table class="api-table">
+                <thead>
+                  <tr>
+                    <th>名前</th>
+                    <th>誰が持つか</th>
+                    <th>用途</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Claude SDKのセッション</td>
+                    <td>Agent SDK</td>
+                    <td>Claudeが過去のやり取りを踏まえて続きの応答をするため。</td>
+                  </tr>
+                  <tr>
+                    <td><code>session_id</code></td>
+                    <td>SDKから返る <code>ResultMessage</code></td>
+                    <td>特定の会話を後から `resume` するため。</td>
+                  </tr>
+                  <tr>
+                    <td>アプリ側の会話履歴</td>
+                    <td>自分のPythonコードやDB</td>
+                    <td>画面表示、一覧、検索、ユーザーごとの管理、監査のため。</td>
+                  </tr>
+                  <tr>
+                    <td><code>user_id</code></td>
+                    <td>アプリ側</td>
+                    <td>複数ユーザー相当の会話を混ぜないため。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="write-script">
+            <p class="eyebrow">Hands-on</p>
+            <h2>確認コードを書く</h2>
+            <p>
+              `python-labs/practice/lesson_13_client_section_overview.py` に、次のコードを入力してください。
+              今回はAgentを実行せず、SDK部品のimportと、この章で学ぶ項目の表示だけを行います。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>python-labs/practice/lesson_13_client_section_overview.py</span>
+              </div>
+              <pre><code>from claude_agent_sdk import ClaudeAgentOptions, ClaudeSDKClient
+
+from shared.display import print_section
+
+
+SECTION_LESSONS = [
+    "ClaudeSDKClientの最小構成",
+    "同じclientでフォローアップする",
+    "session_idを保存する",
+    "resumeで特定の会話を再開する",
+    "複数ユーザー相当の会話を分ける",
+    "ストリーミング表示の基礎",
+    "中断とエラー時の扱い",
+    "ミニチャットCLIを作る",
+]
+
+
+# ClaudeSDKClient編で学ぶ項目を表示する関数です。
+def print_section_lessons() -&gt; None:
+    print_section("ClaudeSDKClient section")
+    for index, lesson in enumerate(SECTION_LESSONS, start=1):
+        print(f"{index}. {lesson}")
+
+
+# SDKからClaudeSDKClientとClaudeAgentOptionsを読み込めるか確認する関数です。
+def print_sdk_parts() -&gt; None:
+    print_section("SDK parts")
+    print(f"ClaudeSDKClient: {ClaudeSDKClient.__name__}")
+    print(f"ClaudeAgentOptions: {ClaudeAgentOptions.__name__}")
+
+
+# このレッスンの確認処理をまとめる関数です。
+def main() -&gt; None:
+    print_sdk_parts()
+    print_section_lessons()
+
+
+if __name__ == "__main__":
+    main()
+</code></pre>
+            </div>
+
+            <p>`python-labs/` から実行します。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Windows / macOS / Linux</span>
+              </div>
+              <pre><code>uv run python practice/lesson_13_client_section_overview.py</code></pre>
+            </div>
+
+            <p>完成版だけを確認したい場合は、次を実行します。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Windows / macOS / Linux</span>
+              </div>
+              <pre><code>uv run python scripts/lesson_13_client_section_overview.py</code></pre>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="review">
+            <p class="eyebrow">Review</p>
+            <h2>確認問題</h2>
+            <ol class="review-list">
+              <li>`query()` と `ClaudeSDKClient` は、それぞれどのような用途に向いていますか。</li>
+              <li>同じプロセス内のマルチターン会話で `ClaudeSDKClient` が便利な理由を説明してください。</li>
+              <li>`continue_conversation` と `resume` の違いを、セッションの探し方に注目して説明してください。</li>
+              <li>複数ユーザー相当の会話を扱う場合、なぜ `session_id` をアプリ側で保存する必要がありますか。</li>
+              <li>セッションが保持するものと、保持しないものを説明してください。</li>
+            </ol>
+            <p>
+              次のレッスンでは、`ClaudeSDKClient` の最小コードを書き、`client.query()` と `client.receive_response()` の関係を実際に確認します。
+            </p>
+          </section>
+
+          <nav class="lesson-nav-bottom" aria-label="レッスン移動">
+            <a href="lesson-12.html">前へ: 業務向けミニ自動化を完成させる</a>
+            <a href="#" aria-disabled="true">次のレッスンは準備中</a>
+          </nav>
+        </article>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <p>Claude Agent SDK Learning Portal</p>
+      <a href="#top">ページ上部へ戻る</a>
+    </footer>
+  </body>
+</html>
+

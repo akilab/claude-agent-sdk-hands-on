@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="900" viewBox="0 0 1280 900" role="img" aria-labelledby="title desc">
+  <title id="title">Lesson 10 Skill sequence</title>
+  <desc id="desc">Sequence diagram showing how Lesson 10 checks an existing SKILL.md file, enables the skill through ClaudeAgentOptions, calls query, lets Claude invoke the Skill tool, and saves the result.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#3267b9"/>
+    </marker>
+    <style>
+      .bg { fill: #f8fbff; }
+      .header { fill: #e9f2ff; stroke: #9cb7dc; stroke-width: 2; }
+      .header-skill { fill: #eef8f3; stroke: #7bb99e; stroke-width: 2; }
+      .header-out { fill: #fff6e6; stroke: #d29a42; stroke-width: 2; }
+      .life { stroke: #9fb0c8; stroke-width: 2; stroke-dasharray: 7 7; }
+      .edge { fill: none; stroke: #3267b9; stroke-width: 2.5; marker-end: url(#arrow); }
+      .return { fill: none; stroke: #5e738f; stroke-width: 2; stroke-dasharray: 6 5; marker-end: url(#arrow); }
+      .note { fill: rgba(238, 248, 243, 0.72); stroke: #7bb99e; stroke-width: 2; stroke-dasharray: 8 6; }
+      .title { fill: #17233a; font: 700 18px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .text { fill: #17233a; font: 600 15px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .small { fill: #4c5f79; font: 13px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .label { fill: #17406f; font: 700 13px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .step { fill: #ffffff; stroke: #3267b9; stroke-width: 2; }
+      .step-text { fill: #17406f; font: 700 12px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    </style>
+  </defs>
+
+  <rect class="bg" width="1280" height="900"/>
+
+  <rect class="header" x="50" y="42" width="160" height="58" rx="8"/>
+  <text class="title" x="96" y="67">main()</text>
+  <text class="small" x="78" y="88">起動入口</text>
+
+  <rect class="header" x="248" y="42" width="176" height="58" rx="8"/>
+  <text class="title" x="284" y="67">run_agent()</text>
+  <text class="small" x="282" y="88">全体の司令塔</text>
+
+  <rect class="header-out" x="472" y="42" width="170" height="58" rx="8"/>
+  <text class="title" x="512" y="67">SKILL.md</text>
+  <text class="small" x="492" y="88">ファイル上の指示</text>
+
+  <rect class="header" x="690" y="42" width="158" height="58" rx="8"/>
+  <text class="title" x="732" y="67">Options</text>
+  <text class="small" x="710" y="88">skills / sources</text>
+
+  <rect class="header-skill" x="896" y="42" width="144" height="58" rx="8"/>
+  <text class="title" x="940" y="67">query()</text>
+  <text class="small" x="920" y="88">Agent loop</text>
+
+  <rect class="header-skill" x="1088" y="42" width="140" height="58" rx="8"/>
+  <text class="title" x="1120" y="67">Skill tool</text>
+  <text class="small" x="1110" y="88">必要時に読む</text>
+
+  <line class="life" x1="130" y1="100" x2="130" y2="832"/>
+  <line class="life" x1="336" y1="100" x2="336" y2="832"/>
+  <line class="life" x1="557" y1="100" x2="557" y2="832"/>
+  <line class="life" x1="769" y1="100" x2="769" y2="832"/>
+  <line class="life" x1="968" y1="100" x2="968" y2="832"/>
+  <line class="life" x1="1158" y1="100" x2="1158" y2="832"/>
+
+  <rect class="note" x="454" y="198" width="408" height="118" rx="10"/>
+  <text class="label" x="474" y="226">SkillはPython関数ではありません</text>
+  <text class="small" x="474" y="252">.claude/skills/faq-review/SKILL.md に置くMarkdown指示です。</text>
+  <text class="small" x="474" y="278">description は、Claudeが使うべき場面を判断する手がかりです。</text>
+
+  <circle class="step" cx="84" cy="150" r="14"/><text class="step-text" x="80" y="154">1</text>
+  <path class="edge" d="M 130 150 L 328 150"/>
+  <text class="text" x="164" y="140">asyncio.run(run_agent())</text>
+
+  <circle class="step" cx="292" cy="370" r="14"/><text class="step-text" x="288" y="374">2</text>
+  <path class="edge" d="M 336 370 L 550 370"/>
+  <text class="text" x="376" y="360">ensure_skill_file()</text>
+  <text class="small" x="376" y="382">事前に作ったSKILL.mdを確認する</text>
+
+  <circle class="step" cx="292" cy="462" r="14"/><text class="step-text" x="288" y="466">3</text>
+  <path class="edge" d="M 336 462 L 762 462"/>
+  <text class="text" x="376" y="452">build_options()</text>
+  <text class="small" x="376" y="474">setting_sources と skills を設定する</text>
+
+  <circle class="step" cx="292" cy="554" r="14"/><text class="step-text" x="288" y="558">4</text>
+  <path class="edge" d="M 336 554 L 960 554"/>
+  <text class="text" x="376" y="544">query(prompt, options)</text>
+  <text class="small" x="376" y="566">run_agent() がAgentを起動する</text>
+
+  <circle class="step" cx="922" cy="642" r="14"/><text class="step-text" x="918" y="646">5</text>
+  <path class="edge" d="M 968 642 L 1150 642"/>
+  <text class="text" x="996" y="632">関連すると判断</text>
+  <text class="small" x="996" y="654">Skill tool がSKILL.mdを読む</text>
+
+  <circle class="step" cx="1114" cy="724" r="14"/><text class="step-text" x="1110" y="728">6</text>
+  <path class="return" d="M 1158 724 L 344 724"/>
+  <text class="text" x="382" y="714">AssistantMessage / ResultMessage</text>
+  <text class="small" x="382" y="736">Skillの指示を反映したレビュー結果が返る</text>
+
+  <circle class="step" cx="292" cy="804" r="14"/><text class="step-text" x="288" y="808">7</text>
+  <path class="edge" d="M 336 804 L 550 804"/>
+  <text class="text" x="376" y="794">save_output()</text>
+  <text class="small" x="376" y="816">outputs に結果を保存する</text>
+</svg>

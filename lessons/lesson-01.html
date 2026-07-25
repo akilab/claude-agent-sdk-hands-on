@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lesson 01 | 学習前提と公式情報を確認する</title>
+    <meta
+      name="description"
+      content="Claude Agent SDKをPythonとuvで学ぶ前に、契約、認証、Python環境、uv、公式情報を確認するレッスン。"
+    >
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <script src="../assets/js/main.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header" id="top">
+      <a class="site-mark" href="../index.html" aria-label="Claude Agent SDK Learning Portal トップへ">
+        <span class="site-mark__symbol" aria-hidden="true">CA</span>
+        <span class="site-mark__text">Claude Agent SDK Learning</span>
+      </a>
+      <nav class="site-nav" aria-label="主要ナビゲーション">
+        <a href="../index.html#roadmap">ロードマップ</a>
+        <a href="../index.html#categories">カテゴリ</a>
+        <a href="../index.html#lessons">レッスン</a>
+        <a href="../index.html#official-docs">公式リンク</a>
+      </nav>
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="ダークモードに切り替え" aria-pressed="false">
+        <span class="theme-toggle__track" aria-hidden="true">
+          <span class="theme-toggle__thumb"></span>
+        </span>
+      </button>
+    </header>
+
+    <main>
+      <section class="lesson-hero" aria-labelledby="lesson-title">
+        <div class="breadcrumb" aria-label="パンくず">
+          <a href="../index.html">トップ</a>
+          <span aria-hidden="true">/</span>
+          <span>Lesson 01</span>
+        </div>
+        <p class="eyebrow">Lesson 01 / Foundation</p>
+        <h1 id="lesson-title">学習前提と公式情報を確認する</h1>
+        <p>
+          このレッスンでは、Agent SDKを動かす前に、契約、認証、Python、uv、作業フォルダの前提を確認します。
+          最後に、自分の環境を点検するPythonスクリプトを手で書きます。
+        </p>
+      </section>
+
+      <div class="lesson-shell">
+        <aside class="lesson-sidebar" aria-label="レッスン目次">
+          <div class="lesson-sidebar__box">
+            <span class="lesson-sidebar__label">所要時間</span>
+            <strong>25分</strong>
+          </div>
+          <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
+            <a href="#goal">ゴール</a>
+            <a href="#assumptions">この教材の前提</a>
+            <a href="#official-check">公式情報で確認すること</a>
+            <a href="#write-script">Pythonで確認スクリプトを書く</a>
+            <a href="#review">確認問題</a>
+          </nav>
+        </aside>
+
+        <article class="lesson-main">
+          <section class="lesson-section" id="goal">
+            <p class="eyebrow">Goal</p>
+            <h2>このレッスンのゴール</h2>
+            <p class="lesson-one-liner">
+              <span>このレッスンを一言で</span>
+              Agent SDKを始める前に、契約・環境・公式情報を確認し、迷わず学習を進める土台を作ります。
+            </p>
+            <ul class="check-list">
+              <li>Claude Agent SDKが何をするためのSDKか説明できる</li>
+              <li>この教材がPython + uvだけを使う理由を説明できる</li>
+              <li>Pro以上のサブスクリプション前提と、APIキー利用の違いを意識できる</li>
+              <li>自分の環境を確認するPythonスクリプトを書ける</li>
+            </ul>
+          </section>
+
+          <section class="lesson-section" id="assumptions">
+            <p class="eyebrow">Assumptions</p>
+            <h2>この教材の前提</h2>
+            <div class="info-grid">
+              <div class="info-card">
+                <span>Runtime</span>
+                <strong>Python 3.10+</strong>
+                <p>Agent SDKのPythonパッケージを使うため、Python 3.10以上を前提にします。</p>
+              </div>
+              <div class="info-card">
+                <span>Package manager</span>
+                <strong>uv</strong>
+                <p>仮想環境と依存関係を扱いやすくするため、この教材ではuvに統一します。</p>
+              </div>
+              <div class="info-card">
+                <span>Plan</span>
+                <strong>Claude Pro以上</strong>
+                <p>Claude Code / Agent SDKをサブスクリプション前提で学ぶ構成にします。</p>
+              </div>
+            </div>
+            <div class="callout callout--warning">
+              <strong>契約・認証まわりは必ず最新情報を確認してください</strong>
+              <p>
+                Claude Agent SDK、Claude Code、利用枠、料金、認証方法は変更される可能性があります。
+                本教材ではPro以上のサブスクリプションを前提にしますが、実務利用前には公式情報を確認します。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="official-check">
+            <p class="eyebrow">Official check</p>
+            <h2>公式情報で確認すること</h2>
+            <p>
+              Agent SDKの概要ページでは、Claude Codeのツール、エージェントループ、コンテキスト管理を
+              PythonやTypeScriptから使えることが説明されています。この教材ではPythonだけを扱います。
+            </p>
+            <p>
+              クイックスタートではPython 3.10+、uvでのセットアップ、`uv init`、`uv add claude-agent-sdk`
+              が紹介されています。次のレッスンで、実際にuvプロジェクトを作ります。
+            </p>
+            <p>
+              ProまたはMaxプランでClaude Codeを使う場合、Claudeと同じ認証情報でログインする流れが案内されています。
+              ただし、`ANTHROPIC_API_KEY` が環境変数にあると、サブスクリプションではなくAPIキー認証が使われる可能性があります。
+              Lesson 01では、値を表示せずに「設定されているか」だけを確認します。
+            </p>
+            <div class="reference-list">
+              <a href="https://code.claude.com/docs/ja/agent-sdk/overview" target="_blank" rel="noreferrer">Agent SDK の概要</a>
+              <a href="https://code.claude.com/docs/ja/agent-sdk/quickstart" target="_blank" rel="noreferrer">クイックスタート</a>
+              <a href="https://code.claude.com/docs/ja/agent-sdk/claude-code-features" target="_blank" rel="noreferrer">SDKでClaude Code機能を使用する</a>
+              <a href="https://support.claude.com/ja/articles/15036540-claude-%E3%83%97%E3%83%A9%E3%83%B3%E3%81%A7-claude-agent-sdk-%E3%82%92%E4%BD%BF%E7%94%A8%E3%81%99%E3%82%8B" target="_blank" rel="noreferrer">Claude プランで Agent SDK を使用する</a>
+              <a href="https://support.claude.com/ja/articles/11145838-pro-%E3%81%BE%E3%81%9F%E3%81%AF-max-%E3%83%97%E3%83%A9%E3%83%B3%E3%81%A7-claude-code-%E3%82%92%E4%BD%BF%E7%94%A8%E3%81%99%E3%82%8B" target="_blank" rel="noreferrer">Pro または Max プランで Claude Code を使用する</a>
+              <a href="https://docs.astral.sh/uv/guides/projects/" target="_blank" rel="noreferrer">uv: Working on projects</a>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="write-script">
+            <p class="eyebrow">Hands-on</p>
+            <h2>Pythonで確認スクリプトを書く</h2>
+            <p>
+              ここからは手を動かします。`python-labs/practice/lesson_01_check_environment.py` を作り、
+              次のコードを自分で入力してください。`scripts/` はGit管理対象外なので、学習用に自由に書き換えられます。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>python-labs/practice/lesson_01_check_environment.py</span>
+              </div>
+              <pre><code>import os
+import platform
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+
+REQUIRED_PYTHON = (3, 10)
+OFFICIAL_DOCS = [
+    {
+        "title": "Agent SDK の概要",
+        "url": "https://code.claude.com/docs/ja/agent-sdk/overview",
+    },
+    {
+        "title": "クイックスタート",
+        "url": "https://code.claude.com/docs/ja/agent-sdk/quickstart",
+    },
+    {
+        "title": "Claude プランで Agent SDK を使用する",
+        "url": "https://support.claude.com/ja/articles/15036540-claude-%E3%83%97%E3%83%A9%E3%83%B3%E3%81%A7-claude-agent-sdk-%E3%82%92%E4%BD%BF%E7%94%A8%E3%81%99%E3%82%8B",
+    },
+]
+
+
+# 見出しを区切り線つきで表示する関数です。
+def print_section(title: str) -&gt; None:
+    print()
+    print("=" * 72)
+    print(title)
+    print("=" * 72)
+
+
+# 外部コマンドを実行し、成功したかどうかと出力を返す関数です。
+def run_command(command: list[str]) -&gt; tuple[bool, str]:
+    try:
+        completed = subprocess.run(
+            command,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except FileNotFoundError:
+        return False, "command not found"
+
+    output = completed.stdout.strip() or completed.stderr.strip()
+    return completed.returncode == 0, output
+
+
+# Pythonのバージョンが教材の前提を満たしているか確認する関数です。
+def check_python_version() -&gt; bool:
+    print_section("Python")
+
+    version = sys.version_info
+    version_text = platform.python_version()
+    print(f"Python version: {version_text}")
+    print(f"Python executable: {sys.executable}")
+
+    if version &gt;= REQUIRED_PYTHON:
+        print("OK: Python 3.10+ is available.")
+        return True
+    else:
+        print("NG: Python 3.10+ is required for this curriculum.")
+        return False
+
+
+# uvコマンドが使える状態か確認する関数です。
+def check_uv() -&gt; bool:
+    print_section("uv")
+
+    uv_path = shutil.which("uv")
+    if uv_path is None:
+        print("NG: uv is not available on PATH.")
+        print("Install uv before Lesson 02.")
+        return False
+
+    ok, output = run_command(["uv", "--version"])
+    print(f"uv path: {uv_path}")
+    print(f"uv version: {output if ok else 'could not read version'}")
+    return ok
+
+
+# APIキー環境変数が設定されているかを、値を表示せず確認する関数です。
+def check_auth_environment() -&gt; bool:
+    print_section("Authentication environment")
+
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if api_key:
+        print("WARNING: ANTHROPIC_API_KEY is set.")
+        print("This may cause API key authentication to be used instead of a Claude plan.")
+        print("The actual API key value is intentionally not printed.")
+        return False
+    else:
+        print("OK: ANTHROPIC_API_KEY is not set in this shell.")
+        return True
+
+
+# python-labs配下に必要な学習フォルダがあるか確認する関数です。
+def check_project_layout() -&gt; bool:
+    print_section("Project layout")
+
+    script_path = Path(__file__).resolve()
+    labs_dir = script_path.parents[1]
+    expected_dirs = [
+        labs_dir / "src" / "agent_sdk_learning",
+        labs_dir / "scripts",
+        labs_dir / "data",
+        labs_dir / "outputs",
+    ]
+
+    print(f"python-labs directory: {labs_dir}")
+
+    all_found = True
+    for directory in expected_dirs:
+        if directory.exists():
+            print(f"OK: {directory.name} exists - {directory}")
+        else:
+            print(f"NG: missing directory - {directory}")
+            all_found = False
+
+    return all_found
+
+
+# この教材で確認する公式ドキュメントの一覧を表示する関数です。
+def show_official_docs() -&gt; None:
+    print_section("Official documentation to check")
+
+    for index, doc in enumerate(OFFICIAL_DOCS, start=1):
+        print(f"{index}. {doc['title']}")
+        print(f"   {doc['url']}")
+
+
+# 各確認結果をOKまたは要確認としてまとめて表示する関数です。
+def print_summary(results: dict[str, bool]) -&gt; None:
+    print_section("Summary")
+
+    for name, ok in results.items():
+        status = "OK" if ok else "要確認"
+        print(f"{name}: {status}")
+
+
+# Lesson 01の確認処理を順番に実行する関数です。
+def main() -&gt; None:
+    print("Claude Agent SDK Hands-on / Lesson 01")
+    results = {
+        "Python 3.10+": check_python_version(),
+        "uv": check_uv(),
+        "Authentication environment": check_auth_environment(),
+        "Project layout": check_project_layout(),
+    }
+    show_official_docs()
+    print_summary(results)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre>
+            </div>
+
+            <p>保存できたら、`python-labs/` に移動して実行します。</p>
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>PowerShell</span>
+              </div>
+              <pre><code>cd python-labs
+uv run python practice/lesson_01_check_environment.py</code></pre>
+            </div>
+
+            <div class="callout">
+              <strong>この時点で全部OKでなくても大丈夫です</strong>
+              <p>
+                Lesson 01の目的は、現在地を確認することです。uvが未導入ならLesson 02の前に導入します。
+                `ANTHROPIC_API_KEY` が表示された場合は、サブスクリプション前提で学ぶために認証方法を見直します。
+              </p>
+            </div>
+
+            <p>表示例です。環境によってパスやバージョンは変わります。</p>
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>出力例</span>
+              </div>
+              <pre><code>Claude Agent SDK Hands-on / Lesson 01
+
+========================================================================
+Python
+========================================================================
+Python version: 3.12.4
+Python executable: C:\Users\akira\...\python.exe
+OK: Python 3.10+ is available.
+
+========================================================================
+uv
+========================================================================
+uv path: C:\Users\akira\...\uv.exe
+uv version: uv 0.8.0
+
+========================================================================
+Summary
+========================================================================
+Python 3.10+: OK
+uv: OK
+Authentication environment: OK
+Project layout: OK</code></pre>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="review">
+            <p class="eyebrow">Review</p>
+            <h2>確認問題</h2>
+            <ol class="review-list">
+              <li>この教材でNode.jsとTypeScriptを扱わない理由を、自分の言葉で1文にしてください。</li>
+              <li>`ANTHROPIC_API_KEY` が設定されていると、なぜ注意が必要ですか。</li>
+              <li>`ANTHROPIC_API_KEY` の値そのものを表示してはいけない理由は何ですか。</li>
+              <li>Python 3.10+ とuvのどちらが不足しているか、確認スクリプトの出力から判断してください。</li>
+              <li>Lesson 01でまだAgent SDKを呼び出さない理由は何ですか。</li>
+            </ol>
+          </section>
+
+          <nav class="lesson-nav-bottom" aria-label="レッスン移動">
+            <a href="../index.html#lessons">レッスン一覧へ戻る</a>
+            <a href="lesson-02.html">次へ: uvでPythonプロジェクトを作る</a>
+          </nav>
+        </article>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <p>Claude Agent SDK Learning Portal</p>
+      <a href="#top">ページ上部へ戻る</a>
+    </footer>
+  </body>
+</html>
+

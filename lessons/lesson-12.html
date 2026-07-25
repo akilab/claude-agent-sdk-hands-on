@@ -1,0 +1,658 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lesson 12 | 業務向けミニ自動化を完成させる</title>
+    <meta
+      name="description"
+      content="Claude Agent SDKでSkill、サブエージェント、構造化出力、ログ保存を組み合わせ、FAQ公開前レビューの小さな業務自動化を完成させるレッスン。"
+    >
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <script src="../assets/js/main.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header" id="top">
+      <a class="site-mark" href="../index.html" aria-label="Claude Agent SDK Learning Portal トップへ">
+        <span class="site-mark__symbol" aria-hidden="true">CA</span>
+        <span class="site-mark__text">Claude Agent SDK Learning</span>
+      </a>
+      <nav class="site-nav" aria-label="主要ナビゲーション">
+        <a href="../index.html#roadmap">ロードマップ</a>
+        <a href="../index.html#categories">カテゴリ</a>
+        <a href="../index.html#lessons">レッスン</a>
+        <a href="../index.html#official-docs">公式リンク</a>
+      </nav>
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="ダークモードに切り替え" aria-pressed="false">
+        <span class="theme-toggle__track" aria-hidden="true">
+          <span class="theme-toggle__thumb"></span>
+        </span>
+      </button>
+    </header>
+
+    <main>
+      <section class="lesson-hero" aria-labelledby="lesson-title">
+        <div class="breadcrumb" aria-label="パンくず">
+          <a href="../index.html">トップ</a>
+          <span aria-hidden="true">/</span>
+          <span>Lesson 12</span>
+        </div>
+        <p class="eyebrow">Lesson 12 / Business</p>
+        <h1 id="lesson-title">業務向けミニ自動化を完成させる</h1>
+        <p>
+          Lesson 12では、ここまで学んだ要素を一つの小さな業務フローにまとめます。
+          Skillでレビュー観点を持たせ、サブエージェントに専門レビューを任せ、親Agentが構造化出力と実行ログとして保存します。
+        </p>
+      </section>
+
+      <div class="lesson-shell">
+        <aside class="lesson-sidebar" aria-label="レッスン目次">
+          <div class="lesson-sidebar__box">
+            <span class="lesson-sidebar__label">所要時間</span>
+            <strong>80分</strong>
+          </div>
+          <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
+            <a href="#goal">ゴール</a>
+            <a href="#before-run">実行前の確認</a>
+            <a href="#concepts">組み合わせる要素</a>
+            <a href="#architecture">完成形の読み方</a>
+            <a href="#sequence">シーケンス図</a>
+            <a href="#mental-model">処理の流れ</a>
+            <a href="#write-script">自動化コードを書く</a>
+            <a href="#run">実行して確認</a>
+            <a href="#review">確認問題</a>
+          </nav>
+        </aside>
+
+        <article class="lesson-main">
+          <section class="lesson-section" id="goal">
+            <p class="eyebrow">Goal</p>
+            <h2>このレッスンのゴール</h2>
+            <p class="lesson-one-liner">
+              <span>このレッスンを一言で</span>
+              Skill、サブエージェント、構造化出力を組み合わせ、FAQ公開前レビューの小さな業務自動化を完成させます。
+            </p>
+            <ul class="check-list">
+              <li>Skill、サブエージェント、構造化出力の役割分担を説明できる</li>
+              <li>サブエージェントに `skills=["faq-review"]` を指定する意味を説明できる</li>
+              <li>親Agentに `allowed_tools=["Agent"]` を設定する理由を説明できる</li>
+              <li>最終結果を `ResultMessage.structured_output` から受け取り、JSONとして保存できる</li>
+              <li>業務利用前に、入力、判断基準、権限、出力、ログを分けて確認できる</li>
+            </ul>
+          </section>
+
+          <section class="lesson-section" id="before-run">
+            <p class="eyebrow">Before run</p>
+            <h2>実行前の確認</h2>
+            <p>
+              Lesson 12は、Lesson 10で作成した `faq-review` Skillを使います。
+              先に `python-labs/.claude/skills/faq-review/SKILL.md` があることを確認してください。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Windows / macOS / Linux</span>
+              </div>
+              <pre><code>uv run python -c "from claude_agent_sdk import AgentDefinition; print('AgentDefinition OK')"</code></pre>
+            </div>
+
+            <p>Skillファイルも確認します。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>PowerShell</span>
+              </div>
+              <pre><code>Get-Content .claude/skills/faq-review/SKILL.md</code></pre>
+            </div>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>macOS / Linux</span>
+              </div>
+              <pre><code>cat .claude/skills/faq-review/SKILL.md</code></pre>
+            </div>
+
+            <div class="callout callout--warning">
+              <strong>最終回でも、権限は小さく保ちます</strong>
+              <p>
+                このレッスンでは、親Agentには `Agent` ツールだけを許可します。
+                FAQ原稿はPython文字列として渡すため、`Read`、`Write`、`Bash` は不要です。
+                業務自動化では、便利さより先に「何を許すか」を明確にします。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="concepts">
+            <p class="eyebrow">SDK concepts</p>
+            <h2>このレッスンで組み合わせる要素</h2>
+            <p>
+              Lesson 12では新しいSDKの主役を増やすのではなく、すでに学んだ要素を業務フローとして接続します。
+              似たコードに見えても、今回の目的は「部品をつなぐ設計」です。
+            </p>
+
+            <div class="table-wrap" role="region" aria-label="Lesson 12で組み合わせる要素">
+              <table class="api-table">
+                <thead>
+                  <tr>
+                    <th>名前</th>
+                    <th>分類</th>
+                    <th>インスタンス生成</th>
+                    <th>Lesson 12での役割</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>SKILL.md</code></td>
+                    <td>Markdownファイル</td>
+                    <td>不要。Lesson 10で作ったファイルを使う</td>
+                    <td>FAQレビューの観点を、Pythonコードから切り離した判断基準として使う。</td>
+                  </tr>
+                  <tr>
+                    <td><code>AgentDefinition.skills</code></td>
+                    <td><code>AgentDefinition</code> の項目</td>
+                    <td>不要。リストを渡す</td>
+                    <td>サブエージェント起動時に、`faq-review` Skillの内容を事前に読み込ませる。</td>
+                  </tr>
+                  <tr>
+                    <td><code>allowed_tools=["Agent"]</code></td>
+                    <td><code>ClaudeAgentOptions</code> の設定</td>
+                    <td>不要。リストを渡す</td>
+                    <td>親Agentがサブエージェントを呼び出せるようにする。ファイル操作やコマンド実行は許可しない。</td>
+                  </tr>
+                  <tr>
+                    <td><code>output_format</code></td>
+                    <td><code>ClaudeAgentOptions</code> の設定</td>
+                    <td>不要。辞書を渡す</td>
+                    <td>親Agentの最終結果を、後続処理で使える構造化JSONにする。</td>
+                  </tr>
+                  <tr>
+                    <td><code>ResultMessage.structured_output</code></td>
+                    <td><code>ResultMessage</code> の属性</td>
+                    <td>不要。SDKから返る結果が持つ</td>
+                    <td>スキーマに合う最終結果を直接取り出し、JSONファイルに保存する。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="reference-list">
+              <a href="https://code.claude.com/docs/ja/agent-sdk/skills" target="_blank" rel="noreferrer">SDK の Agent Skills</a>
+              <a href="https://code.claude.com/docs/ja/agent-sdk/subagents" target="_blank" rel="noreferrer">SDK のサブエージェント</a>
+              <a href="https://code.claude.com/docs/ja/agent-sdk/structured-outputs" target="_blank" rel="noreferrer">エージェントから構造化された出力を取得する</a>
+              <a href="https://code.claude.com/docs/ja/agent-sdk/permissions" target="_blank" rel="noreferrer">パーミッションの設定</a>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="architecture">
+            <p class="eyebrow">Architecture</p>
+            <h2>完成形の読み方</h2>
+            <p>
+              今回のPythonコードは長く見えますが、責務は五つに分かれます。
+              どの関数が何をしているかを先に分けると、業務自動化の設計として読みやすくなります。
+            </p>
+
+            <div class="table-wrap" role="region" aria-label="完成形の責務">
+              <table class="api-table">
+                <thead>
+                  <tr>
+                    <th>責務</th>
+                    <th>関数・定義</th>
+                    <th>何を担当するか</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>入力</td>
+                    <td><code>FAQ_DRAFT</code></td>
+                    <td>レビュー対象のFAQ原稿。今回はファイルではなくPython文字列として渡す。</td>
+                  </tr>
+                  <tr>
+                    <td>判断基準</td>
+                    <td><code>SKILL.md</code> / <code>ensure_skill_file()</code></td>
+                    <td>レビュー観点が存在するか確認する。Skill本文はPythonコード内に埋め込まない。</td>
+                  </tr>
+                  <tr>
+                    <td>専門レビュー</td>
+                    <td><code>build_agents()</code></td>
+                    <td>`faq-risk-reviewer` サブエージェントを定義し、`faq-review` Skillを事前投入する。</td>
+                  </tr>
+                  <tr>
+                    <td>実行制御</td>
+                    <td><code>build_options()</code></td>
+                    <td>親Agentの権限、サブエージェント、構造化出力をまとめる。</td>
+                  </tr>
+                  <tr>
+                    <td>出力保存</td>
+                    <td><code>save_outputs()</code></td>
+                    <td>レビュー結果と実行ログを別々のJSONファイルとして保存する。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="callout">
+              <strong>今回は親Agentとサブエージェントの責務を分けます</strong>
+              <p>
+                サブエージェントはFAQをレビューする専門役です。
+                親Agentは、サブエージェントの指摘を受け取り、公開判断、リスク、次アクションという業務で扱いやすい形にまとめます。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="sequence">
+            <p class="eyebrow">Sequence</p>
+            <h2>完成形の流れを図で見る</h2>
+            <p>
+              `Options` や `AgentDefinition` は、実行主体ではありません。
+              実行の起点は `run_agent()` で、`query()` が親Agentを動かし、親Agentが `Agent` ツールでサブエージェントを呼びます。
+            </p>
+
+            <figure class="diagram-figure">
+              <button class="diagram-zoom" type="button" data-diagram-open aria-label="Lesson 12の業務自動化シーケンス図を拡大表示">
+                <img src="../assets/img/lesson-12-automation-sequence.svg" alt="Lesson 12の業務向けミニ自動化シーケンス図。mainからrun_agentを呼び、Skillファイル確認、AgentDefinition作成、Options設定、query実行、サブエージェントレビュー、ResultMessageのstructured_output保存までを示す。" />
+                <span class="diagram-zoom__hint">クリックして拡大</span>
+              </button>
+              <figcaption>
+                最後は `ResultMessage.structured_output` を保存し、人が読むレビューではなく、次の処理へ渡せる業務データにします。
+              </figcaption>
+            </figure>
+          </section>
+
+          <section class="lesson-section" id="mental-model">
+            <p class="eyebrow">Before coding</p>
+            <h2>コードを書く前に処理の流れを読む</h2>
+            <p>
+              最終回では、関数の順番を追うことがとても大事です。
+              どの関数も小さな責務を持ち、`run_agent()` がそれらを組み合わせます。
+            </p>
+            <ol class="review-list">
+              <li>`main()` が `asyncio.run(run_agent())` で非同期処理を起動する</li>
+              <li>`run_agent()` が `ensure_skill_file()` でSkillファイルの存在を確認する</li>
+              <li>`build_options()` が `build_agents()` を呼び、`faq-risk-reviewer` を登録する</li>
+              <li>`AgentDefinition.skills=["faq-review"]` により、サブエージェントへレビュー観点を事前投入する</li>
+              <li>`build_prompt()` が親Agentへの依頼文とFAQ原稿を作る</li>
+              <li>`query(prompt=..., options=...)` が親Agentを実行する</li>
+              <li>親Agentが `Agent` ツールでサブエージェントへレビューを依頼する</li>
+              <li>`ResultMessage.structured_output` から構造化データを取り出す</li>
+              <li>`save_outputs()` がレビュー結果と実行ログを保存する</li>
+            </ol>
+          </section>
+
+          <section class="lesson-section" id="write-script">
+            <p class="eyebrow">Hands-on</p>
+            <h2>業務向けミニ自動化を書く</h2>
+            <p>
+              `python-labs/practice/lesson_12_business_automation.py` を作り、次のコードを入力してください。
+              長いコードですが、入力、Skill確認、サブエージェント定義、Options、構造化出力、ログ保存を分けて読むと整理できます。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>python-labs/practice/lesson_12_business_automation.py</span>
+              </div>
+              <pre><code>import asyncio
+import json
+
+from claude_agent_sdk import (
+    AgentDefinition,
+    AssistantMessage,
+    ClaudeAgentOptions,
+    ResultMessage,
+    query,
+)
+
+from shared.display import print_section
+from shared.files import write_json_file
+from shared.logs import build_run_log
+from shared.messages import print_assistant_message
+from shared.paths import OUTPUT_DIR, PROJECT_ROOT
+
+
+SKILL_PATH = PROJECT_ROOT / ".claude" / "skills" / "faq-review" / "SKILL.md"
+STRUCTURED_OUTPUT_PATH = OUTPUT_DIR / "lesson_12_release_review.json"
+RUN_LOG_PATH = OUTPUT_DIR / "lesson_12_run_log.json"
+
+
+# 最終レッスンでは、公開前FAQの小さな業務自動化を作ります。
+# 入力はPython内の文字列、判断基準はLesson 10で作ったSkill、
+# 専門レビューはLesson 11で学んだサブエージェント、
+# 最終出力はLesson 09で学んだ構造化出力として保存します。
+FAQ_DRAFT = """
+FAQ: 請求書ダウンロード機能
+
+Q. 新しい機能はいつ使えますか？
+A. 来月から必ず全ユーザーが使えます。
+
+Q. 過去の請求書も見られますか？
+A. すべての過去請求書を確認できます。
+
+Q. ダウンロードに失敗した場合はどうしますか？
+A. サポートチームに連絡してください。
+
+Q. 請求書データはどのくらい保存されますか？
+A. 保存期間は現在確認中です。
+""".strip()
+
+
+# Agentに最終的に作ってほしいJSONのイメージです。
+#
+# {
+#   "summary": "レビュー全体の短い要約",
+#   "release_readiness": "ready / needs_changes / blocked のどれか",
+#   "risk_items": [
+#     {
+#       "area": "リスクの領域",
+#       "issue": "問題になりそうな表現や内容",
+#       "recommendation": "修正案や確認案",
+#       "owner": "次に確認すべき担当"
+#     }
+#   ],
+#   "next_actions": [
+#     {
+#       "team": "担当チーム",
+#       "action": "次に行う作業",
+#       "priority": "high / medium / low のどれか"
+#     }
+#   ],
+#   "subagent_used": true
+# }
+#
+# OUTPUT_SCHEMAは、上のJSONをClaudeに返してもらうための設計図です。
+# 「文章をあとからPythonでJSON化する」のではなく、
+# Agent SDKの構造化出力としてResultMessage.structured_outputに入る形を指定します。
+OUTPUT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "summary": {
+            "type": "string",
+            "description": "公開前レビュー全体の短い要約",
+        },
+        "release_readiness": {
+            "type": "string",
+            "enum": ["ready", "needs_changes", "blocked"],
+            "description": "現時点の公開判断",
+        },
+        "risk_items": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "area": {"type": "string"},
+                    "issue": {"type": "string"},
+                    "recommendation": {"type": "string"},
+                    "owner": {"type": "string"},
+                },
+                "required": ["area", "issue", "recommendation", "owner"],
+            },
+            "description": "公開前に確認すべきリスク項目",
+        },
+        "next_actions": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "team": {"type": "string"},
+                    "action": {"type": "string"},
+                    "priority": {
+                        "type": "string",
+                        "enum": ["high", "medium", "low"],
+                    },
+                },
+                "required": ["team", "action", "priority"],
+            },
+            "description": "公開前に行う次アクション",
+        },
+        "subagent_used": {
+            "type": "boolean",
+            "description": "faq-risk-reviewerサブエージェントを使ったかどうか",
+        },
+    },
+    "required": [
+        "summary",
+        "release_readiness",
+        "risk_items",
+        "next_actions",
+        "subagent_used",
+    ],
+}
+
+
+# Lesson 10で作ったSkillファイルがあるか確認する関数です。
+def ensure_skill_file() -&gt; None:
+    if SKILL_PATH.exists():
+        return
+
+    raise FileNotFoundError(
+        "Skill file was not found. "
+        "Create python-labs/.claude/skills/faq-review/SKILL.md first."
+    )
+
+
+# この業務自動化で使うサブエージェント定義を作る関数です。
+def build_agents() -&gt; dict[str, AgentDefinition]:
+    return {
+        "faq-risk-reviewer": AgentDefinition(
+            description=(
+                "公開前の日本語FAQを読み、断定が強すぎる表現、"
+                "未確定仕様、法務確認が必要そうな箇所をレビューします。"
+            ),
+            prompt=(
+                "あなたは公開前FAQのリスクレビュー担当です。"
+                "faq-review Skillの観点を使い、断定表現、未確定仕様、"
+                "法務確認、担当チームの次アクションを日本語で整理してください。"
+                "親Agentが構造化出力へまとめやすいよう、根拠を短く明確にしてください。"
+            ),
+            # skillsにSkill名を指定すると、サブエージェント起動時にそのSkill内容を読み込ませます。
+            # tools=[]なので、サブエージェントは実行中にファイル操作やコマンド実行をしません。
+            skills=["faq-review"],
+            tools=[],
+            maxTurns=3,
+        ),
+    }
+
+
+# 親Agentに依頼するプロンプトを作る関数です。
+def build_prompt() -&gt; str:
+    return f"""
+faq-risk-reviewer サブエージェントを使って、次のFAQ原稿を公開前レビューしてください。
+
+必ず行うこと:
+- faq-risk-reviewer にレビューを依頼する
+- 返ってきた指摘を、公開判断、リスク、次アクションに整理する
+- 最終回答は指定されたJSON Schemaに合う構造化出力にする
+- subagent_used は true にする
+
+FAQ原稿:
+{FAQ_DRAFT}
+""".strip()
+
+
+# 親AgentのOptionsを作る関数です。
+def build_options() -&gt; ClaudeAgentOptions:
+    return ClaudeAgentOptions(
+        cwd=str(PROJECT_ROOT),
+        max_turns=8,
+        # projectを含めると、python-labs/.claude/skills/ が検出対象になります。
+        setting_sources=["project"],
+        # 親Agentには、サブエージェントを呼ぶAgent toolだけを許可します。
+        allowed_tools=["Agent"],
+        # 今回は教材を安全に保つため、ファイル操作やコマンド実行は使わせません。
+        disallowed_tools=["Read", "Glob", "Edit", "Write", "Bash"],
+        permission_mode="dontAsk",
+        agents=build_agents(),
+        # output_formatは、最終結果をResultMessage.structured_outputで受け取るための設定です。
+        output_format={
+            "type": "json_schema",
+            "schema": OUTPUT_SCHEMA,
+        },
+    )
+
+
+# 親Agentを起動し、サブエージェントの結果を構造化JSONとして保存する関数です。
+async def run_agent() -&gt; None:
+    ensure_skill_file()
+
+    options = build_options()
+    prompt = build_prompt()
+    final_result = None
+    structured_output = None
+
+    print_section("Skill file")
+    print(SKILL_PATH)
+
+    print_section("Prompt")
+    print(prompt)
+
+    print_section("Agent output")
+    async for message in query(
+        prompt=prompt,
+        options=options,
+    ):
+        if isinstance(message, AssistantMessage):
+            print_assistant_message(message)
+        elif isinstance(message, ResultMessage):
+            final_result = message
+            structured_output = message.structured_output
+
+    if final_result is None:
+        raise RuntimeError("ResultMessage was not received.")
+
+    run_log = build_run_log(final_result, structured_output)
+
+    if structured_output is not None:
+        write_json_file(STRUCTURED_OUTPUT_PATH, structured_output)
+    write_json_file(RUN_LOG_PATH, run_log)
+
+    print_section("Structured output")
+    if structured_output is None:
+        print("No structured output was returned.")
+    else:
+        print(json.dumps(structured_output, ensure_ascii=False, indent=2))
+
+    print_section("Saved files")
+    print(STRUCTURED_OUTPUT_PATH)
+    print(RUN_LOG_PATH)
+
+
+# 非同期のrun_agent関数をイベントループで実行する関数です。
+def main() -&gt; None:
+    asyncio.run(run_agent())
+
+
+if __name__ == "__main__":
+    main()</code></pre>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="run">
+            <p class="eyebrow">Run</p>
+            <h2>実行して確認する</h2>
+            <p>
+              `python-labs/` から実行します。
+              成功すると、公開前レビュー結果と実行ログが `outputs/` に保存されます。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Windows / macOS / Linux</span>
+              </div>
+              <pre><code>uv run python practice/lesson_12_business_automation.py</code></pre>
+            </div>
+
+            <p>保存されたファイルを確認します。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>PowerShell</span>
+              </div>
+              <pre><code>Get-Content outputs/lesson_12_release_review.json
+Get-Content outputs/lesson_12_run_log.json</code></pre>
+            </div>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>macOS / Linux</span>
+              </div>
+              <pre><code>cat outputs/lesson_12_release_review.json
+cat outputs/lesson_12_run_log.json</code></pre>
+            </div>
+
+            <p>出力例です。実際の指摘内容、公開判断、優先度は実行時のAgentの判断で変わります。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>lesson_12_release_review.json の例</span>
+              </div>
+              <pre><code>{
+  "summary": "請求書ダウンロード機能のFAQは公開前に表現と仕様範囲の確認が必要です。",
+  "release_readiness": "needs_changes",
+  "risk_items": [
+    {
+      "area": "表現",
+      "issue": "「必ず全ユーザーが使えます」は断定が強い表現です。",
+      "recommendation": "対象ユーザーと公開時期が確定してから、限定条件を明記します。",
+      "owner": "開発チーム"
+    },
+    {
+      "area": "仕様",
+      "issue": "「すべての過去請求書」は保存期間や対象範囲と矛盾する可能性があります。",
+      "recommendation": "確認できる請求書の範囲を仕様として確定します。",
+      "owner": "プロダクトチーム"
+    }
+  ],
+  "next_actions": [
+    {
+      "team": "開発チーム",
+      "action": "対象ユーザー、公開時期、過去請求書の範囲を確認する",
+      "priority": "high"
+    },
+    {
+      "team": "法務チーム",
+      "action": "断定表現と保存期間に関する表現を確認する",
+      "priority": "medium"
+    }
+  ],
+  "subagent_used": true
+}</code></pre>
+            </div>
+
+            <div class="callout">
+              <strong>業務投入前に見る場所</strong>
+              <p>
+                まず `release_readiness` を確認し、`blocked` または `needs_changes` なら `risk_items` と `next_actions` を見ます。
+                実行状態やターン数を確認したい場合は、`lesson_12_run_log.json` を見ます。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="review">
+            <p class="eyebrow">Review</p>
+            <h2>確認問題</h2>
+            <ol class="review-list">
+              <li>このレッスンで、Skill、サブエージェント、構造化出力はそれぞれ何を担当していますか。</li>
+              <li>サブエージェントに `skills=["faq-review"]` を指定する理由を説明してください。</li>
+              <li>親Agentに `allowed_tools=["Agent"]` だけを許可している理由を説明してください。</li>
+              <li>`ResultMessage.structured_output` と `ResultMessage.subtype` の役割の違いを説明してください。</li>
+              <li>このミニ自動化を実務で使う前に、どの入力、権限、出力、ログを確認しますか。</li>
+            </ol>
+            <p>
+              これで、PythonとuvだけでClaude Agent SDKの基礎、権限、構造化出力、Skills、サブエージェントを一通り扱いました。
+              次は、実際の業務データに合わせて入力ファイル、出力先、レビュー観点を少しずつ置き換えていきます。
+            </p>
+          </section>
+
+          <nav class="lesson-nav-bottom" aria-label="レッスン移動">
+            <a href="lesson-11.html">前へ: サブエージェントの役割を実装する</a>
+            <a href="lesson-13.html">次へ: ClaudeSDKClient編で学ぶこと</a>
+          </nav>
+        </article>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <p>Claude Agent SDK Learning Portal</p>
+      <a href="#top">ページ上部へ戻る</a>
+    </footer>
+  </body>
+</html>
+

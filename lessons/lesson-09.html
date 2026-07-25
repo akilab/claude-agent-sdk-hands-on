@@ -1,0 +1,579 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lesson 09 | 構造化出力とログを保存する</title>
+    <meta
+      name="description"
+      content="Claude Agent SDKのoutput_formatとJSON Schemaを使い、ResultMessage.structured_outputをPythonで保存するレッスン。"
+    >
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <script src="../assets/js/main.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header" id="top">
+      <a class="site-mark" href="../index.html" aria-label="Claude Agent SDK Learning Portal トップへ">
+        <span class="site-mark__symbol" aria-hidden="true">CA</span>
+        <span class="site-mark__text">Claude Agent SDK Learning</span>
+      </a>
+      <nav class="site-nav" aria-label="主要ナビゲーション">
+        <a href="../index.html#roadmap">ロードマップ</a>
+        <a href="../index.html#categories">カテゴリ</a>
+        <a href="../index.html#lessons">レッスン</a>
+        <a href="../index.html#official-docs">公式リンク</a>
+      </nav>
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="ダークモードに切り替え" aria-pressed="false">
+        <span class="theme-toggle__track" aria-hidden="true">
+          <span class="theme-toggle__thumb"></span>
+        </span>
+      </button>
+    </header>
+
+    <main>
+      <section class="lesson-hero" aria-labelledby="lesson-title">
+        <div class="breadcrumb" aria-label="パンくず">
+          <a href="../index.html">トップ</a>
+          <span aria-hidden="true">/</span>
+          <span>Lesson 09</span>
+        </div>
+        <p class="eyebrow">Lesson 09 / Agent SDK</p>
+        <h1 id="lesson-title">構造化出力とログを保存する</h1>
+        <p>
+          Lesson 09では、Agentの最終結果を自由な文章ではなく、Pythonで扱いやすい辞書として受け取ります。
+          `output_format` と JSON Schemaで出力の形を指定し、`ResultMessage.structured_output` と実行ログをファイルに保存します。
+        </p>
+      </section>
+
+      <div class="lesson-shell">
+        <aside class="lesson-sidebar" aria-label="レッスン目次">
+          <div class="lesson-sidebar__box">
+            <span class="lesson-sidebar__label">所要時間</span>
+            <strong>60分</strong>
+          </div>
+          <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
+            <a href="#goal">ゴール</a>
+            <a href="#before-run">実行前の確認</a>
+            <a href="#concepts">初出APIの見方</a>
+            <a href="#schema-detail">output_formatの読み方</a>
+            <a href="#sequence">シーケンス図</a>
+            <a href="#mental-model">処理の流れ</a>
+            <a href="#write-script">構造化出力を書く</a>
+            <a href="#run">実行して確認</a>
+            <a href="#review">確認問題</a>
+          </nav>
+        </aside>
+
+        <article class="lesson-main">
+          <section class="lesson-section" id="goal">
+            <p class="eyebrow">Goal</p>
+            <h2>このレッスンのゴール</h2>
+            <p class="lesson-one-liner">
+              <span>このレッスンを一言で</span>
+              JSON Schemaを渡し、構造化された最終結果を `ResultMessage.structured_output` から受け取ります。
+            </p>
+            <ul class="check-list">
+              <li>自由形式の文章と構造化出力の違いを説明できる</li>
+              <li>JSON Schemaで、Agentに返してほしいデータの形を定義できる</li>
+              <li>`ClaudeAgentOptions(output_format=...)` の役割を説明できる</li>
+              <li>`ResultMessage.structured_output` が `ResultMessage` の属性であると理解できる</li>
+              <li>構造化出力と実行ログを別々のJSONファイルに保存できる</li>
+            </ul>
+          </section>
+
+          <section class="lesson-section" id="before-run">
+            <p class="eyebrow">Before run</p>
+            <h2>実行前の確認</h2>
+            <p>
+              Lesson 09は、Lesson 08までと同じ `python-labs/` のuv環境で動かします。
+              まず `claude_agent_sdk` が読み込める状態か確認してください。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Windows / macOS / Linux</span>
+              </div>
+              <pre><code>uv run python -c "import claude_agent_sdk; print('claude_agent_sdk OK')"</code></pre>
+            </div>
+
+            <div class="callout">
+              <strong>この回ではツールを使わせません</strong>
+              <p>
+                構造化出力そのものに集中するため、`Read`、`Glob`、`Edit`、`Write`、`Bash` は禁止します。
+                Agentには、スクリプト内にある会議メモを読み取り、指定したJSON Schemaに合う形で返してもらいます。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="concepts">
+            <p class="eyebrow">SDK concepts</p>
+            <h2>初めて出てくる関数・クラス・属性</h2>
+            <p>
+              このレッスンでは、SDKの新しい設定として `output_format` を使います。
+              あわせて、Python標準ライブラリの `json` と `datetime` も、実行結果を保存するために使います。
+            </p>
+
+            <div class="table-wrap" role="region" aria-label="Lesson 09で扱う要素">
+              <table class="api-table">
+                <thead>
+                  <tr>
+                    <th>名前</th>
+                    <th>分類</th>
+                    <th>インスタンス生成</th>
+                    <th>Lesson 09での使い方</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>output_format</code></td>
+                    <td>`ClaudeAgentOptions` に渡す引数</td>
+                    <td>不要。辞書を渡す</td>
+                    <td>Agentの最終結果をJSON Schemaに合う構造化データとして返すよう指定する。</td>
+                  </tr>
+                  <tr>
+                    <td><code>ResultMessage.structured_output</code></td>
+                    <td>`ResultMessage` の属性</td>
+                    <td>不要。SDKから返る `ResultMessage` が持つ</td>
+                    <td>検証済みの構造化出力を取り出す。`subtype` の中にあるのではなく、`ResultMessage` 自体の属性。</td>
+                  </tr>
+                  <tr>
+                    <td><code>json.dumps()</code></td>
+                    <td>Python標準ライブラリの関数</td>
+                    <td>不要。呼び出して使う</td>
+                    <td>Pythonの辞書やリストをJSON文字列に変換する。ファイル保存前の整形に使う。</td>
+                  </tr>
+                  <tr>
+                    <td><code>datetime.now(timezone.utc)</code></td>
+                    <td>Python標準ライブラリのクラスメソッド呼び出し</td>
+                    <td>`datetime` クラスのメソッドを呼ぶ</td>
+                    <td>UTCの現在時刻を取得し、実行ログの `created_at` に保存する。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="reference-list">
+              <a href="https://code.claude.com/docs/ja/agent-sdk/structured-outputs" target="_blank" rel="noreferrer">エージェントから構造化された出力を取得する</a>
+              <a href="https://code.claude.com/docs/ja/agent-sdk/python" target="_blank" rel="noreferrer">Python SDK reference</a>
+              <a href="https://json-schema.org/learn/getting-started-step-by-step" target="_blank" rel="noreferrer">JSON Schema getting started</a>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="schema-detail">
+            <p class="eyebrow">Schema detail</p>
+            <h2>`output_format` と JSON Schema を読む</h2>
+            <p>
+              公式ドキュメントでは、Pythonの場合 `output_format` に `{"type": "json_schema", "schema": ...}` の形を渡します。
+              これにより、Agentの完了時に `ResultMessage` の `structured_output` 属性へ検証済みデータが入ります。
+            </p>
+            <p>
+              今回作りたいのは、会議メモから「要約」「決定事項」「担当チームごとのTODO」「リスク」を取り出したJSONです。
+              先に完成形を見ておくと、`OUTPUT_SCHEMA` はその形をAgentに守らせるための設計図だと読みやすくなります。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>作りたいJSONの形</span>
+              </div>
+              <pre><code>{
+  "summary": "会議メモ全体の短い要約",
+  "decisions": [
+    "決定事項を文字列で並べる"
+  ],
+  "todos": [
+    {
+      "team": "担当チーム名",
+      "task": "そのチームが行う作業",
+      "priority": "high / medium / low のどれか"
+    }
+  ],
+  "risks": [
+    "注意すべき点や未確定事項を文字列で並べる"
+  ]
+}</code></pre>
+            </div>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Lesson 09で使うoutput_format</span>
+              </div>
+              <pre><code>output_format={
+    "type": "json_schema",
+    "schema": OUTPUT_SCHEMA,
+}</code></pre>
+            </div>
+
+            <div class="table-wrap" role="region" aria-label="JSON Schemaで使う主なキー">
+              <table class="api-table">
+                <thead>
+                  <tr>
+                    <th>キー</th>
+                    <th>意味</th>
+                    <th>今回の例</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>type</code></td>
+                    <td>値の種類を指定する。object、array、string、numberなどを使う。</td>
+                    <td>全体は <code>object</code>。TODO一覧は <code>array</code>。</td>
+                  </tr>
+                  <tr>
+                    <td><code>properties</code></td>
+                    <td>objectが持つ項目名と、それぞれの型を定義する。</td>
+                    <td><code>summary</code>、<code>decisions</code>、<code>todos</code>、<code>risks</code>。</td>
+                  </tr>
+                  <tr>
+                    <td><code>required</code></td>
+                    <td>必ず含める項目を指定する。</td>
+                    <td>4つのトップレベル項目と、TODO内の <code>team</code>、<code>task</code>、<code>priority</code>。</td>
+                  </tr>
+                  <tr>
+                    <td><code>enum</code></td>
+                    <td>許可する値を限定する。</td>
+                    <td><code>priority</code> を <code>high</code>、<code>medium</code>、<code>low</code> に限定。</td>
+                  </tr>
+                  <tr>
+                    <td><code>description</code></td>
+                    <td>項目の意図を説明する。検証条件ではなく、Agentへの手がかりとして使う。</td>
+                    <td>要約、決定事項、TODO、リスクの意味を説明。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="callout callout--warning">
+              <strong>スキーマは最初から複雑にしすぎない</strong>
+              <p>
+                構造化出力は、スキーマに合うJSONを生成できないと失敗することがあります。
+                公式ドキュメントでは、失敗時の `subtype` として `error_max_structured_output_retries` が示されています。
+                まず小さく確実なスキーマから始め、必要に応じて項目を増やします。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="sequence">
+            <p class="eyebrow">Sequence</p>
+            <h2>構造化出力が保存される順番を図で見る</h2>
+            <p>
+              `structured_output` は `subtype` の中にある値ではありません。
+              `ResultMessage` が持つ別の属性として返ってくるため、完了状態を見る処理と、構造化データを取り出す処理を分けて読みます。
+            </p>
+
+            <figure class="diagram-figure">
+              <button class="diagram-zoom" type="button" data-diagram-open aria-label="Lesson 09の構造化出力シーケンス図を拡大表示">
+                <img src="../assets/img/lesson-09-sequence-flow.svg" alt="Lesson 09の構造化出力シーケンス図。mainからrun_agentを呼び、output_formatを含むOptionsでqueryを実行し、ResultMessageのstructured_outputを取り出してJSONファイルに保存する。" />
+                <span class="diagram-zoom__hint">クリックして拡大</span>
+              </button>
+              <figcaption>
+                完了状態は `ResultMessage.subtype`、構造化データは `ResultMessage.structured_output` として読み分けます。
+              </figcaption>
+            </figure>
+          </section>
+
+          <section class="lesson-section" id="mental-model">
+            <p class="eyebrow">Before coding</p>
+            <h2>コードを書く前に処理の流れを読む</h2>
+            <p>
+              Lesson 09のコードは、Agentの出力を「人が読む結果」と「プログラムが後で使うデータ」に分けて保存します。
+              関数の関係は次の順番で追うと理解しやすくなります。
+            </p>
+            <ol class="review-list">
+              <li>`main()` が `asyncio.run(run_agent())` で非同期処理を起動する</li>
+              <li>`run_agent()` が `build_options()` と `build_prompt()` を呼ぶ</li>
+              <li>`build_options()` が `output_format` にJSON Schemaを設定する</li>
+              <li>`query(prompt=..., options=...)` がAgentを実行し、メッセージを順に返す</li>
+              <li>`AssistantMessage` なら途中応答を表示する</li>
+              <li>`ResultMessage` なら `message.structured_output` を直接読み、構造化出力を取り出す</li>
+              <li>`build_run_log()` が完了状態、ターン数、時間、コストなどのメタ情報をまとめる</li>
+              <li>`save_outputs()` が構造化出力と実行ログを `outputs/` に保存する</li>
+            </ol>
+          </section>
+
+          <section class="lesson-section" id="write-script">
+            <p class="eyebrow">Hands-on</p>
+            <h2>構造化出力とログ保存を書く</h2>
+            <p>
+              `python-labs/practice/lesson_09_structured_output_log.py` を作り、次のコードを入力してください。
+              長めですが、JSON Schema、Agent実行、ResultMessage処理、ファイル保存の関係を一つの流れとして読むため、省略せずに書きます。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>python-labs/practice/lesson_09_structured_output_log.py</span>
+              </div>
+              <pre><code>import asyncio
+import json
+
+from claude_agent_sdk import (
+    AssistantMessage,
+    ClaudeAgentOptions,
+    ResultMessage,
+    query,
+)
+
+from shared.display import print_section
+from shared.files import write_json_file
+from shared.logs import build_run_log
+from shared.messages import print_assistant_message
+from shared.paths import OUTPUT_DIR, PROJECT_ROOT
+
+
+STRUCTURED_OUTPUT_PATH = OUTPUT_DIR / "lesson_09_structured_output.json"
+RUN_LOG_PATH = OUTPUT_DIR / "lesson_09_run_log.json"
+
+
+# このレッスンでは、下の会議メモをAgentに読ませます。
+# Agentには自由な文章で感想を書かせるのではなく、
+# 後でPythonから扱いやすいJSONに整理してもらいます。
+MEETING_MEMO = """
+社内FAQページの公開準備について打ち合わせを行った。
+公開日は来月第2週を目標にする。
+営業チームは、よくある質問を10件選ぶ。
+法務チームは、公開前に表現を確認する。
+開発チームは、検索しやすいページ構成を検討する。
+サポートチームは、公開後の問い合わせ窓口を準備する。
+未確定の仕様はFAQに断定表現で書かない。
+""".strip()
+
+
+# Agentに最終的に作ってほしいJSONのイメージです。
+#
+# {
+#   "summary": "会議メモ全体の短い要約",
+#   "decisions": [
+#     "決定事項を文字列で並べる"
+#   ],
+#   "todos": [
+#     {
+#       "team": "担当チーム名",
+#       "task": "そのチームが行う作業",
+#       "priority": "high / medium / low のどれか"
+#     }
+#   ],
+#   "risks": [
+#     "注意すべき点や未確定事項を文字列で並べる"
+#   ]
+# }
+#
+# OUTPUT_SCHEMAは、このJSONの形をAgent SDKに伝えるための設計図です。
+# Pythonの辞書として書いていますが、中身はJSON Schemaのルールです。
+OUTPUT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "summary": {
+            "type": "string",
+            "description": "会議メモ全体の短い要約",
+        },
+        "decisions": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "決定事項の一覧",
+        },
+        "todos": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "team": {"type": "string"},
+                    "task": {"type": "string"},
+                    "priority": {
+                        "type": "string",
+                        "enum": ["high", "medium", "low"],
+                    },
+                },
+                "required": ["team", "task", "priority"],
+            },
+            "description": "担当チームごとのTODO",
+        },
+        "risks": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "注意すべきリスクや未確定事項",
+        },
+    },
+    "required": ["summary", "decisions", "todos", "risks"],
+}
+
+
+# 構造化出力を得るためのOptionsを作る関数です。
+def build_options() -&gt; ClaudeAgentOptions:
+    return ClaudeAgentOptions(
+        cwd=str(PROJECT_ROOT),
+        max_turns=2,
+        # このレッスンはスキーマ指定に集中するため、ツールは使わせません。
+        # 会議メモはPython文字列としてプロンプトに入れるので、Readも不要です。
+        disallowed_tools=["Read", "Glob", "Edit", "Write", "Bash"],
+        # output_formatは、Agentの最終回答の形を指定する設定です。
+        # typeにjson_schemaを指定し、schemaに上で定義したOUTPUT_SCHEMAを渡します。
+        output_format={
+            "type": "json_schema",
+            "schema": OUTPUT_SCHEMA,
+        },
+    )
+
+
+# Agentに依頼するプロンプトを作る関数です。
+def build_prompt() -&gt; str:
+    return f"""
+次の会議メモを読み、JSON Schemaに合う形で構造化してください。
+TODOのpriorityは high / medium / low のいずれかにしてください。
+
+会議メモ:
+{MEETING_MEMO}
+""".strip()
+
+
+# queryを呼び出し、構造化出力とログを保存する関数です。
+async def run_agent() -&gt; None:
+    options = build_options()
+    prompt = build_prompt()
+    final_result = None
+    structured_output = None
+
+    print_section("Prompt")
+    print(prompt)
+
+    print_section("Agent output")
+    async for message in query(
+        prompt=prompt,
+        options=options,
+    ):
+        if isinstance(message, AssistantMessage):
+            print_assistant_message(message)
+        elif isinstance(message, ResultMessage):
+            final_result = message
+            structured_output = message.structured_output
+
+    if final_result is None:
+        raise RuntimeError("ResultMessage was not received.")
+
+    run_log = build_run_log(final_result, structured_output)
+
+    if structured_output is not None:
+        write_json_file(STRUCTURED_OUTPUT_PATH, structured_output)
+    write_json_file(RUN_LOG_PATH, run_log)
+
+    print_section("Structured output")
+    if structured_output is None:
+        print("No structured output was returned.")
+    else:
+        print(json.dumps(structured_output, ensure_ascii=False, indent=2))
+
+    print_section("Saved files")
+    print(STRUCTURED_OUTPUT_PATH)
+    print(RUN_LOG_PATH)
+
+
+# 非同期のrun_agent関数をイベントループで実行する関数です。
+def main() -&gt; None:
+    asyncio.run(run_agent())
+
+
+if __name__ == "__main__":
+    main()</code></pre>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="run">
+            <p class="eyebrow">Run</p>
+            <h2>実行して確認する</h2>
+            <p>
+              `python-labs/` から実行します。
+              成功すると、構造化出力と実行ログが `outputs/` に保存されます。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Windows / macOS / Linux</span>
+              </div>
+              <pre><code>uv run python practice/lesson_09_structured_output_log.py</code></pre>
+            </div>
+
+            <p>保存された構造化出力を確認します。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>PowerShell</span>
+              </div>
+              <pre><code>Get-Content outputs/lesson_09_structured_output.json
+Get-Content outputs/lesson_09_run_log.json</code></pre>
+            </div>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>macOS / Linux</span>
+              </div>
+              <pre><code>cat outputs/lesson_09_structured_output.json
+cat outputs/lesson_09_run_log.json</code></pre>
+            </div>
+
+            <p>出力例です。実際の文章や優先度は、実行時のAgentの判断で変わります。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>lesson_09_structured_output.json の例</span>
+              </div>
+              <pre><code>{
+  "summary": "社内FAQページ公開に向けた準備事項を整理した会議メモです。",
+  "decisions": [
+    "公開日は来月第2週を目標にする"
+  ],
+  "todos": [
+    {
+      "team": "営業チーム",
+      "task": "よくある質問を10件選ぶ",
+      "priority": "medium"
+    },
+    {
+      "team": "法務チーム",
+      "task": "公開前に表現を確認する",
+      "priority": "high"
+    }
+  ],
+  "risks": [
+    "未確定の仕様を断定表現で書かない"
+  ]
+}</code></pre>
+            </div>
+
+            <div class="callout">
+              <strong>`structured_output` が空の場合</strong>
+              <p>
+                `ResultMessage.subtype` を確認します。
+                `error_max_structured_output_retries` の場合は、スキーマを小さくする、必須項目を減らす、プロンプトを具体化する、という順で見直します。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="review">
+            <p class="eyebrow">Review</p>
+            <h2>確認問題</h2>
+            <ol class="review-list">
+              <li>自由形式の文章ではなく、構造化出力を使うメリットを説明してください。</li>
+              <li>`output_format={"type": "json_schema", "schema": OUTPUT_SCHEMA}` は何を指定していますか。</li>
+              <li>`structured_output` は `subtype` の中にありますか。それとも `ResultMessage` の属性ですか。</li>
+              <li>構造化出力と実行ログを別ファイルに分ける理由を説明してください。</li>
+              <li>`error_max_structured_output_retries` が出た場合、最初に何を見直しますか。</li>
+            </ol>
+            <p>
+              構造化出力を扱えると、Agentの結果を次の処理やUIへ渡しやすくなります。
+              次のLesson 10では、繰り返し使う判断や手順をSkillsとして設計する方向へ進みます。
+            </p>
+          </section>
+
+          <nav class="lesson-nav-bottom" aria-label="レッスン移動">
+            <a href="lesson-08.html">前へ: Optionsと権限を設定する</a>
+            <a href="lesson-10.html">次へ: Agent Skillsを設計する</a>
+          </nav>
+        </article>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <p>Claude Agent SDK Learning Portal</p>
+      <a href="#top">ページ上部へ戻る</a>
+    </footer>
+  </body>
+</html>
+

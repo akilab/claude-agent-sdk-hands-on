@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="900" viewBox="0 0 1280 900" role="img" aria-labelledby="title desc">
+  <title id="title">Lesson 11 subagent sequence</title>
+  <desc id="desc">Sequence diagram showing how Lesson 11 defines a subagent with AgentDefinition, passes it to ClaudeAgentOptions, calls query, invokes the Agent tool, and saves the result.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#3267b9"/>
+    </marker>
+    <style>
+      .bg { fill: #f8fbff; }
+      .header { fill: #e9f2ff; stroke: #9cb7dc; stroke-width: 2; }
+      .header-agent { fill: #eef8f3; stroke: #7bb99e; stroke-width: 2; }
+      .header-out { fill: #fff6e6; stroke: #d29a42; stroke-width: 2; }
+      .life { stroke: #9fb0c8; stroke-width: 2; stroke-dasharray: 7 7; }
+      .edge { fill: none; stroke: #3267b9; stroke-width: 2.5; marker-end: url(#arrow); }
+      .return { fill: none; stroke: #5e738f; stroke-width: 2; stroke-dasharray: 6 5; marker-end: url(#arrow); }
+      .note { fill: rgba(238, 248, 243, 0.72); stroke: #7bb99e; stroke-width: 2; stroke-dasharray: 8 6; }
+      .title { fill: #17233a; font: 700 18px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .text { fill: #17233a; font: 600 15px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .small { fill: #4c5f79; font: 13px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .label { fill: #17406f; font: 700 13px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .step { fill: #ffffff; stroke: #3267b9; stroke-width: 2; }
+      .step-text { fill: #17406f; font: 700 12px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    </style>
+  </defs>
+
+  <rect class="bg" width="1280" height="900"/>
+
+  <rect class="header" x="50" y="42" width="160" height="58" rx="8"/>
+  <text class="title" x="96" y="67">main()</text>
+  <text class="small" x="78" y="88">起動入口</text>
+
+  <rect class="header" x="250" y="42" width="176" height="58" rx="8"/>
+  <text class="title" x="286" y="67">run_agent()</text>
+  <text class="small" x="286" y="88">全体の司令塔</text>
+
+  <rect class="header-out" x="474" y="42" width="210" height="58" rx="8"/>
+  <text class="title" x="508" y="67">AgentDefinition</text>
+  <text class="small" x="514" y="88">サブエージェント定義</text>
+
+  <rect class="header" x="730" y="42" width="156" height="58" rx="8"/>
+  <text class="title" x="768" y="67">Options</text>
+  <text class="small" x="752" y="88">agents / Agent tool</text>
+
+  <rect class="header-agent" x="930" y="42" width="140" height="58" rx="8"/>
+  <text class="title" x="972" y="67">query()</text>
+  <text class="small" x="954" y="88">親Agent</text>
+
+  <rect class="header-agent" x="1110" y="42" width="132" height="58" rx="8"/>
+  <text class="title" x="1140" y="67">Subagent</text>
+  <text class="small" x="1133" y="88">役割を分ける</text>
+
+  <line class="life" x1="130" y1="100" x2="130" y2="832"/>
+  <line class="life" x1="338" y1="100" x2="338" y2="832"/>
+  <line class="life" x1="579" y1="100" x2="579" y2="832"/>
+  <line class="life" x1="808" y1="100" x2="808" y2="832"/>
+  <line class="life" x1="1000" y1="100" x2="1000" y2="832"/>
+  <line class="life" x1="1176" y1="100" x2="1176" y2="832"/>
+
+  <rect class="note" x="458" y="184" width="488" height="146" rx="10"/>
+  <text class="label" x="478" y="218">サブエージェントは役割つきの別Agentです</text>
+  <text class="small" x="478" y="246">AgentDefinition で description / prompt / tools / maxTurns を定義します。</text>
+  <text class="small" x="478" y="274">親Agentは Agent tool を使って、必要なタスクだけをサブエージェントへ渡します。</text>
+  <text class="small" x="478" y="298">サブエージェントは親の会話履歴を丸ごと引き継ぐわけではありません。</text>
+  <text class="small" x="478" y="320">Skillを使わせる場合は AgentDefinition.skills や tools=["Skill"] で明示します。</text>
+
+  <circle class="step" cx="84" cy="150" r="14"/><text class="step-text" x="80" y="154">1</text>
+  <path class="edge" d="M 130 150 L 330 150"/>
+  <text class="text" x="166" y="140">asyncio.run(run_agent())</text>
+
+  <circle class="step" cx="294" cy="366" r="14"/><text class="step-text" x="290" y="370">2</text>
+  <path class="edge" d="M 338 366 L 570 366"/>
+  <text class="text" x="378" y="356">build_agents()</text>
+  <text class="small" x="378" y="378">faq-risk-reviewer を定義</text>
+
+  <circle class="step" cx="294" cy="458" r="14"/><text class="step-text" x="290" y="462">3</text>
+  <path class="edge" d="M 338 458 L 800 458"/>
+  <text class="text" x="378" y="448">build_options()</text>
+  <text class="small" x="378" y="470">agents と allowed_tools=["Agent"] を設定</text>
+
+  <circle class="step" cx="294" cy="550" r="14"/><text class="step-text" x="290" y="554">4</text>
+  <path class="edge" d="M 338 550 L 992 550"/>
+  <text class="text" x="378" y="540">query(prompt, options)</text>
+  <text class="small" x="378" y="562">親Agentを起動する</text>
+
+  <circle class="step" cx="956" cy="642" r="14"/><text class="step-text" x="952" y="646">5</text>
+  <path class="edge" d="M 1000 642 L 1168 642"/>
+  <text class="text" x="1024" y="632">Agent tool</text>
+  <text class="small" x="1024" y="654">レビューをサブエージェントへ依頼</text>
+
+  <circle class="step" cx="1132" cy="724" r="14"/><text class="step-text" x="1128" y="728">6</text>
+  <path class="return" d="M 1176 724 L 1008 724"/>
+  <text class="text" x="1018" y="714">レビュー結果</text>
+  <text class="small" x="1018" y="736">親Agentが結果をまとめる</text>
+
+  <circle class="step" cx="956" cy="804" r="14"/><text class="step-text" x="952" y="808">7</text>
+  <path class="return" d="M 1000 804 L 346 804"/>
+  <text class="text" x="382" y="794">ResultMessage</text>
+  <text class="small" x="382" y="816">save_output() で保存する</text>
+</svg>

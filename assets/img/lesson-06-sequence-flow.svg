@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="980" viewBox="0 0 1280 980" role="img" aria-labelledby="title desc">
+  <title id="title">Lesson 06 execution sequence</title>
+  <desc id="desc">Sequence diagram showing the execution order from main to run_agent, query, message handlers, and save_output.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#3267b9"/>
+    </marker>
+    <style>
+      .bg { fill: #f8fbff; }
+      .header { fill: #e9f2ff; stroke: #9cb7dc; stroke-width: 2; }
+      .header-sdk { fill: #eef8f3; stroke: #7bb99e; stroke-width: 2; }
+      .header-out { fill: #fff6e6; stroke: #d29a42; stroke-width: 2; }
+      .box { fill: #ffffff; stroke: #d5dfef; stroke-width: 2; }
+      .alt { fill: rgba(238, 245, 255, 0.65); stroke: #9cb7dc; stroke-width: 2; stroke-dasharray: 8 6; }
+      .loop { fill: rgba(238, 248, 243, 0.58); stroke: #7bb99e; stroke-width: 2; stroke-dasharray: 8 6; }
+      .life { stroke: #9fb0c8; stroke-width: 2; stroke-dasharray: 7 7; }
+      .edge { fill: none; stroke: #3267b9; stroke-width: 2.5; marker-end: url(#arrow); }
+      .edge-soft { fill: none; stroke: #5e738f; stroke-width: 2; marker-end: url(#arrow); }
+      .return { fill: none; stroke: #5e738f; stroke-width: 2; stroke-dasharray: 6 5; marker-end: url(#arrow); }
+      .title { fill: #17233a; font: 700 18px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .text { fill: #17233a; font: 600 15px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .small { fill: #4c5f79; font: 13px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .label { fill: #17406f; font: 700 13px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .step { fill: #ffffff; stroke: #3267b9; stroke-width: 2; }
+      .step-text { fill: #17406f; font: 700 12px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    </style>
+  </defs>
+
+  <rect class="bg" width="1280" height="980"/>
+
+  <rect class="header" x="46" y="42" width="150" height="58" rx="8"/>
+  <text class="title" x="90" y="67">main()</text>
+  <text class="small" x="76" y="88">起動入口</text>
+
+  <rect class="header" x="246" y="42" width="166" height="58" rx="8"/>
+  <text class="title" x="274" y="67">asyncio.run</text>
+  <text class="small" x="275" y="88">非同期関数を開始</text>
+
+  <rect class="header" x="462" y="42" width="168" height="58" rx="8"/>
+  <text class="title" x="498" y="67">run_agent()</text>
+  <text class="small" x="489" y="88">全体の司令塔</text>
+
+  <rect class="header-sdk" x="684" y="42" width="150" height="58" rx="8"/>
+  <text class="title" x="728" y="67">query()</text>
+  <text class="small" x="710" y="88">SDKストリーム</text>
+
+  <rect class="header" x="888" y="42" width="176" height="58" rx="8"/>
+  <text class="title" x="904" y="67">message handler</text>
+  <text class="small" x="918" y="88">型ごとの処理</text>
+
+  <rect class="header-out" x="1110" y="42" width="132" height="58" rx="8"/>
+  <text class="title" x="1138" y="67">output</text>
+  <text class="small" x="1132" y="88">表示と保存</text>
+
+  <line class="life" x1="121" y1="100" x2="121" y2="930"/>
+  <line class="life" x1="329" y1="100" x2="329" y2="930"/>
+  <line class="life" x1="546" y1="100" x2="546" y2="930"/>
+  <line class="life" x1="759" y1="100" x2="759" y2="930"/>
+  <line class="life" x1="976" y1="100" x2="976" y2="930"/>
+  <line class="life" x1="1176" y1="100" x2="1176" y2="930"/>
+
+  <rect class="loop" x="444" y="460" width="566" height="314" rx="10"/>
+  <text class="label" x="462" y="486">async for message in query(...): messageが届くたびに繰り返す</text>
+
+  <rect class="alt" x="470" y="540" width="516" height="168" rx="10"/>
+  <text class="label" x="488" y="566">messageの型で分岐</text>
+
+  <circle class="step" cx="64" cy="150" r="14"/><text class="step-text" x="60" y="154">1</text>
+  <path class="edge" d="M 121 150 L 321 150"/>
+  <text class="text" x="148" y="140">asyncio.run(run_agent())</text>
+
+  <circle class="step" cx="274" cy="210" r="14"/><text class="step-text" x="270" y="214">2</text>
+  <path class="edge" d="M 329 210 L 538 210"/>
+  <text class="text" x="356" y="200">run_agent() を開始</text>
+
+  <circle class="step" cx="482" cy="278" r="14"/><text class="step-text" x="478" y="282">3</text>
+  <path class="edge-soft" d="M 546 278 C 590 260, 590 304, 548 306"/>
+  <text class="text" x="580" y="274">ClaudeAgentOptions(...) を作る</text>
+  <text class="small" x="580" y="294">cwd / max_turns / disallowed_tools</text>
+
+  <circle class="step" cx="482" cy="350" r="14"/><text class="step-text" x="478" y="354">4</text>
+  <path class="edge-soft" d="M 546 350 C 590 332, 590 376, 548 378"/>
+  <text class="text" x="580" y="348">build_prompt() で依頼文を作る</text>
+
+  <circle class="step" cx="482" cy="422" r="14"/><text class="step-text" x="478" y="426">5</text>
+  <path class="edge" d="M 546 422 L 751 422"/>
+  <text class="text" x="576" y="412">query(prompt, options) を呼ぶ</text>
+  <text class="small" x="576" y="434">ここからSDKがメッセージを返し始める</text>
+
+  <circle class="step" cx="704" cy="520" r="14"/><text class="step-text" x="700" y="524">6</text>
+  <path class="return" d="M 759 520 L 554 520"/>
+  <text class="text" x="580" y="510">message が1件届く</text>
+
+  <circle class="step" cx="492" cy="602" r="14"/><text class="step-text" x="488" y="606">7</text>
+  <path class="edge" d="M 546 602 L 968 602"/>
+  <text class="text" x="588" y="592">AssistantMessageなら print_assistant_message()</text>
+
+  <circle class="step" cx="930" cy="660" r="14"/><text class="step-text" x="926" y="664">8</text>
+  <path class="edge" d="M 976 660 L 1168 660"/>
+  <text class="text" x="1010" y="650">record_line()</text>
+  <text class="small" x="1010" y="672">画面表示 + output_linesへ追加</text>
+
+  <circle class="step" cx="492" cy="730" r="14"/><text class="step-text" x="488" y="734">9</text>
+  <path class="edge" d="M 546 730 L 968 730"/>
+  <text class="text" x="588" y="720">ResultMessageなら print_result_message()</text>
+  <text class="small" x="588" y="742">subtype と message.result を読む</text>
+
+  <circle class="step" cx="482" cy="824" r="14"/><text class="step-text" x="475" y="828">10</text>
+  <path class="edge-soft" d="M 546 824 C 594 800, 594 850, 548 872"/>
+  <text class="text" x="580" y="820">queryのストリームが終わる</text>
+
+  <circle class="step" cx="482" cy="900" r="14"/><text class="step-text" x="475" y="904">11</text>
+  <path class="edge" d="M 546 900 L 1168 900"/>
+  <text class="text" x="588" y="890">save_output(output_lines)</text>
+  <text class="small" x="588" y="912">outputsフォルダを作り、write_text()で保存</text>
+
+  <text class="small" x="1020" y="604">分岐A</text>
+  <text class="small" x="1020" y="732">分岐B</text>
+</svg>
