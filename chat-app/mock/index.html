@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Claude Agent SDK Chat Lab</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=Noto+Sans+JP:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/mock.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="global-header">
+        <div class="product-brand">
+          <span class="product-mark" aria-hidden="true">
+            <img src="assets/img/logo-design.svg" alt="">
+          </span>
+          <div>
+            <p>Claude Agent SDK</p>
+            <h1>Chat Lab</h1>
+          </div>
+        </div>
+        <nav class="global-nav" aria-label="グローバルナビゲーション">
+          <button type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M6 5.5h12M6 12h12M6 18.5h8"></path>
+            </svg>
+            セッション
+          </button>
+          <button type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M8 8.5 4.5 12 8 15.5M16 8.5l3.5 3.5-3.5 3.5M13.5 5.5l-3 13"></path>
+            </svg>
+            API
+          </button>
+          <button type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M7 6.5h10M7 11h10M7 15.5h6"></path>
+              <path d="M5 3.5h14a1.5 1.5 0 0 1 1.5 1.5v14L17 17.5H5A1.5 1.5 0 0 1 3.5 16V5A1.5 1.5 0 0 1 5 3.5Z"></path>
+            </svg>
+            ログ
+          </button>
+        </nav>
+        <div class="account-menu">
+          <span class="account-avatar" aria-hidden="true">L</span>
+          <span>learner-001</span>
+        </div>
+      </header>
+
+      <aside class="sidebar" aria-label="セッション管理">
+        <button type="button" class="new-session-button">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M12 5v14M5 12h14"></path>
+          </svg>
+          新しいチャット
+        </button>
+
+        <section class="session-section" aria-labelledby="recent-session-title">
+          <div class="section-heading">
+            <h2 id="recent-session-title">最近のセッション</h2>
+            <span>4</span>
+          </div>
+
+          <div class="session-list" role="list">
+            <button type="button" class="session-item is-active" data-session="fastapi">
+              <span class="session-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v10A1.5 1.5 0 0 1 19 17.5h-5.5L9 21v-3.5H5A1.5 1.5 0 0 1 3.5 16V6A1.5 1.5 0 0 1 5 4.5Z"></path>
+                  <path d="M7.5 9h9M7.5 12.5H14"></path>
+                </svg>
+              </span>
+              <span class="session-title">FastAPI連携の相談</span>
+              <span class="session-preview">セッション一覧APIの設計を確認</span>
+              <span class="session-time">今日 15:42</span>
+            </button>
+            <button type="button" class="session-item" data-session="sqlite">
+              <span class="session-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v10A1.5 1.5 0 0 1 19 17.5h-5.5L9 21v-3.5H5A1.5 1.5 0 0 1 3.5 16V6A1.5 1.5 0 0 1 5 4.5Z"></path>
+                  <path d="M7.5 9h9M7.5 12.5H14"></path>
+                </svg>
+              </span>
+              <span class="session-title">SQLite履歴保存</span>
+              <span class="session-preview">messagesテーブルの役割を整理</span>
+              <span class="session-time">今日 14:18</span>
+            </button>
+            <button type="button" class="session-item" data-session="stream">
+              <span class="session-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v10A1.5 1.5 0 0 1 19 17.5h-5.5L9 21v-3.5H5A1.5 1.5 0 0 1 3.5 16V6A1.5 1.5 0 0 1 5 4.5Z"></path>
+                  <path d="M7.5 9h9M7.5 12.5H14"></path>
+                </svg>
+              </span>
+              <span class="session-title">ストリーミング表示</span>
+              <span class="session-preview">返答を少しずつ描画する方法</span>
+              <span class="session-time">昨日 18:04</span>
+            </button>
+            <button type="button" class="session-item" data-session="client">
+              <span class="session-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v10A1.5 1.5 0 0 1 19 17.5h-5.5L9 21v-3.5H5A1.5 1.5 0 0 1 3.5 16V6A1.5 1.5 0 0 1 5 4.5Z"></path>
+                  <path d="M7.5 9h9M7.5 12.5H14"></path>
+                </svg>
+              </span>
+              <span class="session-title">ClaudeSDKClient基礎</span>
+              <span class="session-preview">queryとの違いを確認</span>
+              <span class="session-time">昨日 11:20</span>
+            </button>
+          </div>
+        </section>
+
+        <div class="sidebar-footer">
+          <button type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"></path>
+              <path d="M19 12a7.6 7.6 0 0 0-.08-1.1l2.02-1.56-2-3.46-2.39.96a7.44 7.44 0 0 0-1.9-1.1L14.3 3.2h-4.6l-.35 2.54a7.44 7.44 0 0 0-1.9 1.1l-2.39-.96-2 3.46 2.02 1.56A7.6 7.6 0 0 0 5 12c0 .38.03.74.08 1.1l-2.02 1.56 2 3.46 2.39-.96c.58.46 1.22.83 1.9 1.1l.35 2.54h4.6l.35-2.54c.68-.27 1.32-.64 1.9-1.1l2.39.96 2-3.46-2.02-1.56c.05-.36.08-.72.08-1.1Z"></path>
+            </svg>
+            設定
+          </button>
+          <button type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M5 5.5h14M5 12h14M5 18.5h8"></path>
+            </svg>
+            ログ
+          </button>
+        </div>
+      </aside>
+
+      <main class="chat-layout">
+        <header class="topbar">
+          <div>
+            <p class="breadcrumb">Workspace / learner-001</p>
+            <h2 id="conversation-title">FastAPI連携の相談</h2>
+          </div>
+          <div class="topbar-actions">
+            <span class="state-badge">resume active</span>
+            <button type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M20 12a8 8 0 1 1-2.35-5.65"></path>
+                <path d="M20 4.5v5h-5"></path>
+              </svg>
+              履歴を更新
+            </button>
+            <button type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M12 4v10"></path>
+                <path d="m8 10 4 4 4-4"></path>
+                <path d="M5 18.5h14"></path>
+              </svg>
+              エクスポート
+            </button>
+          </div>
+        </header>
+
+        <section class="chat-panel" aria-label="会話">
+          <div id="message-list" class="message-list" aria-live="polite"></div>
+
+          <form id="chat-form" class="composer">
+            <label class="visually-hidden" for="chat-input">メッセージ</label>
+            <button type="button" class="icon-button" aria-label="ファイルを添付">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="m20 11.5-8.3 8.3a5.1 5.1 0 0 1-7.2-7.2l9-9a3.3 3.3 0 0 1 4.7 4.7l-9.1 9.1a1.7 1.7 0 0 1-2.4-2.4l8.3-8.3"></path>
+              </svg>
+            </button>
+            <input id="chat-input" name="message" type="text" autocomplete="off" placeholder="Claudeに質問する">
+            <button type="submit" class="send-button">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M4 12 20 4l-4.8 16-3.1-6.1L4 12Z"></path>
+                <path d="m12.1 13.9 3.2-3.2"></path>
+              </svg>
+              送信
+            </button>
+          </form>
+        </section>
+      </main>
+
+      <aside class="details-panel" aria-label="セッション詳細">
+        <section class="detail-card">
+          <div class="detail-heading">
+            <span class="detail-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M12 3.5 19 7.5v8L12 20l-7-4.5v-8L12 3.5Z"></path>
+                <path d="M8.5 10h7M8.5 13h7"></path>
+              </svg>
+            </span>
+            <p>Session</p>
+            <h2>現在の状態</h2>
+          </div>
+          <dl class="session-facts">
+            <div>
+              <dt>ユーザー</dt>
+              <dd>learner-001</dd>
+            </div>
+            <div>
+              <dt>セッションID</dt>
+              <dd id="session-id">ses-fastapi-001</dd>
+            </div>
+            <div>
+              <dt>メッセージ</dt>
+              <dd id="message-count">4</dd>
+            </div>
+            <div>
+              <dt>最終更新</dt>
+              <dd id="updated-at">2026/07/26 15:45</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="detail-card">
+          <div class="detail-heading">
+            <span class="detail-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <ellipse cx="12" cy="6" rx="6.5" ry="2.7"></ellipse>
+                <path d="M5.5 6v6c0 1.5 2.9 2.7 6.5 2.7s6.5-1.2 6.5-2.7V6"></path>
+                <path d="M5.5 12v6c0 1.5 2.9 2.7 6.5 2.7s6.5-1.2 6.5-2.7v-6"></path>
+              </svg>
+            </span>
+            <p>Storage</p>
+            <h2>保存先</h2>
+          </div>
+          <div class="storage-list">
+            <div>
+              <span class="storage-dot"></span>
+              <div>
+                <strong>sessions</strong>
+                <p>会話単位のメタ情報</p>
+              </div>
+            </div>
+            <div>
+              <span class="storage-dot"></span>
+              <div>
+                <strong>messages</strong>
+                <p>user / assistant の本文</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="detail-card">
+          <div class="detail-heading">
+            <span class="detail-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M4.5 12h3l2-5 4.5 10 2-5h3.5"></path>
+              </svg>
+            </span>
+            <p>Run</p>
+            <h2>実行ステータス</h2>
+          </div>
+          <div class="run-status">
+            <span></span>
+            <div>
+              <strong>待機中</strong>
+              <p>入力を送信するとAPI経由でClaudeに問い合わせます。</p>
+            </div>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <script src="assets/js/mock.js"></script>
+  </body>
+</html>
