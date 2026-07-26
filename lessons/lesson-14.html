@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lesson 14 | ClaudeSDKClientの最小会話を動かす</title>
+    <meta
+      name="description"
+      content="ClaudeSDKClientを使い、同じclientで2回問い合わせて会話が継続することを確認するPythonハンズオンレッスン。"
+    >
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <script src="../assets/js/main.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header" id="top">
+      <a class="site-mark" href="../index.html" aria-label="Claude Agent SDK Learning Portal トップへ">
+        <span class="site-mark__symbol" aria-hidden="true">CA</span>
+        <span class="site-mark__text">Claude Agent SDK Learning</span>
+      </a>
+      <nav class="site-nav" aria-label="主要ナビゲーション">
+        <a href="../index.html#roadmap">ロードマップ</a>
+        <a href="../index.html#lessons">学習セクション</a>
+        <a href="../index.html#official-docs">公式リンク</a>
+      </nav>
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="ダークモードに切り替え" aria-pressed="false">
+        <span class="theme-toggle__track" aria-hidden="true">
+          <span class="theme-toggle__thumb"></span>
+        </span>
+      </button>
+    </header>
+
+    <main>
+      <section class="lesson-hero" aria-labelledby="lesson-title">
+        <div class="breadcrumb" aria-label="パンくず">
+          <a href="../index.html">トップ</a>
+          <span aria-hidden="true">/</span>
+          <span>Lesson 14</span>
+        </div>
+        <p class="eyebrow">Lesson 14 / ClaudeSDKClient</p>
+        <h1 id="lesson-title">ClaudeSDKClientの最小会話を動かす</h1>
+        <p>
+          `ClaudeSDKClient` を使い、同じclientインスタンスに2回問い合わせます。
+          `client.query()` は送信、`client.receive_response()` は受信という役割分担を、短いコードで確認します。
+        </p>
+      </section>
+
+      <div class="lesson-shell">
+        <aside class="lesson-sidebar" aria-label="レッスン目次">
+          <div class="lesson-sidebar__box">
+            <span class="lesson-sidebar__label">所要時間</span>
+            <strong>55分</strong>
+          </div>
+          <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
+            <a href="#goal">ゴール</a>
+            <a href="#before-run">実行前の確認</a>
+            <a href="#concepts">初出APIの見方</a>
+            <a href="#sequence">処理の流れ</a>
+            <a href="#hands-on">コードを書く</a>
+            <a href="#run">実行して確認</a>
+            <a href="#review">確認問題</a>
+          </nav>
+        </aside>
+
+        <article class="lesson-main">
+          <section class="lesson-section" id="goal">
+            <p class="eyebrow">Goal</p>
+            <h2>このレッスンのゴール</h2>
+            <p class="lesson-one-liner">
+              <span>このレッスンを一言で</span>
+              `ClaudeSDKClient` で同じ会話を続ける最小形を作り、送信と受信の分離を理解します。
+            </p>
+            <ul class="check-list">
+              <li>`async with ClaudeSDKClient(...) as client` の役割を説明できる</li>
+              <li>`client.query()` はプロンプト送信、`client.receive_response()` は応答受信だと説明できる</li>
+              <li>同じclientで2回問い合わせると、同じセッションの文脈を引き継ぐことを確認できる</li>
+              <li>`ResultMessage.session_id` を見て、会話の識別子を観察できる</li>
+            </ul>
+          </section>
+
+          <section class="lesson-section" id="before-run">
+            <p class="eyebrow">Before run</p>
+            <h2>実行前の確認</h2>
+            <p>
+              このレッスンでは実際にClaudeへ問い合わせます。
+              Pro以上のサブスクリプションでClaude Code / Agent SDKを使える状態にしてから進めてください。
+              契約条件や利用枠は変更される可能性があるため、実務利用前には公式情報を確認します。
+            </p>
+
+            <div class="callout">
+              <strong>今回もツールは使いません</strong>
+              <p>
+                目的はファイル操作やコード編集ではなく、同じclientで会話が続く感覚をつかむことです。
+                `disallowed_tools` で主要ツールを使わないようにし、会話の流れだけを観察します。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="concepts">
+            <p class="eyebrow">SDK concepts</p>
+            <h2>初めて出てくる関数・クラス・メソッド</h2>
+            <p>
+              `ClaudeSDKClient` は、単発の `query()` とは使い方が少し違います。
+              まず「何がクラスで、何がメソッドか」を分けて見ます。
+            </p>
+
+            <div class="table-wrap" role="region" aria-label="Lesson 14で使うSDK要素">
+              <table class="api-table">
+                <thead>
+                  <tr>
+                    <th>名前</th>
+                    <th>分類</th>
+                    <th>引数</th>
+                    <th>戻り値・読み方</th>
+                    <th>このコードでの役割</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>ClaudeSDKClient</code></td>
+                    <td>クラス</td>
+                    <td><code>options</code> など</td>
+                    <td>clientインスタンスを作る</td>
+                    <td>同じセッションを保ったまま、複数回の問い合わせを送る入口。</td>
+                  </tr>
+                  <tr>
+                    <td><code>async with ClaudeSDKClient(...)</code></td>
+                    <td>非同期コンテキストマネージャー</td>
+                    <td>生成済みclientを <code>as client</code> で受ける</td>
+                    <td>ブロックを抜けるとclientを閉じる</td>
+                    <td>会話の開始と終了をコード上で明示する。</td>
+                  </tr>
+                  <tr>
+                    <td><code>client.query(prompt)</code></td>
+                    <td>メソッド</td>
+                    <td>文字列、またはメッセージストリーム</td>
+                    <td>応答本文を直接返すのではなく、問い合わせをclientへ送る</td>
+                    <td>1回目、2回目のプロンプトを同じclientへ送る。</td>
+                  </tr>
+                  <tr>
+                    <td><code>client.receive_response()</code></td>
+                    <td>メソッド</td>
+                    <td>なし</td>
+                    <td>非同期イテレータ。<code>AssistantMessage</code> や <code>ResultMessage</code> を順に返す</td>
+                    <td>直前に送った問い合わせの応答を最後まで読む。</td>
+                  </tr>
+                  <tr>
+                    <td><code>ResultMessage.session_id</code></td>
+                    <td>属性</td>
+                    <td>なし</td>
+                    <td>SDKが付けたセッションID文字列</td>
+                    <td>1回目と2回目が同じ会話として扱われているかを観察する。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="callout callout--warning">
+              <strong>`client.query()` だけでは応答を読みません</strong>
+              <p>
+                `query()` 関数版では <code>async for message in query(...)</code> と書きました。
+                `ClaudeSDKClient` では <code>await client.query(...)</code> で送信し、
+                その後に <code>async for message in client.receive_response()</code> で応答を読みます。
+              </p>
+            </div>
+
+            <div class="reference-list">
+              <a href="https://code.claude.com/docs/ja/agent-sdk/sessions" target="_blank" rel="noreferrer">セッションの操作</a>
+              <a href="https://code.claude.com/docs/ja/agent-sdk/python" target="_blank" rel="noreferrer">Python SDK reference</a>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="sequence">
+            <p class="eyebrow">Sequence</p>
+            <h2>処理の流れ</h2>
+            <p>
+              ポイントは、clientを1つ作り、その中で「送る」「読む」を2回繰り返すことです。
+              `options` は設定であり、会話を進める主体は `client` です。
+            </p>
+
+            <button class="diagram-frame" type="button" data-diagram-open aria-label="ClaudeSDKClientの処理フローを拡大表示">
+              <img src="../assets/img/lesson-14-client-sequence.svg" alt="main関数がClaudeSDKClientを作り、2回queryして各回receive_responseで応答を読む流れ">
+            </button>
+          </section>
+
+          <section class="lesson-section" id="hands-on">
+            <p class="eyebrow">Hands-on</p>
+            <h2>コードを書く</h2>
+            <p>
+              `python-labs/practice/lesson_14_client_minimal_conversation.py` に、次のコードを入力してください。
+              関数ごとの役割が見えるように、今回は少しコメントを多めにしています。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>python-labs/practice/lesson_14_client_minimal_conversation.py</span>
+              </div>
+              <pre><code>import asyncio
+
+from claude_agent_sdk import (
+    AssistantMessage,
+    ClaudeAgentOptions,
+    ClaudeSDKClient,
+    ResultMessage,
+)
+
+from shared.display import print_section, record_line
+from shared.files import write_text_lines
+from shared.messages import append_result_message, print_assistant_message
+from shared.paths import OUTPUT_DIR
+
+
+PROMPTS = [
+    (
+        "1回目の質問",
+        "PythonでAgent SDKを学ぶ人に向けて、ClaudeSDKClientを一文で説明してください。",
+    ),
+    (
+        "2回目の質問",
+        "先ほどの説明を前提に、query()との違いを二つの箇条書きで説明してください。",
+    ),
+]
+
+OUTPUT_PATH = OUTPUT_DIR / "lesson_14_client_conversation.txt"
+
+
+# ClaudeSDKClientに渡す実行設定を作る関数です。
+def build_options() -&gt; ClaudeAgentOptions:
+    return ClaudeAgentOptions(
+        system_prompt=(
+            "あなたはClaude Agent SDKを学ぶ日本語教材の補助者です。"
+            "短く、具体的に、初学者にも分かる言葉で答えてください。"
+        ),
+        disallowed_tools=["Read", "Glob", "Grep", "Write", "Edit", "Bash"],
+        max_turns=2,
+    )
+
+
+# 1回分の問い合わせに対するメッセージを最後まで読む関数です。
+async def receive_current_response(
+    client: ClaudeSDKClient,
+    label: str,
+) -&gt; tuple[ResultMessage | None, list[str]]:
+    result_message = None
+    output_lines: list[str] = []
+
+    record_line(output_lines, "=" * 72)
+    record_line(output_lines, label)
+    record_line(output_lines, "=" * 72)
+
+    async for message in client.receive_response():
+        if isinstance(message, AssistantMessage):
+            print_assistant_message(message, output_lines)
+        elif isinstance(message, ResultMessage):
+            result_message = message
+            append_result_message(message, output_lines, include_result=False)
+
+    print("\n".join(output_lines))
+    return result_message, output_lines
+
+
+# 同じClaudeSDKClientで2回問い合わせ、同じセッションが続くことを確認する関数です。
+async def run_conversation() -&gt; None:
+    options = build_options()
+    session_ids: list[str] = []
+    conversation_lines: list[str] = []
+
+    print_section("ClaudeSDKClient conversation")
+
+    async with ClaudeSDKClient(options=options) as client:
+        for label, prompt in PROMPTS:
+            print_section(label)
+            print(prompt)
+
+            await client.query(prompt)
+            result_message, response_lines = await receive_current_response(client, label)
+            conversation_lines.extend(response_lines)
+            conversation_lines.append("")
+
+            if result_message is not None:
+                session_ids.append(result_message.session_id)
+
+    output_lines = [
+        "ClaudeSDKClient conversation summary",
+        "",
+        "Observed session IDs:",
+        *session_ids,
+        "",
+        "If the same client continued the conversation, the session IDs should match.",
+        "",
+        "Conversation output:",
+        *conversation_lines,
+    ]
+    write_text_lines(OUTPUT_PATH, output_lines)
+
+    print_section("Saved")
+    print(OUTPUT_PATH)
+
+
+# このファイルを直接実行したときの入口になる関数です。
+def main() -&gt; None:
+    asyncio.run(run_conversation())
+
+
+if __name__ == "__main__":
+    main()
+</code></pre>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="run">
+            <p class="eyebrow">Run</p>
+            <h2>実行して確認</h2>
+            <p>`python-labs/` から実行します。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Windows / macOS / Linux</span>
+              </div>
+              <pre><code>uv run python practice/lesson_14_client_minimal_conversation.py</code></pre>
+            </div>
+
+            <p>うまく動くと、1回目と2回目の応答が表示され、最後に出力ファイルの場所が表示されます。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Windows</span>
+              </div>
+              <pre><code>Get-Content outputs/lesson_14_client_conversation.txt</code></pre>
+            </div>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>macOS / Linux</span>
+              </div>
+              <pre><code>cat outputs/lesson_14_client_conversation.txt</code></pre>
+            </div>
+
+            <p>完成版だけを確認したい場合は、次を実行します。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Windows / macOS / Linux</span>
+              </div>
+              <pre><code>uv run python scripts/lesson_14_client_minimal_conversation.py</code></pre>
+            </div>
+
+            <div class="callout">
+              <strong>session_idの見方</strong>
+              <p>
+                出力ファイルには、各問い合わせの `ResultMessage.session_id` を保存しています。
+                同じclientで会話を続けている場合、1回目と2回目は同じセッションとして扱われます。
+                ここではIDそのものを暗記する必要はなく、「後でresumeするときの会話識別子」として見てください。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="review">
+            <p class="eyebrow">Review</p>
+            <h2>確認問題</h2>
+            <ol class="review-list">
+              <li>`ClaudeSDKClient` は関数ですか、クラスですか。インスタンス生成は必要ですか。</li>
+              <li>`client.query()` と `client.receive_response()` の役割の違いを説明してください。</li>
+              <li>`async with ClaudeSDKClient(...) as client` を使う理由を説明してください。</li>
+              <li>同じclientで2回問い合わせると、2回目の質問は何を引き継ぎますか。</li>
+              <li>`ResultMessage.session_id` は、どのような場面で必要になりますか。</li>
+            </ol>
+            <p>
+              次のレッスンでは、今回観察した `session_id` を保存し、特定の会話を `resume` する準備に進みます。
+            </p>
+          </section>
+
+          <nav class="lesson-nav-bottom" aria-label="レッスン移動">
+            <a href="lesson-13.html">前へ: ClaudeSDKClient編で学ぶこと</a>
+            <a href="lesson-15.html">次へ: session_idを保存する</a>
+          </nav>
+        </article>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <p>Claude Agent SDK Learning Portal</p>
+      <a href="#top">ページ上部へ戻る</a>
+    </footer>
+  </body>
+</html>

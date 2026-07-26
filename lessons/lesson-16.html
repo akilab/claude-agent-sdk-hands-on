@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lesson 16 | resumeで特定の会話を再開する</title>
+    <meta
+      name="description"
+      content="Claude Agent SDKのresumeに保存済みsession_idを渡し、特定の過去セッションを再開するPythonハンズオンレッスン。"
+    >
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <script src="../assets/js/main.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header" id="top">
+      <a class="site-mark" href="../index.html" aria-label="Claude Agent SDK Learning Portal トップへ">
+        <span class="site-mark__symbol" aria-hidden="true">CA</span>
+        <span class="site-mark__text">Claude Agent SDK Learning</span>
+      </a>
+      <nav class="site-nav" aria-label="主要ナビゲーション">
+        <a href="../index.html#roadmap">ロードマップ</a>
+        <a href="../index.html#lessons">学習セクション</a>
+        <a href="../index.html#official-docs">公式リンク</a>
+      </nav>
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="ダークモードに切り替え" aria-pressed="false">
+        <span class="theme-toggle__track" aria-hidden="true">
+          <span class="theme-toggle__thumb"></span>
+        </span>
+      </button>
+    </header>
+
+    <main>
+      <section class="lesson-hero" aria-labelledby="lesson-title">
+        <div class="breadcrumb" aria-label="パンくず">
+          <a href="../index.html">トップ</a>
+          <span aria-hidden="true">/</span>
+          <span>Lesson 16</span>
+        </div>
+        <p class="eyebrow">Lesson 16 / ClaudeSDKClient</p>
+        <h1 id="lesson-title">resumeで特定の会話を再開する</h1>
+        <p>
+          Lesson 15で保存した `session_id` を読み込み、`ClaudeAgentOptions(resume=...)` に渡します。
+          最新の会話ではなく、指定した過去セッションへ戻る感覚をつかみます。
+        </p>
+      </section>
+
+      <div class="lesson-shell">
+        <aside class="lesson-sidebar" aria-label="レッスン目次">
+          <div class="lesson-sidebar__box">
+            <span class="lesson-sidebar__label">所要時間</span>
+            <strong>60分</strong>
+          </div>
+          <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
+            <a href="#goal">ゴール</a>
+            <a href="#before-run">実行前の確認</a>
+            <a href="#concepts">初出APIの見方</a>
+            <a href="#continue-resume">continueとの違い</a>
+            <a href="#sequence">処理の流れ</a>
+            <a href="#hands-on">コードを書く</a>
+            <a href="#run">実行して確認</a>
+            <a href="#review">確認問題</a>
+          </nav>
+        </aside>
+
+        <article class="lesson-main">
+          <section class="lesson-section" id="goal">
+            <p class="eyebrow">Goal</p>
+            <h2>このレッスンのゴール</h2>
+            <p class="lesson-one-liner">
+              <span>このレッスンを一言で</span>
+              保存済みの `session_id` を使い、最新ではない特定の会話を `resume` で再開します。
+            </p>
+            <ul class="check-list">
+              <li>`resume` は特定の `session_id` を指定して再開する設定だと説明できる</li>
+              <li>`continue_conversation` と `resume` の探し方の違いを説明できる</li>
+              <li>Lesson 15のJSON台帳から `session_id` を読み込める</li>
+              <li>`cwd` が一致していないと、想定したセッションを見つけられない理由を説明できる</li>
+            </ul>
+          </section>
+
+          <section class="lesson-section" id="before-run">
+            <p class="eyebrow">Before run</p>
+            <h2>実行前の確認</h2>
+            <p>
+              このレッスンはLesson 15の続きです。
+              先にLesson 15を実行して、`outputs/lesson_15_session_registry.json` を作成しておいてください。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Windows</span>
+              </div>
+              <pre><code>Get-Content outputs/lesson_15_session_registry.json</code></pre>
+            </div>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>macOS / Linux</span>
+              </div>
+              <pre><code>cat outputs/lesson_15_session_registry.json</code></pre>
+            </div>
+
+            <div class="callout callout--warning">
+              <strong>台帳がない場合はLesson 15へ戻ります</strong>
+              <p>
+                `resume` にはセッションIDが必要です。
+                `outputs/lesson_15_session_registry.json` がない場合、このレッスンのコードは明示的にエラーを出します。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="concepts">
+            <p class="eyebrow">SDK concepts</p>
+            <h2>初めて出てくる関数・クラス・設定</h2>
+            <p>
+              今回のSDK側の主役は `ClaudeAgentOptions.resume` です。
+              `resume` は関数ではなく、`ClaudeAgentOptions` に渡す設定値です。
+            </p>
+
+            <div class="table-wrap" role="region" aria-label="Lesson 16で使う要素">
+              <table class="api-table">
+                <thead>
+                  <tr>
+                    <th>名前</th>
+                    <th>分類</th>
+                    <th>引数・値</th>
+                    <th>このレッスンでの役割</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>ClaudeAgentOptions.resume</code></td>
+                    <td>SDKオプション</td>
+                    <td>保存済みの <code>session_id</code> 文字列</td>
+                    <td>特定の過去セッションを再開する。</td>
+                  </tr>
+                  <tr>
+                    <td><code>ClaudeAgentOptions.cwd</code></td>
+                    <td>SDKオプション</td>
+                    <td>セッションを作ったときと同じ作業ディレクトリ</td>
+                    <td>SDKが正しい場所からセッションファイルを探せるようにする。</td>
+                  </tr>
+                  <tr>
+                    <td><code>load_registry()</code></td>
+                    <td>この教材で書く関数</td>
+                    <td>なし</td>
+                    <td>Lesson 15で作ったJSON台帳を読み込む。</td>
+                  </tr>
+                  <tr>
+                    <td><code>find_session_entry()</code></td>
+                    <td>この教材で書く関数</td>
+                    <td>台帳辞書と <code>user_id</code></td>
+                    <td>再開したいユーザーのセッション情報を探す。</td>
+                  </tr>
+                  <tr>
+                    <td><code>build_resume_options()</code></td>
+                    <td>この教材で書く関数</td>
+                    <td><code>session_id</code></td>
+                    <td><code>resume=session_id</code> を含むSDK設定を作る。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="reference-list">
+              <a href="https://code.claude.com/docs/ja/agent-sdk/sessions" target="_blank" rel="noreferrer">セッションの操作</a>
+              <a href="https://code.claude.com/docs/ja/agent-sdk/python" target="_blank" rel="noreferrer">Python SDK reference</a>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="continue-resume">
+            <p class="eyebrow">Continue vs resume</p>
+            <h2>`continue_conversation` と `resume` の違い</h2>
+            <p>
+              どちらも既存セッションへ続きを足すための設定です。
+              違いは、どのセッションを探すかです。
+            </p>
+
+            <div class="table-wrap" role="region" aria-label="continue_conversationとresumeの違い">
+              <table class="api-table">
+                <thead>
+                  <tr>
+                    <th>設定</th>
+                    <th>探し方</th>
+                    <th>向いている場面</th>
+                    <th>アプリ側のID管理</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>continue_conversation=True</code></td>
+                    <td>現在のディレクトリ内の最新セッションを探す</td>
+                    <td>1人で1つの会話を続けるCLIツール</td>
+                    <td>不要</td>
+                  </tr>
+                  <tr>
+                    <td><code>resume=session_id</code></td>
+                    <td>指定されたセッションIDの履歴を探す</td>
+                    <td>複数ユーザー、複数会話、過去の特定会話への復帰</td>
+                    <td>必要</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="callout">
+              <strong>Webアプリでは `resume` が重要になります</strong>
+              <p>
+                Webアプリでは、ユーザーごとに複数の会話が並びます。
+                「最新」ではなく「このユーザーが選んだこの会話」を再開する必要があるため、
+                `session_id` を保存して `resume` に渡す設計が重要になります。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="sequence">
+            <p class="eyebrow">Sequence</p>
+            <h2>処理の流れ</h2>
+            <p>
+              今回の流れは、アプリ側の台帳を読むところから始まります。
+              SDKに渡すのは、台帳から取り出した `session_id` です。
+            </p>
+
+            <button class="diagram-frame" type="button" data-diagram-open aria-label="resume処理フローを拡大表示">
+              <img src="../assets/img/lesson-16-resume-sequence.svg" alt="JSON台帳からsession_idを読み、resume設定でClaudeSDKClientを作り、続きの質問を送る流れ">
+            </button>
+          </section>
+
+          <section class="lesson-section" id="hands-on">
+            <p class="eyebrow">Hands-on</p>
+            <h2>コードを書く</h2>
+            <p>
+              `python-labs/practice/lesson_16_resume_session.py` に、次のコードを入力してください。
+              Lesson 15の台帳を読むため、先にLesson 15を実行しておく必要があります。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>python-labs/practice/lesson_16_resume_session.py</span>
+              </div>
+              <pre><code>import asyncio
+import json
+from datetime import datetime, timezone
+from typing import Any
+
+from claude_agent_sdk import (
+    AssistantMessage,
+    ClaudeAgentOptions,
+    ClaudeSDKClient,
+    ResultMessage,
+)
+
+from shared.display import print_section
+from shared.files import write_json_file, write_text_lines
+from shared.messages import append_result_message, print_assistant_message
+from shared.paths import OUTPUT_DIR, PROJECT_ROOT
+
+
+USER_ID = "learner-001"
+SESSION_REGISTRY_PATH = OUTPUT_DIR / "lesson_15_session_registry.json"
+RESUME_TRANSCRIPT_PATH = OUTPUT_DIR / "lesson_16_resume_transcript.txt"
+
+FOLLOW_UP_PROMPT = (
+    "前回のセッションで説明した内容を前提に、"
+    "Webアプリでsession_idをDBに保存するときの注意点を3つ教えてください。"
+)
+
+
+# UTCの現在時刻を、JSONに保存しやすい文字列にする関数です。
+def now_iso() -&gt; str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+# Lesson 15で作ったセッション台帳を読み込む関数です。
+def load_registry() -&gt; dict[str, Any]:
+    if not SESSION_REGISTRY_PATH.exists():
+        raise FileNotFoundError(
+            "セッション台帳が見つかりません。先にLesson 15を実行してください。"
+        )
+
+    return json.loads(SESSION_REGISTRY_PATH.read_text(encoding="utf-8"))
+
+
+# セッション台帳から、指定したuser_idのセッション情報を探す関数です。
+def find_session_entry(registry: dict[str, Any], user_id: str) -&gt; dict[str, Any]:
+    sessions = registry.get("sessions", [])
+
+    for session in sessions:
+        if session.get("user_id") == user_id:
+            return session
+
+    raise ValueError(f"user_id={user_id} のセッションが台帳にありません。")
+
+
+# 保存済みsession_idを使って、特定の過去セッションを再開する設定を作る関数です。
+def build_resume_options(session_id: str) -&gt; ClaudeAgentOptions:
+    return ClaudeAgentOptions(
+        cwd=str(PROJECT_ROOT),
+        resume=session_id,
+        system_prompt=(
+            "あなたはClaude Agent SDKを学ぶ日本語教材の補助者です。"
+            "前回の会話文脈を踏まえ、短く実務的に答えてください。"
+        ),
+        disallowed_tools=["Read", "Glob", "Grep", "Write", "Edit", "Bash"],
+        max_turns=2,
+    )
+
+
+# Agentからの応答を最後まで読み、ResultMessageと表示用テキストを返す関数です。
+async def receive_response(
+    client: ClaudeSDKClient,
+) -&gt; tuple[ResultMessage | None, list[str]]:
+    result_message = None
+    output_lines: list[str] = []
+
+    async for message in client.receive_response():
+        if isinstance(message, AssistantMessage):
+            print_assistant_message(message, output_lines)
+        elif isinstance(message, ResultMessage):
+            result_message = message
+            append_result_message(message, output_lines, include_result=False)
+
+    return result_message, output_lines
+
+
+# resume後の状態を、Lesson 15のセッション台帳へ追記する関数です。
+def update_registry_after_resume(
+    registry: dict[str, Any],
+    entry: dict[str, Any],
+    result_message: ResultMessage,
+) -&gt; dict[str, Any]:
+    entry["last_resumed_at"] = now_iso()
+    entry["last_subtype"] = result_message.subtype
+    entry["is_error"] = result_message.is_error
+    entry["num_turns"] = result_message.num_turns
+    entry["updated_at"] = now_iso()
+    entry["last_result_session_id"] = result_message.session_id
+
+    registry["updated_at"] = now_iso()
+    return registry
+
+
+# 保存済みsession_idを読み込み、ClaudeSDKClientで会話を再開する関数です。
+async def resume_saved_session() -&gt; None:
+    registry = load_registry()
+    entry = find_session_entry(registry, USER_ID)
+    session_id = str(entry["session_id"])
+
+    print_section("Resume target")
+    print(f"user_id: {USER_ID}")
+    print(f"session_id: {session_id}")
+    print(f"cwd: {entry.get('cwd')}")
+
+    async with ClaudeSDKClient(options=build_resume_options(session_id)) as client:
+        await client.query(FOLLOW_UP_PROMPT)
+        result_message, transcript_lines = await receive_response(client)
+
+    if result_message is None:
+        raise RuntimeError("ResultMessageを受け取れなかったため、resume結果を保存できません。")
+
+    updated_registry = update_registry_after_resume(registry, entry, result_message)
+
+    transcript = [
+        "ClaudeSDKClient resume transcript",
+        "",
+        f"user_id: {USER_ID}",
+        f"resume_session_id: {session_id}",
+        f"result_session_id: {result_message.session_id}",
+        "",
+        "Prompt:",
+        FOLLOW_UP_PROMPT,
+        "",
+        "Response:",
+        *transcript_lines,
+    ]
+
+    write_json_file(SESSION_REGISTRY_PATH, updated_registry)
+    write_text_lines(RESUME_TRANSCRIPT_PATH, transcript)
+
+    print_section("Saved resume result")
+    print(f"registry: {SESSION_REGISTRY_PATH}")
+    print(f"transcript: {RESUME_TRANSCRIPT_PATH}")
+
+
+# このファイルを直接実行したときの入口になる関数です。
+def main() -&gt; None:
+    asyncio.run(resume_saved_session())
+
+
+if __name__ == "__main__":
+    main()
+</code></pre>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="run">
+            <p class="eyebrow">Run</p>
+            <h2>実行して確認</h2>
+            <p>`python-labs/` から実行します。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Windows / macOS / Linux</span>
+              </div>
+              <pre><code>uv run python practice/lesson_16_resume_session.py</code></pre>
+            </div>
+
+            <p>再開結果のtranscriptを確認します。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Windows</span>
+              </div>
+              <pre><code>Get-Content outputs/lesson_16_resume_transcript.txt</code></pre>
+            </div>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>macOS / Linux</span>
+              </div>
+              <pre><code>cat outputs/lesson_16_resume_transcript.txt</code></pre>
+            </div>
+
+            <p>完成版だけを確認したい場合は、次を実行します。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Windows / macOS / Linux</span>
+              </div>
+              <pre><code>uv run python scripts/lesson_16_resume_session.py</code></pre>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="review">
+            <p class="eyebrow">Review</p>
+            <h2>確認問題</h2>
+            <ol class="review-list">
+              <li>`resume` は関数ですか、`ClaudeAgentOptions` に渡す設定ですか。</li>
+              <li>`continue_conversation=True` と `resume=session_id` は、セッションの探し方がどう違いますか。</li>
+              <li>Lesson 16を実行する前にLesson 15の台帳が必要な理由を説明してください。</li>
+              <li>`cwd` が一致しないと、なぜ想定したセッションへ戻れない可能性がありますか。</li>
+              <li>Webアプリで会話一覧を表示する場合、`session_id` 以外にどの情報を保存したいですか。</li>
+            </ol>
+            <p>
+              次のレッスンでは、複数ユーザー相当の会話を分けるために、複数の `user_id` と `session_id` を扱います。
+            </p>
+          </section>
+
+          <nav class="lesson-nav-bottom" aria-label="レッスン移動">
+            <a href="lesson-15.html">前へ: session_idを保存する</a>
+            <a href="#" aria-disabled="true">次のレッスンは準備中</a>
+          </nav>
+        </article>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <p>Claude Agent SDK Learning Portal</p>
+      <a href="#top">ページ上部へ戻る</a>
+    </footer>
+  </body>
+</html>

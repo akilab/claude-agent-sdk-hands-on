@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="700" viewBox="0 0 1080 700" role="img" aria-labelledby="title desc">
+  <title id="title">Lesson 16 resume sequence</title>
+  <desc id="desc">The script reads a saved session ID from a JSON registry, passes it to ClaudeAgentOptions resume, sends a follow-up prompt with ClaudeSDKClient, and saves the resumed result.</desc>
+  <defs>
+    <style>
+      .bg { fill: #f8fbff; }
+      .laneHead { fill: #0b1f3f; }
+      .laneText { fill: #ffffff; font: 700 17px Arial, sans-serif; }
+      .line { stroke: #6b86aa; stroke-width: 2; stroke-dasharray: 7 7; }
+      .arrow { stroke: #2f6fdd; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }
+      .return { stroke: #567293; stroke-width: 2.5; fill: none; stroke-dasharray: 6 6; marker-end: url(#arrowMuted); }
+      .label { fill: #17345f; font: 700 17px Arial, sans-serif; }
+      .text { fill: #294562; font: 15px Arial, sans-serif; }
+      .step { fill: #2f6fdd; }
+      .stepText { fill: #ffffff; font: 700 13px Arial, sans-serif; }
+      .note { fill: #fff7db; stroke: #e1bc4f; stroke-width: 1.5; }
+      .store { fill: #ffffff; stroke: #c9d8ee; stroke-width: 2; }
+      .storeHead { fill: #eaf2ff; }
+      .code { fill: #17345f; font: 14px Consolas, monospace; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2f6fdd"/>
+    </marker>
+    <marker id="arrowMuted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#567293"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" width="1080" height="700" rx="18"/>
+
+  <g transform="translate(55 50)">
+    <rect class="laneHead" width="210" height="48" rx="8"/>
+    <text class="laneText" x="105" y="31" text-anchor="middle">Python script</text>
+    <line class="line" x1="105" y1="48" x2="105" y2="600"/>
+  </g>
+
+  <g transform="translate(315 50)">
+    <rect class="laneHead" width="210" height="48" rx="8"/>
+    <text class="laneText" x="105" y="31" text-anchor="middle">JSON台帳</text>
+    <line class="line" x1="105" y1="48" x2="105" y2="600"/>
+  </g>
+
+  <g transform="translate(585 50)">
+    <rect class="laneHead" width="245" height="48" rx="8"/>
+    <text class="laneText" x="122.5" y="31" text-anchor="middle">ClaudeSDKClient</text>
+    <line class="line" x1="122.5" y1="48" x2="122.5" y2="600"/>
+  </g>
+
+  <g transform="translate(895 50)">
+    <rect class="laneHead" width="135" height="48" rx="8"/>
+    <text class="laneText" x="67.5" y="31" text-anchor="middle">Claude</text>
+    <line class="line" x1="67.5" y1="48" x2="67.5" y2="600"/>
+  </g>
+
+  <g>
+    <circle class="step" cx="160" cy="145" r="15"/>
+    <text class="stepText" x="160" y="150" text-anchor="middle">1</text>
+    <path class="arrow" d="M 175 145 H 420"/>
+    <text class="label" x="195" y="132">load_registry()</text>
+    <text class="text" x="195" y="164">Lesson 15で保存した台帳を読む</text>
+  </g>
+
+  <g>
+    <circle class="step" cx="420" cy="235" r="15"/>
+    <text class="stepText" x="420" y="240" text-anchor="middle">2</text>
+    <path class="return" d="M 405 235 H 160"/>
+    <text class="label" x="205" y="222">session_id と cwd を取得</text>
+    <text class="text" x="205" y="254">アプリ側がどの会話を再開するか決める</text>
+  </g>
+
+  <g>
+    <circle class="step" cx="160" cy="325" r="15"/>
+    <text class="stepText" x="160" y="330" text-anchor="middle">3</text>
+    <path class="arrow" d="M 175 325 H 707"/>
+    <text class="label" x="205" y="312">ClaudeAgentOptions(resume=session_id)</text>
+    <text class="text" x="205" y="344">特定の過去セッションへ戻る設定をclientへ渡す</text>
+  </g>
+
+  <g>
+    <circle class="step" cx="707" cy="415" r="15"/>
+    <text class="stepText" x="707" y="420" text-anchor="middle">4</text>
+    <path class="arrow" d="M 722 415 H 962"/>
+    <text class="label" x="745" y="402">client.query(続きの質問)</text>
+    <text class="text" x="745" y="434">前回の会話文脈を踏まえて応答する</text>
+  </g>
+
+  <g>
+    <circle class="step" cx="962" cy="505" r="15"/>
+    <text class="stepText" x="962" y="510" text-anchor="middle">5</text>
+    <path class="return" d="M 947 505 H 160"/>
+    <text class="label" x="340" y="492">ResultMessage と応答本文</text>
+    <text class="text" x="340" y="524">再開結果を受け取り、台帳と transcript を保存する</text>
+  </g>
+
+  <g transform="translate(610 565)">
+    <rect class="store" width="390" height="88" rx="10"/>
+    <rect class="storeHead" width="390" height="28" rx="10"/>
+    <text class="code" x="18" y="20">outputs/lesson_16_resume_transcript.txt</text>
+    <text class="code" x="18" y="52">resume_session_id: "..."</text>
+    <text class="code" x="18" y="74">result_session_id: "..."</text>
+  </g>
+
+  <g>
+    <rect class="note" x="70" y="610" width="470" height="48" rx="8"/>
+    <text class="text" x="305" y="640" text-anchor="middle">ポイント: resumeは「最新」ではなく「指定したID」へ戻ります。</text>
+  </g>
+</svg>

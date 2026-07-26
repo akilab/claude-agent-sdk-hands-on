@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="700" viewBox="0 0 1080 700" role="img" aria-labelledby="title desc">
+  <title id="title">Lesson 15 session registry sequence</title>
+  <desc id="desc">The script sends a prompt through ClaudeSDKClient, receives ResultMessage.session_id, and saves the session ID into an application-owned JSON registry.</desc>
+  <defs>
+    <style>
+      .bg { fill: #f8fbff; }
+      .laneHead { fill: #0b1f3f; }
+      .laneText { fill: #ffffff; font: 700 17px Arial, sans-serif; }
+      .line { stroke: #6b86aa; stroke-width: 2; stroke-dasharray: 7 7; }
+      .arrow { stroke: #2f6fdd; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }
+      .return { stroke: #567293; stroke-width: 2.5; fill: none; stroke-dasharray: 6 6; marker-end: url(#arrowMuted); }
+      .label { fill: #17345f; font: 700 17px Arial, sans-serif; }
+      .text { fill: #294562; font: 15px Arial, sans-serif; }
+      .step { fill: #2f6fdd; }
+      .stepText { fill: #ffffff; font: 700 13px Arial, sans-serif; }
+      .note { fill: #fff7db; stroke: #e1bc4f; stroke-width: 1.5; }
+      .store { fill: #ffffff; stroke: #c9d8ee; stroke-width: 2; }
+      .storeHead { fill: #eaf2ff; }
+      .code { fill: #17345f; font: 14px Consolas, monospace; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2f6fdd"/>
+    </marker>
+    <marker id="arrowMuted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#567293"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" width="1080" height="700" rx="18"/>
+
+  <g transform="translate(55 50)">
+    <rect class="laneHead" width="210" height="48" rx="8"/>
+    <text class="laneText" x="105" y="31" text-anchor="middle">Python script</text>
+    <line class="line" x1="105" y1="48" x2="105" y2="600"/>
+  </g>
+
+  <g transform="translate(330 50)">
+    <rect class="laneHead" width="240" height="48" rx="8"/>
+    <text class="laneText" x="120" y="31" text-anchor="middle">ClaudeSDKClient</text>
+    <line class="line" x1="120" y1="48" x2="120" y2="600"/>
+  </g>
+
+  <g transform="translate(655 50)">
+    <rect class="laneHead" width="170" height="48" rx="8"/>
+    <text class="laneText" x="85" y="31" text-anchor="middle">Claude</text>
+    <line class="line" x1="85" y1="48" x2="85" y2="600"/>
+  </g>
+
+  <g transform="translate(890 50)">
+    <rect class="laneHead" width="145" height="48" rx="8"/>
+    <text class="laneText" x="72.5" y="31" text-anchor="middle">JSON台帳</text>
+    <line class="line" x1="72.5" y1="48" x2="72.5" y2="600"/>
+  </g>
+
+  <g>
+    <circle class="step" cx="160" cy="145" r="15"/>
+    <text class="stepText" x="160" y="150" text-anchor="middle">1</text>
+    <path class="arrow" d="M 175 145 H 450"/>
+    <text class="label" x="195" y="132">async with ClaudeSDKClient(options)</text>
+    <text class="text" x="195" y="164">cwdを固定し、同じ場所のセッションを扱う</text>
+  </g>
+
+  <g>
+    <circle class="step" cx="160" cy="235" r="15"/>
+    <text class="stepText" x="160" y="240" text-anchor="middle">2</text>
+    <path class="arrow" d="M 175 235 H 450"/>
+    <text class="label" x="195" y="222">await client.query(prompt)</text>
+    <text class="text" x="195" y="254">会話を開始し、応答を受け取る準備をする</text>
+  </g>
+
+  <g>
+    <circle class="step" cx="450" cy="315" r="15"/>
+    <text class="stepText" x="450" y="320" text-anchor="middle">3</text>
+    <path class="arrow" d="M 465 315 H 740"/>
+    <text class="label" x="490" y="302">receive_response()</text>
+    <text class="text" x="490" y="334">AssistantMessage と ResultMessage を読む</text>
+  </g>
+
+  <g>
+    <circle class="step" cx="740" cy="405" r="15"/>
+    <text class="stepText" x="740" y="410" text-anchor="middle">4</text>
+    <path class="return" d="M 725 405 H 160"/>
+    <text class="label" x="275" y="392">ResultMessage.session_id</text>
+    <text class="text" x="275" y="424">SDKが付けた会話識別子をPython側で受け取る</text>
+  </g>
+
+  <g>
+    <circle class="step" cx="160" cy="505" r="15"/>
+    <text class="stepText" x="160" y="510" text-anchor="middle">5</text>
+    <path class="arrow" d="M 175 505 H 962"/>
+    <text class="label" x="195" y="492">write_json_file(session_registry)</text>
+    <text class="text" x="195" y="524">user_id、session_id、cwd、状態をアプリ側の台帳に保存</text>
+  </g>
+
+  <g transform="translate(635 568)">
+    <rect class="store" width="360" height="88" rx="10"/>
+    <rect class="storeHead" width="360" height="28" rx="10"/>
+    <text class="code" x="18" y="20">outputs/lesson_15_session_registry.json</text>
+    <text class="code" x="18" y="52">"user_id": "learner-001"</text>
+    <text class="code" x="18" y="74">"session_id": "...", "cwd": "..."</text>
+  </g>
+
+  <g>
+    <rect class="note" x="70" y="610" width="490" height="48" rx="8"/>
+    <text class="text" x="315" y="640" text-anchor="middle">ポイント: session_idはSDKが返す。台帳はアプリ側が保存する。</text>
+  </g>
+</svg>

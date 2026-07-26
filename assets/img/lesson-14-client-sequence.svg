@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="680" viewBox="0 0 1040 680" role="img" aria-labelledby="title desc">
+  <title id="title">Lesson 14 ClaudeSDKClient sequence</title>
+  <desc id="desc">The learner script creates one ClaudeSDKClient, sends two queries, receives each response, and observes that the session continues inside the same client.</desc>
+  <defs>
+    <style>
+      .bg { fill: #f8fbff; }
+      .lane { fill: #ffffff; stroke: #c9d8ee; stroke-width: 1.5; }
+      .head { fill: #0b1f3f; }
+      .headText { fill: #ffffff; font: 700 18px Arial, sans-serif; }
+      .label { fill: #17345f; font: 700 18px Arial, sans-serif; }
+      .text { fill: #294562; font: 15px Arial, sans-serif; }
+      .note { fill: #fff7db; stroke: #e1bc4f; stroke-width: 1.5; }
+      .line { stroke: #6b86aa; stroke-width: 2; stroke-dasharray: 7 7; }
+      .arrow { stroke: #2f6fdd; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }
+      .return { stroke: #567293; stroke-width: 2.5; fill: none; stroke-dasharray: 6 6; marker-end: url(#arrowMuted); }
+      .step { fill: #2f6fdd; }
+      .stepText { fill: #ffffff; font: 700 14px Arial, sans-serif; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2f6fdd"/>
+    </marker>
+    <marker id="arrowMuted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#567293"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" width="1040" height="680" rx="18"/>
+
+  <g transform="translate(70 54)">
+    <rect class="head" x="0" y="0" width="190" height="48" rx="8"/>
+    <text class="headText" x="95" y="31" text-anchor="middle">main()</text>
+    <line class="line" x1="95" y1="48" x2="95" y2="585"/>
+  </g>
+
+  <g transform="translate(330 54)">
+    <rect class="head" x="0" y="0" width="250" height="48" rx="8"/>
+    <text class="headText" x="125" y="31" text-anchor="middle">ClaudeSDKClient</text>
+    <line class="line" x1="125" y1="48" x2="125" y2="585"/>
+  </g>
+
+  <g transform="translate(725 54)">
+    <rect class="head" x="0" y="0" width="210" height="48" rx="8"/>
+    <text class="headText" x="105" y="31" text-anchor="middle">Claude</text>
+    <line class="line" x1="105" y1="48" x2="105" y2="585"/>
+  </g>
+
+  <g>
+    <circle class="step" cx="165" cy="145" r="15"/>
+    <text class="stepText" x="165" y="150" text-anchor="middle">1</text>
+    <path class="arrow" d="M 180 145 H 455"/>
+    <text class="label" x="205" y="132">async with ClaudeSDKClient(options)</text>
+    <text class="text" x="205" y="164">clientを作り、会話セッションの入口を開く</text>
+  </g>
+
+  <g>
+    <circle class="step" cx="165" cy="235" r="15"/>
+    <text class="stepText" x="165" y="240" text-anchor="middle">2</text>
+    <path class="arrow" d="M 180 235 H 455"/>
+    <text class="label" x="205" y="222">await client.query(1回目の質問)</text>
+    <text class="text" x="205" y="254">query()は送信、応答の読み取りはまだ別</text>
+  </g>
+
+  <g>
+    <circle class="step" cx="455" cy="315" r="15"/>
+    <text class="stepText" x="455" y="320" text-anchor="middle">3</text>
+    <path class="arrow" d="M 470 315 H 830"/>
+    <text class="label" x="505" y="302">client.receive_response()</text>
+    <text class="text" x="505" y="334">AssistantMessageとResultMessageを順に読む</text>
+  </g>
+
+  <g>
+    <circle class="step" cx="165" cy="405" r="15"/>
+    <text class="stepText" x="165" y="410" text-anchor="middle">4</text>
+    <path class="arrow" d="M 180 405 H 455"/>
+    <text class="label" x="205" y="392">await client.query(2回目の質問)</text>
+    <text class="text" x="205" y="424">同じclientなので、1回目の文脈を持ったまま続く</text>
+  </g>
+
+  <g>
+    <circle class="step" cx="455" cy="485" r="15"/>
+    <text class="stepText" x="455" y="490" text-anchor="middle">5</text>
+    <path class="arrow" d="M 470 485 H 830"/>
+    <text class="label" x="505" y="472">もう一度 receive_response()</text>
+    <text class="text" x="505" y="504">2回目の応答とResultMessage.session_idを読む</text>
+  </g>
+
+  <g>
+    <path class="return" d="M 455 570 H 165"/>
+    <text class="label" x="205" y="557">async with を抜ける</text>
+    <text class="text" x="205" y="589">clientを閉じ、観察したsession_idを保存する</text>
+  </g>
+
+  <g>
+    <rect class="note" x="330" y="612" width="380" height="44" rx="8"/>
+    <text class="text" x="520" y="639" text-anchor="middle">ポイント: optionsは設定。会話を進める主体はclientです。</text>
+  </g>
+</svg>
