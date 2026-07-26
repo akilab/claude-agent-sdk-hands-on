@@ -123,6 +123,85 @@
     return button;
   }
 
+  function inferCodeLanguage(block, code) {
+    const headerText = block.querySelector(".code-block__header span")?.textContent.toLowerCase() ?? "";
+    const codeText = code.textContent.trim();
+
+    if (headerText.includes(".py") || headerText.includes("python")) {
+      return "python";
+    }
+
+    if (headerText.includes(".json") || headerText.includes("json")) {
+      return "json";
+    }
+
+    if (headerText.includes(".toml") || headerText.includes("pyproject")) {
+      return "toml";
+    }
+
+    if (headerText.includes(".html")) {
+      return "markup";
+    }
+
+    if (headerText.includes(".css")) {
+      return "css";
+    }
+
+    if (headerText.includes(".js") || headerText.includes("javascript")) {
+      return "javascript";
+    }
+
+    if (headerText.includes(".md") || codeText.startsWith("---")) {
+      return "yaml";
+    }
+
+    if (/\b(Get-Content|New-Item|Set-Content)\b/.test(codeText)) {
+      return "powershell";
+    }
+
+    if (headerText.includes("macos") || headerText.includes("linux")) {
+      return "bash";
+    }
+
+    if (headerText.includes("windows")) {
+      return "powershell";
+    }
+
+    if (/^(cd|uv|cat|mkdir|python)\b/m.test(codeText)) {
+      return "bash";
+    }
+
+    if (codeText.startsWith("{") || codeText.startsWith("[")) {
+      return "json";
+    }
+
+    if (/\b(import|from|def|async def|class)\b/.test(codeText)) {
+      return "python";
+    }
+
+    return "plaintext";
+  }
+
+  function initCodeHighlighting() {
+    getElements(selectors.codeBlock).forEach((block) => {
+      const code = block.querySelector("code");
+
+      if (!code || Array.from(code.classList).some((className) => className.startsWith("language-"))) {
+        return;
+      }
+
+      const language = inferCodeLanguage(block, code);
+      const pre = code.closest("pre");
+
+      code.classList.add(`language-${language}`);
+      pre?.classList.add(`language-${language}`);
+    });
+
+    if (window.Prism) {
+      window.Prism.highlightAllUnder(document);
+    }
+  }
+
   function initCodeCopy() {
     getElements(selectors.codeBlock).forEach((block) => {
       const header = block.querySelector(".code-block__header");
@@ -238,6 +317,7 @@
 
   function initPage() {
     initThemeToggle();
+    initCodeHighlighting();
     initCodeCopy();
     initDiagramZoom();
     initTopLinks();
