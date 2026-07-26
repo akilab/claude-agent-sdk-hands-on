@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="720" viewBox="0 0 1120 720" role="img" aria-labelledby="title desc">
+  <title id="title">Lesson 19 registry import sequence</title>
+  <desc id="desc">A sequence diagram showing how the JSON session registry is imported into SQLite users and sessions tables.</desc>
+  <defs>
+    <style>
+      .bg { fill: #f8fbff; }
+      .lane { fill: #ffffff; stroke: #c9d8ee; stroke-width: 2; }
+      .head { fill: #0b1f3f; }
+      .headText { fill: #ffffff; font: 700 17px Arial, sans-serif; }
+      .line { stroke: #9fb4ce; stroke-width: 2; stroke-dasharray: 8 8; }
+      .arrow { stroke: #2f6fdd; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }
+      .text { fill: #17345f; font: 15px Arial, sans-serif; }
+      .step { fill: #eaf2ff; stroke: #9fc0f2; stroke-width: 1.5; }
+      .note { fill: #fff7db; stroke: #e1bc4f; stroke-width: 1.5; }
+      .noteText { fill: #294562; font: 15px Arial, sans-serif; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2f6fdd"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" width="1120" height="720" rx="18"/>
+
+  <g transform="translate(50 60)">
+    <rect class="lane" width="210" height="520" rx="10"/>
+    <rect class="head" width="210" height="52" rx="10"/>
+    <text class="headText" x="105" y="33" text-anchor="middle">main()</text>
+    <line class="line" x1="105" y1="70" x2="105" y2="500"/>
+  </g>
+
+  <g transform="translate(330 60)">
+    <rect class="lane" width="220" height="520" rx="10"/>
+    <rect class="head" width="220" height="52" rx="10"/>
+    <text class="headText" x="110" y="33" text-anchor="middle">JSON registry</text>
+    <line class="line" x1="110" y1="70" x2="110" y2="500"/>
+  </g>
+
+  <g transform="translate(610 60)">
+    <rect class="lane" width="220" height="520" rx="10"/>
+    <rect class="head" width="220" height="52" rx="10"/>
+    <text class="headText" x="110" y="33" text-anchor="middle">Import code</text>
+    <line class="line" x1="110" y1="70" x2="110" y2="500"/>
+  </g>
+
+  <g transform="translate(890 60)">
+    <rect class="lane" width="180" height="520" rx="10"/>
+    <rect class="head" width="180" height="52" rx="10"/>
+    <text class="headText" x="90" y="33" text-anchor="middle">SQLite DB</text>
+    <line class="line" x1="90" y1="70" x2="90" y2="500"/>
+  </g>
+
+  <path class="arrow" d="M 155 145 H 440"/>
+  <rect class="step" x="220" y="119" width="160" height="42" rx="8"/>
+  <text class="text" x="300" y="146" text-anchor="middle">load_registry()</text>
+
+  <path class="arrow" d="M 155 215 H 720"/>
+  <rect class="step" x="315" y="189" width="250" height="42" rx="8"/>
+  <text class="text" x="440" y="216" text-anchor="middle">connect + create_schema</text>
+
+  <path class="arrow" d="M 720 285 H 980"/>
+  <rect class="step" x="760" y="259" width="185" height="42" rx="8"/>
+  <text class="text" x="852" y="286" text-anchor="middle">upsert users</text>
+
+  <path class="arrow" d="M 720 350 H 980"/>
+  <rect class="step" x="750" y="324" width="205" height="42" rx="8"/>
+  <text class="text" x="852" y="351" text-anchor="middle">upsert sessions</text>
+
+  <path class="arrow" d="M 980 420 H 720"/>
+  <rect class="step" x="777" y="394" width="145" height="42" rx="8"/>
+  <text class="text" x="850" y="421" text-anchor="middle">counts + list</text>
+
+  <path class="arrow" d="M 720 490 H 155"/>
+  <rect class="step" x="338" y="464" width="200" height="42" rx="8"/>
+  <text class="text" x="438" y="491" text-anchor="middle">print summary</text>
+
+  <g transform="translate(80 620)">
+    <rect class="note" width="960" height="68" rx="10"/>
+    <text class="noteText" x="28" y="29">このレッスンでは users と sessions だけを登録する。messages への本文保存は次回に分ける。</text>
+    <text class="noteText" x="28" y="52">DB Browserで agent_sessions.sqlite3 を開き、Browse Data から users / sessions を確認する。</text>
+  </g>
+</svg>

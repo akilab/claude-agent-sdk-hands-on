@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lesson 17 | SQLite保存を設計する</title>
+    <meta
+      name="description"
+      content="Claude Agent SDKのsession_id、ユーザー、会話本文をSQLiteで管理する前に、users、sessions、messagesのテーブル設計を整理するレッスン。"
+    >
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <script>window.Prism = window.Prism || {}; window.Prism.manual = true;</script>
+    <script src="../assets/vendor/prism/prism-core.min.js" defer></script>
+    <script src="../assets/vendor/prism/prism-markup.min.js" defer></script>
+    <script src="../assets/vendor/prism/prism-css.min.js" defer></script>
+    <script src="../assets/vendor/prism/prism-clike.min.js" defer></script>
+    <script src="../assets/vendor/prism/prism-javascript.min.js" defer></script>
+    <script src="../assets/vendor/prism/prism-python.min.js" defer></script>
+    <script src="../assets/vendor/prism/prism-bash.min.js" defer></script>
+    <script src="../assets/vendor/prism/prism-powershell.min.js" defer></script>
+    <script src="../assets/vendor/prism/prism-json.min.js" defer></script>
+    <script src="../assets/vendor/prism/prism-toml.min.js" defer></script>
+    <script src="../assets/vendor/prism/prism-yaml.min.js" defer></script>
+    <script src="../assets/js/main.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header" id="top">
+      <a class="site-mark" href="../index.html" aria-label="Claude Agent SDK Learning Portal トップへ">
+        <span class="site-mark__symbol" aria-hidden="true">CA</span>
+        <span class="site-mark__text">Claude Agent SDK Learning</span>
+      </a>
+      <nav class="site-nav" aria-label="主要ナビゲーション">
+        <a href="../index.html#roadmap">ロードマップ</a>
+        <a href="../index.html#lessons">学習セクション</a>
+        <a href="../index.html#official-docs">公式リンク</a>
+      </nav>
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="ダークモードに切り替え" aria-pressed="false">
+        <span class="theme-toggle__track" aria-hidden="true">
+          <span class="theme-toggle__thumb"></span>
+        </span>
+      </button>
+    </header>
+
+    <main>
+      <section class="lesson-hero" aria-labelledby="lesson-title">
+        <div class="breadcrumb" aria-label="パンくず">
+          <a href="../index.html">トップ</a>
+          <span aria-hidden="true">/</span>
+          <span>Lesson 17</span>
+        </div>
+        <p class="eyebrow">Lesson 17 / ClaudeSDKClient</p>
+        <h1 id="lesson-title">SQLite保存を設計する</h1>
+        <p>
+          Lesson 15/16で作ったJSON台帳とtranscript保存を、SQLiteのテーブル設計へ置き換える準備をします。
+          まだDBは作らず、どの情報をどのテーブルに置くかを整理します。
+        </p>
+      </section>
+
+      <div class="lesson-shell">
+        <aside class="lesson-sidebar" aria-label="レッスン目次">
+          <div class="lesson-sidebar__box">
+            <span class="lesson-sidebar__label">所要時間</span>
+            <strong>45分</strong>
+          </div>
+          <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
+            <a href="#goal">ゴール</a>
+            <a href="#why-sqlite">なぜSQLiteか</a>
+            <a href="#tables">テーブル設計</a>
+            <a href="#lifecycle">状態管理</a>
+            <a href="#mapping">JSONからDBへ</a>
+            <a href="#sequence">設計図</a>
+            <a href="#hands-on">コードを書く</a>
+            <a href="#run">実行して確認</a>
+            <a href="#review">確認問題</a>
+          </nav>
+        </aside>
+
+        <article class="lesson-main">
+          <section class="lesson-section" id="goal">
+            <p class="eyebrow">Goal</p>
+            <h2>このレッスンのゴール</h2>
+            <p class="lesson-one-liner">
+              <span>このレッスンを一言で</span>
+              JSON台帳とtranscriptファイルを、SQLiteの `users`、`sessions`、`messages` に写す設計を作ります。
+            </p>
+            <ul class="check-list">
+              <li>`user_id` と `session_id` を別物として説明できる</li>
+              <li>会話一覧と会話本文を別テーブルに分ける理由を説明できる</li>
+              <li>Lesson 15/16のJSON構造をSQLiteのテーブルへ対応づけられる</li>
+              <li>次のレッスンでDBを作る前に、必要な列を確認できる</li>
+            </ul>
+          </section>
+
+          <section class="lesson-section" id="why-sqlite">
+            <p class="eyebrow">Why SQLite</p>
+            <h2>なぜSQLiteへ進むのか</h2>
+            <p>
+              JSONファイルは、構造を目で見て理解するには向いています。
+              しかし、複数ユーザー、複数セッション、会話本文の追記、検索、一覧表示を扱うには、
+              SQLiteのような小さなデータベースの方が自然です。
+            </p>
+
+            <div class="table-wrap" role="region" aria-label="JSON保存とSQLite保存の違い">
+              <table class="api-table">
+                <thead>
+                  <tr>
+                    <th>保存方法</th>
+                    <th>向いていること</th>
+                    <th>苦手なこと</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>JSON台帳</td>
+                    <td>構造を読みやすい。少量の学習データを確認しやすい。</td>
+                    <td>検索、並び替え、同時更新、本文の追記が増えると扱いにくい。</td>
+                  </tr>
+                  <tr>
+                    <td>transcriptファイル</td>
+                    <td>1セッションの結果をそのまま読める。</td>
+                    <td>会話一覧、ユーザー別検索、メッセージ単位の復元には向かない。</td>
+                  </tr>
+                  <tr>
+                    <td>SQLite</td>
+                    <td>ローカルでDBを持てる。検索、更新、一覧表示に向いている。</td>
+                    <td>最初にテーブル設計を決める必要がある。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="callout">
+              <strong>この回ではDBをまだ作りません</strong>
+              <p>
+                いきなり `CREATE TABLE` を書く前に、何を保存したいのかを分けます。
+                設計が曖昧なままDBを作ると、後から `user_id`、`session_id`、本文ログの関係が分かりにくくなります。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="tables">
+            <p class="eyebrow">Tables</p>
+            <h2>3つのテーブルに分ける</h2>
+            <p>
+              最初の設計では、`users`、`sessions`、`messages` の3つに分けます。
+              `sessions` には会話一覧に必要な情報、`messages` には増え続ける本文を置きます。
+            </p>
+
+            <div class="table-wrap" role="region" aria-label="SQLiteテーブル設計">
+              <table class="api-table">
+                <thead>
+                  <tr>
+                    <th>テーブル</th>
+                    <th>保存するもの</th>
+                    <th>代表的な列</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>users</code></td>
+                    <td>アプリ側の利用者</td>
+                    <td><code>id</code>, <code>user_id</code>, <code>status</code></td>
+                  </tr>
+                  <tr>
+                    <td><code>sessions</code></td>
+                    <td>ユーザーごとのClaudeセッション一覧</td>
+                    <td><code>id</code>, <code>user_id</code>, <code>claude_session_id</code>, <code>title</code>, <code>cwd</code></td>
+                  </tr>
+                  <tr>
+                    <td><code>messages</code></td>
+                    <td>セッションに紐づく本文や結果ログ</td>
+                    <td><code>id</code>, <code>claude_session_id</code>, <code>role</code>, <code>content</code>, <code>turn_number</code></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="callout callout--warning">
+              <strong>`session_id` という列名は分けて考えます</strong>
+              <p>
+                DB内部の主キーとしての `sessions.id` と、Claude Agent SDKが返す `session_id` は別物です。
+                この教材では混乱を避けるため、Claude側のIDを `claude_session_id` という列名で保存する設計にします。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="lifecycle">
+            <p class="eyebrow">Lifecycle</p>
+            <h2>無効化・再有効化・削除をどう持つか</h2>
+            <p>
+              `disabled` や `deleted` はBooleanで持つこともできますが、後から「無効化したあとに再有効化した」
+              「削除扱いにしたが復元した」という運用を考えると、現在状態と履歴を分ける方が読みやすくなります。
+              このレッスンでは、`users.status` に現在状態を置く設計にします。
+            </p>
+
+            <div class="table-wrap" role="region" aria-label="ユーザー状態の設計">
+              <table class="api-table">
+                <thead>
+                  <tr>
+                    <th>場面</th>
+                    <th><code>users.status</code></th>
+                    <th>履歴が必要な場合</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>通常利用中</td>
+                    <td><code>active</code></td>
+                    <td>必要なら作成イベントを別テーブルに残す。</td>
+                  </tr>
+                  <tr>
+                    <td>一時的に無効化</td>
+                    <td><code>disabled</code></td>
+                    <td>必要なら <code>disabled</code> イベントを残す。</td>
+                  </tr>
+                  <tr>
+                    <td>再有効化</td>
+                    <td><code>active</code> に戻す</td>
+                    <td>必要なら <code>enabled</code> イベントを残す。</td>
+                  </tr>
+                  <tr>
+                    <td>削除扱い</td>
+                    <td><code>deleted</code></td>
+                    <td>必要なら <code>deleted</code> イベントを残す。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="callout">
+              <strong>NULLを避けたい場合の考え方</strong>
+              <p>
+                `disabled_at` や `deleted_at` のような日時列は便利ですが、「まだ無効化されていない」状態をNULLで表すことが多くなります。
+                NULLを避けたいなら、まず `status` で現在状態を明示し、変更履歴が必要になった時点で
+                `user_events` のような履歴テーブルを追加する設計が素直です。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="mapping">
+            <p class="eyebrow">Mapping</p>
+            <h2>JSON台帳をSQLiteへ対応づける</h2>
+            <p>
+              Lesson 15/16のJSON台帳は、DB設計の下書きとして見ることができます。
+              `users[].sessions[]` という入れ子構造を、SQLiteではテーブルの関係に変換します。
+            </p>
+
+            <div class="table-wrap" role="region" aria-label="JSON台帳とSQLiteの対応">
+              <table class="api-table">
+                <thead>
+                  <tr>
+                    <th>JSONの場所</th>
+                    <th>SQLiteの場所</th>
+                    <th>意味</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>users[].user_id</code></td>
+                    <td><code>users.user_id</code></td>
+                    <td>アプリ側のユーザー識別子。</td>
+                  </tr>
+                  <tr>
+                    <td><code>users[].sessions[].session_id</code></td>
+                    <td><code>sessions.claude_session_id</code></td>
+                    <td>Claude Agent SDKの `resume` に渡すID。</td>
+                  </tr>
+                  <tr>
+                    <td><code>users[].sessions[].title</code></td>
+                    <td><code>sessions.title</code></td>
+                    <td>会話一覧に表示する名前。</td>
+                  </tr>
+                  <tr>
+                    <td><code>users[].sessions[].cwd</code></td>
+                    <td><code>sessions.cwd</code></td>
+                    <td>同じ作業ディレクトリで再開するための情報。</td>
+                  </tr>
+                  <tr>
+                    <td><code>transcript_path</code> のファイル本文</td>
+                    <td><code>messages.content</code></td>
+                    <td>将来DBへ保存する会話本文。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="sequence">
+            <p class="eyebrow">Design diagram</p>
+            <h2>設計図で見る</h2>
+            <p>
+              `users` から `sessions`、`sessions` から `messages` へつながります。
+              Web UIでは、まずユーザーのセッション一覧を表示し、選ばれた `claude_session_id` を `resume` に渡します。
+            </p>
+
+            <button class="diagram-frame" type="button" data-diagram-open aria-label="SQLiteテーブル設計図を拡大表示">
+              <img src="../assets/img/lesson-17-sqlite-schema.svg" alt="users、sessions、messagesのSQLiteテーブル設計図">
+            </button>
+          </section>
+
+          <section class="lesson-section" id="hands-on">
+            <p class="eyebrow">Hands-on</p>
+            <h2>コードを書く</h2>
+            <p>
+              `python-labs/practice/lesson_17_sqlite_design.py` に、次のコードを入力してください。
+              今回はDBを作るのではなく、設計メモをJSONとMarkdownで出力します。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>python-labs/practice/lesson_17_sqlite_design.py</span>
+              </div>
+              <pre><code>from datetime import datetime, timezone
+from typing import Any
+
+from shared.display import print_section
+from shared.files import write_json_file, write_text_lines
+from shared.paths import OUTPUT_DIR
+
+
+DESIGN_JSON_PATH = OUTPUT_DIR / &quot;lesson_17_sqlite_design.json&quot;
+DESIGN_MARKDOWN_PATH = OUTPUT_DIR / &quot;lesson_17_sqlite_design.md&quot;
+
+
+# UTCの現在時刻を、JSONやMarkdownに保存しやすい文字列にする関数です。
+def now_iso() -&gt; str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+# usersテーブルに入れる列の設計を返す関数です。
+def build_users_table() -&gt; dict[str, Any]:
+    return {
+        &quot;name&quot;: &quot;users&quot;,
+        &quot;purpose&quot;: &quot;アプリ側の利用者を管理する&quot;,
+        &quot;columns&quot;: [
+            {&quot;name&quot;: &quot;id&quot;, &quot;type&quot;: &quot;INTEGER&quot;, &quot;role&quot;: &quot;アプリ側の主キー&quot;},
+            {&quot;name&quot;: &quot;user_id&quot;, &quot;type&quot;: &quot;TEXT&quot;, &quot;role&quot;: &quot;画面やログで使うユーザー識別子&quot;},
+            {&quot;name&quot;: &quot;status&quot;, &quot;type&quot;: &quot;TEXT&quot;, &quot;role&quot;: &quot;active / disabled / deleted の現在状態&quot;},
+        ],
+    }
+
+
+# sessionsテーブルに入れる列の設計を返す関数です。
+def build_sessions_table() -&gt; dict[str, Any]:
+    return {
+        &quot;name&quot;: &quot;sessions&quot;,
+        &quot;purpose&quot;: &quot;ユーザーごとのClaudeセッション一覧を管理する&quot;,
+        &quot;columns&quot;: [
+            {&quot;name&quot;: &quot;id&quot;, &quot;type&quot;: &quot;INTEGER&quot;, &quot;role&quot;: &quot;アプリ側の主キー&quot;},
+            {&quot;name&quot;: &quot;user_id&quot;, &quot;type&quot;: &quot;TEXT&quot;, &quot;role&quot;: &quot;users.user_idと対応する値&quot;},
+            {&quot;name&quot;: &quot;claude_session_id&quot;, &quot;type&quot;: &quot;TEXT&quot;, &quot;role&quot;: &quot;Claude Agent SDKのsession_id&quot;},
+            {&quot;name&quot;: &quot;title&quot;, &quot;type&quot;: &quot;TEXT&quot;, &quot;role&quot;: &quot;会話一覧に表示するタイトル&quot;},
+            {&quot;name&quot;: &quot;cwd&quot;, &quot;type&quot;: &quot;TEXT&quot;, &quot;role&quot;: &quot;resume時に合わせる作業ディレクトリ&quot;},
+            {&quot;name&quot;: &quot;created_at&quot;, &quot;type&quot;: &quot;TEXT&quot;, &quot;role&quot;: &quot;初回作成日時&quot;},
+            {&quot;name&quot;: &quot;updated_at&quot;, &quot;type&quot;: &quot;TEXT&quot;, &quot;role&quot;: &quot;最後に更新した日時&quot;},
+            {&quot;name&quot;: &quot;last_resumed_at&quot;, &quot;type&quot;: &quot;TEXT&quot;, &quot;role&quot;: &quot;最後にresumeした日時&quot;},
+        ],
+    }
+
+
+# messagesテーブルに入れる列の設計を返す関数です。
+def build_messages_table() -&gt; dict[str, Any]:
+    return {
+        &quot;name&quot;: &quot;messages&quot;,
+        &quot;purpose&quot;: &quot;各セッションに紐づく会話本文や実行ログを保存する&quot;,
+        &quot;columns&quot;: [
+            {&quot;name&quot;: &quot;id&quot;, &quot;type&quot;: &quot;INTEGER&quot;, &quot;role&quot;: &quot;メッセージ行の主キー&quot;},
+            {&quot;name&quot;: &quot;claude_session_id&quot;, &quot;type&quot;: &quot;TEXT&quot;, &quot;role&quot;: &quot;sessions.claude_session_idと対応する値&quot;},
+            {&quot;name&quot;: &quot;role&quot;, &quot;type&quot;: &quot;TEXT&quot;, &quot;role&quot;: &quot;user / assistant / result などの種別&quot;},
+            {&quot;name&quot;: &quot;content&quot;, &quot;type&quot;: &quot;TEXT&quot;, &quot;role&quot;: &quot;表示・復元したい本文&quot;},
+            {&quot;name&quot;: &quot;turn_number&quot;, &quot;type&quot;: &quot;INTEGER&quot;, &quot;role&quot;: &quot;会話内の順序&quot;},
+            {&quot;name&quot;: &quot;created_at&quot;, &quot;type&quot;: &quot;TEXT&quot;, &quot;role&quot;: &quot;保存日時&quot;},
+        ],
+    }
+
+
+# Lesson 15/16のJSONファイル構造を、SQLiteのテーブルへ対応づける関数です。
+def build_json_to_sqlite_mapping() -&gt; list[dict[str, str]]:
+    return [
+        {
+            &quot;json_location&quot;: &quot;users[].user_id&quot;,
+            &quot;sqlite_location&quot;: &quot;users.user_id&quot;,
+            &quot;meaning&quot;: &quot;アプリ側のユーザー識別子&quot;,
+        },
+        {
+            &quot;json_location&quot;: &quot;users[].sessions[].session_id&quot;,
+            &quot;sqlite_location&quot;: &quot;sessions.claude_session_id&quot;,
+            &quot;meaning&quot;: &quot;Claude Agent SDKのresumeに渡すID&quot;,
+        },
+        {
+            &quot;json_location&quot;: &quot;users[].sessions[].title&quot;,
+            &quot;sqlite_location&quot;: &quot;sessions.title&quot;,
+            &quot;meaning&quot;: &quot;会話一覧に表示する名前&quot;,
+        },
+        {
+            &quot;json_location&quot;: &quot;users[].sessions[].cwd&quot;,
+            &quot;sqlite_location&quot;: &quot;sessions.cwd&quot;,
+            &quot;meaning&quot;: &quot;同じ作業ディレクトリでresumeするための情報&quot;,
+        },
+        {
+            &quot;json_location&quot;: &quot;users[].sessions[].transcript_path&quot;,
+            &quot;sqlite_location&quot;: &quot;messages.content&quot;,
+            &quot;meaning&quot;: &quot;今はファイルにある本文を、将来はDBへ保存する&quot;,
+        },
+    ]
+
+
+# SQLite化するときに守りたい設計判断を返す関数です。
+def build_design_decisions() -&gt; list[str]:
+    return [
+        &quot;Claude側のsession_idと、アプリ側のユーザーIDは別物として扱う。&quot;,
+        &quot;1人のユーザーは複数のClaudeセッションを持てる。&quot;,
+        &quot;会話一覧に必要な情報はsessionsに置く。&quot;,
+        &quot;本文や実行ログのように増え続ける情報はmessagesに置く。&quot;,
+        &quot;users.statusには現在状態を置き、active / disabled / deleted のような値で管理する。&quot;,
+        &quot;無効化や再有効化の履歴まで必要なら、将来はuser_eventsのような履歴テーブルを追加する。&quot;,
+        &quot;ローカル学習ではSQLiteを使い、Web化するときも同じ設計を流用できるようにする。&quot;,
+    ]
+
+
+# ユーザーの無効化や削除をどう扱うか、今回の設計方針を返す関数です。
+def build_lifecycle_policy() -&gt; list[dict[str, str]]:
+    return [
+        {
+            &quot;case&quot;: &quot;通常利用中&quot;,
+            &quot;current_state&quot;: &quot;users.status = &#39;active&#39;&quot;,
+            &quot;history&quot;: &quot;履歴テーブルを使う場合は、createdなどのイベントを残す&quot;,
+        },
+        {
+            &quot;case&quot;: &quot;一時的に無効化&quot;,
+            &quot;current_state&quot;: &quot;users.status = &#39;disabled&#39;&quot;,
+            &quot;history&quot;: &quot;履歴テーブルを使う場合は、disabledイベントを残す&quot;,
+        },
+        {
+            &quot;case&quot;: &quot;無効化したユーザーを再有効化&quot;,
+            &quot;current_state&quot;: &quot;users.status = &#39;active&#39; に戻す&quot;,
+            &quot;history&quot;: &quot;履歴テーブルを使う場合は、enabledイベントを残す&quot;,
+        },
+        {
+            &quot;case&quot;: &quot;削除扱いにする&quot;,
+            &quot;current_state&quot;: &quot;users.status = &#39;deleted&#39;&quot;,
+            &quot;history&quot;: &quot;履歴テーブルを使う場合は、deletedイベントを残す&quot;,
+        },
+    ]
+
+
+# 画面表示とファイル保存に使う設計データ全体を作る関数です。
+def build_design_document() -&gt; dict[str, Any]:
+    return {
+        &quot;version&quot;: 1,
+        &quot;created_at&quot;: now_iso(),
+        &quot;goal&quot;: &quot;JSON台帳とtranscriptファイルを、SQLiteのテーブル設計へ置き換える準備をする&quot;,
+        &quot;tables&quot;: [
+            build_users_table(),
+            build_sessions_table(),
+            build_messages_table(),
+        ],
+        &quot;relationships&quot;: [
+            &quot;users.user_id -&gt; sessions.user_id&quot;,
+            &quot;sessions.claude_session_id -&gt; messages.claude_session_id&quot;,
+        ],
+        &quot;json_to_sqlite_mapping&quot;: build_json_to_sqlite_mapping(),
+        &quot;design_decisions&quot;: build_design_decisions(),
+        &quot;lifecycle_policy&quot;: build_lifecycle_policy(),
+    }
+
+
+# 1テーブル分の設計をMarkdownの行に変換する関数です。
+def append_table_markdown(lines: list[str], table: dict[str, Any]) -&gt; None:
+    lines.append(f&quot;## {table[&#39;name&#39;]}&quot;)
+    lines.append(&quot;&quot;)
+    lines.append(str(table[&quot;purpose&quot;]))
+    lines.append(&quot;&quot;)
+    lines.append(&quot;| column | type | role |&quot;)
+    lines.append(&quot;|---|---|---|&quot;)
+
+    for column in table[&quot;columns&quot;]:
+        lines.append(f&quot;| {column[&#39;name&#39;]} | {column[&#39;type&#39;]} | {column[&#39;role&#39;]} |&quot;)
+
+    lines.append(&quot;&quot;)
+
+
+# 設計データを、読みやすいMarkdownの行リストへ変換する関数です。
+def build_markdown_lines(design: dict[str, Any]) -&gt; list[str]:
+    lines = [
+        &quot;# Lesson 17 SQLite design&quot;,
+        &quot;&quot;,
+        str(design[&quot;goal&quot;]),
+        &quot;&quot;,
+        &quot;## Tables&quot;,
+        &quot;&quot;,
+    ]
+
+    for table in design[&quot;tables&quot;]:
+        append_table_markdown(lines, table)
+
+    lines.append(&quot;## Relationships&quot;)
+    lines.append(&quot;&quot;)
+    for relationship in design[&quot;relationships&quot;]:
+        lines.append(f&quot;- {relationship}&quot;)
+
+    lines.append(&quot;&quot;)
+    lines.append(&quot;## JSON to SQLite mapping&quot;)
+    lines.append(&quot;&quot;)
+    lines.append(&quot;| JSON | SQLite | meaning |&quot;)
+    lines.append(&quot;|---|---|---|&quot;)
+    for mapping in design[&quot;json_to_sqlite_mapping&quot;]:
+        lines.append(
+            f&quot;| {mapping[&#39;json_location&#39;]} | {mapping[&#39;sqlite_location&#39;]} | {mapping[&#39;meaning&#39;]} |&quot;
+        )
+
+    lines.append(&quot;&quot;)
+    lines.append(&quot;## User lifecycle policy&quot;)
+    lines.append(&quot;&quot;)
+    lines.append(&quot;| case | current state | history |&quot;)
+    lines.append(&quot;|---|---|---|&quot;)
+    for policy in design[&quot;lifecycle_policy&quot;]:
+        lines.append(
+            f&quot;| {policy[&#39;case&#39;]} | {policy[&#39;current_state&#39;]} | {policy[&#39;history&#39;]} |&quot;
+        )
+
+    lines.append(&quot;&quot;)
+    lines.append(&quot;## Design decisions&quot;)
+    lines.append(&quot;&quot;)
+    for decision in design[&quot;design_decisions&quot;]:
+        lines.append(f&quot;- {decision}&quot;)
+
+    return lines
+
+
+# ターミナルで設計の要点を確認できるように表示する関数です。
+def print_design_summary(design: dict[str, Any]) -&gt; None:
+    print_section(&quot;SQLite design&quot;)
+    print(design[&quot;goal&quot;])
+
+    print_section(&quot;Tables&quot;)
+    for table in design[&quot;tables&quot;]:
+        print(f&quot;- {table[&#39;name&#39;]}: {table[&#39;purpose&#39;]}&quot;)
+
+    print_section(&quot;Relationships&quot;)
+    for relationship in design[&quot;relationships&quot;]:
+        print(f&quot;- {relationship}&quot;)
+
+
+# 設計データをJSONとMarkdownの2形式で保存する関数です。
+def save_design_files(design: dict[str, Any]) -&gt; None:
+    write_json_file(DESIGN_JSON_PATH, design)
+    write_text_lines(DESIGN_MARKDOWN_PATH, build_markdown_lines(design))
+
+
+# このファイルを直接実行したときの入口になる関数です。
+def main() -&gt; None:
+    design = build_design_document()
+    print_design_summary(design)
+    save_design_files(design)
+
+    print_section(&quot;Saved files&quot;)
+    print(DESIGN_JSON_PATH)
+    print(DESIGN_MARKDOWN_PATH)
+
+
+if __name__ == &quot;__main__&quot;:
+    main()</code></pre>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="run">
+            <p class="eyebrow">Run</p>
+            <h2>実行して確認</h2>
+            <p>`python-labs/` から実行します。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Windows / macOS / Linux</span>
+              </div>
+              <pre><code>uv run python practice/lesson_17_sqlite_design.py</code></pre>
+            </div>
+
+            <p>設計メモを確認します。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Windows</span>
+              </div>
+              <pre><code>Get-Content outputs/lesson_17_sqlite_design.md</code></pre>
+            </div>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>macOS / Linux</span>
+              </div>
+              <pre><code>cat outputs/lesson_17_sqlite_design.md</code></pre>
+            </div>
+
+            <p>完成版だけを確認したい場合は、次を実行します。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Windows / macOS / Linux</span>
+              </div>
+              <pre><code>uv run python scripts/lesson_17_sqlite_design.py</code></pre>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="review">
+            <p class="eyebrow">Review</p>
+            <h2>確認問題</h2>
+            <ol class="review-list">
+              <li>Claude Agent SDKが返す `session_id` を、DBではなぜ `claude_session_id` と呼び分けるのですか。</li>
+              <li>`sessions` に置く情報と、`messages` に置く情報はどう違いますか。</li>
+              <li>Lesson 15の `transcript_path` は、SQLite化するとどこへ移すのが自然ですか。</li>
+              <li>無効化したユーザーを再有効化するとき、`users.status` は何に戻しますか。</li>
+              <li>Web UIで会話一覧を表示するとき、最初に読むテーブルはどれですか。</li>
+              <li>次回 `CREATE TABLE` を書く前に、不安な列名や関係を1つ挙げてください。</li>
+            </ol>
+            <p>
+              次のレッスンでは、この設計をもとにSQLiteファイルを作り、実際にテーブルを作成します。
+            </p>
+          </section>
+
+          <nav class="lesson-nav-bottom" aria-label="レッスン移動">
+            <a href="lesson-16.html">前へ: resumeで特定の会話を再開する</a>
+            <a href="lesson-18.html">次へ: SQLiteでテーブルを作成する</a>
+          </nav>
+        </article>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <p>Claude Agent SDK Learning Portal</p>
+      <a href="#top">ページ上部へ戻る</a>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lesson 19 | JSON台帳をSQLiteへ登録する</title>
+    <meta
+      name="description"
+      content="Lesson 15で保存したClaude Agent SDKのsession_id台帳を、SQLiteのusersとsessionsテーブルへ登録するレッスン。"
+    >
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <script>window.Prism = window.Prism || {}; window.Prism.manual = true;</script>
+    <script src="../assets/vendor/prism/prism-core.min.js" defer></script>
+    <script src="../assets/vendor/prism/prism-markup.min.js" defer></script>
+    <script src="../assets/vendor/prism/prism-css.min.js" defer></script>
+    <script src="../assets/vendor/prism/prism-clike.min.js" defer></script>
+    <script src="../assets/vendor/prism/prism-javascript.min.js" defer></script>
+    <script src="../assets/vendor/prism/prism-python.min.js" defer></script>
+    <script src="../assets/vendor/prism/prism-bash.min.js" defer></script>
+    <script src="../assets/vendor/prism/prism-powershell.min.js" defer></script>
+    <script src="../assets/vendor/prism/prism-json.min.js" defer></script>
+    <script src="../assets/vendor/prism/prism-toml.min.js" defer></script>
+    <script src="../assets/vendor/prism/prism-yaml.min.js" defer></script>
+    <script src="../assets/js/main.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header" id="top">
+      <a class="site-mark" href="../index.html" aria-label="Claude Agent SDK Learning Portal トップへ">
+        <span class="site-mark__symbol" aria-hidden="true">CA</span>
+        <span class="site-mark__text">Claude Agent SDK Learning</span>
+      </a>
+      <nav class="site-nav" aria-label="主要ナビゲーション">
+        <a href="../index.html#roadmap">ロードマップ</a>
+        <a href="../index.html#lessons">学習セクション</a>
+        <a href="../index.html#official-docs">公式リンク</a>
+      </nav>
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="ダークモードに切り替え" aria-pressed="false">
+        <span class="theme-toggle__track" aria-hidden="true">
+          <span class="theme-toggle__thumb"></span>
+        </span>
+      </button>
+    </header>
+
+    <main>
+      <section class="lesson-hero" aria-labelledby="lesson-title">
+        <div class="breadcrumb" aria-label="パンくず">
+          <a href="../index.html">トップ</a>
+          <span aria-hidden="true">/</span>
+          <span>Lesson 19</span>
+        </div>
+        <p class="eyebrow">Lesson 19 / ClaudeSDKClient</p>
+        <h1 id="lesson-title">JSON台帳をSQLiteへ登録する</h1>
+        <p>
+          Lesson 15で保存したJSON台帳を読み込み、Lesson 18で作ったSQLite DBへ登録します。
+          まずは会話一覧に必要な `users` と `sessions` だけを扱い、会話本文の `messages` は次回に分けます。
+        </p>
+      </section>
+
+      <div class="lesson-shell">
+        <aside class="lesson-sidebar" aria-label="レッスン目次">
+          <div class="lesson-sidebar__box">
+            <span class="lesson-sidebar__label">所要時間</span>
+            <strong>55分</strong>
+          </div>
+          <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
+            <a href="#goal">ゴール</a>
+            <a href="#before-run">実行前の確認</a>
+            <a href="#mapping">登録する範囲</a>
+            <a href="#insert-user">ユーザー登録</a>
+            <a href="#sequence">処理の流れ</a>
+            <a href="#hands-on">コードを書く</a>
+            <a href="#run">実行して確認</a>
+            <a href="#db-browser">DB Browserで確認</a>
+            <a href="#review">確認問題</a>
+          </nav>
+        </aside>
+
+        <article class="lesson-main">
+          <section class="lesson-section" id="goal">
+            <p class="eyebrow">Goal</p>
+            <h2>このレッスンのゴール</h2>
+            <p class="lesson-one-liner">
+              <span>このレッスンを一言で</span>
+              JSON台帳の `users[].sessions[]` を、SQLiteの `users` と `sessions` に登録します。
+            </p>
+            <ul class="check-list">
+              <li>JSON台帳からユーザーとセッションを取り出せる</li>
+              <li>`users` テーブルへユーザー記録を登録できる</li>
+              <li>`sessions` テーブルへClaude側の `session_id` を登録できる</li>
+              <li>DB Browserで登録結果を確認できる</li>
+            </ul>
+          </section>
+
+          <section class="lesson-section" id="before-run">
+            <p class="eyebrow">Before run</p>
+            <h2>先に必要なファイル</h2>
+            <p>
+              このレッスンは、Lesson 15で作った `outputs/lesson_15_session_registry.json` を入力として使います。
+              まだ台帳がない場合は、先にLesson 15の完成版を実行して、少なくとも1つの `session_id` を保存してください。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Windows / macOS / Linux</span>
+              </div>
+              <pre><code>uv run python scripts/lesson_15_capture_session_id.py</code></pre>
+            </div>
+
+            <div class="callout">
+              <strong>Lesson 18のDB作成もコード側で呼びます</strong>
+              <p>
+                今回のコードは `create_schema()` を呼ぶため、DBやテーブルがまだない状態でも実行できます。
+                ただし、学習の流れとしてはLesson 18でDB Browserから空のテーブルを確認しておくと、今回の変化が見えやすくなります。
+              </p>
+            </div>
+
+            <div class="callout callout--warning">
+              <strong>古いDBを作っていた場合</strong>
+              <p>
+                以前の版で `users.created_at` や `users.updated_at` を含むDBを作っていた場合は、DB Browserを閉じてから
+                `data/agent_sessions.sqlite3` を削除し、Lesson 18を実行し直してください。
+                SQLiteは既存テーブルの列を `CREATE TABLE IF NOT EXISTS` では自動的に減らしません。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="mapping">
+            <p class="eyebrow">Mapping</p>
+            <h2>今回は本文をまだ入れない</h2>
+            <p>
+              JSON台帳には `transcript_path` も入っていますが、今回はファイル本文を読んで `messages` に入れるところまでは進みません。
+              まず、Web UIの会話一覧に必要になるユーザーとセッションだけをDB化します。
+            </p>
+
+            <div class="table-wrap" role="region" aria-label="JSON台帳からSQLiteへ登録する範囲">
+              <table class="api-table">
+                <thead>
+                  <tr>
+                    <th>JSONの場所</th>
+                    <th>登録先</th>
+                    <th>今回扱うか</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>users[].user_id</code></td>
+                    <td><code>users.user_id</code></td>
+                    <td>扱う</td>
+                  </tr>
+                  <tr>
+                    <td><code>users[].sessions[].session_id</code></td>
+                    <td><code>sessions.claude_session_id</code></td>
+                    <td>扱う</td>
+                  </tr>
+                  <tr>
+                    <td><code>users[].sessions[].title</code></td>
+                    <td><code>sessions.title</code></td>
+                    <td>扱う</td>
+                  </tr>
+                  <tr>
+                    <td><code>users[].sessions[].transcript_path</code></td>
+                    <td><code>messages.content</code></td>
+                    <td>次回扱う</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="insert-user">
+            <p class="eyebrow">Insert user</p>
+            <h2>ユーザーは「なければ追加」だけにする</h2>
+            <p>
+              `users` では、JSON台帳にある `user_id` をDBへ登録します。
+              学習用に割り切り、すでに同じ `user_id` がある場合は何もしません。
+              そのため、ユーザー登録は `INSERT OR IGNORE` だけで扱います。
+            </p>
+
+            <div class="callout callout--warning">
+              <strong>UNIQUE制約がここで効きます</strong>
+              <p>
+                `users.user_id` と `sessions.claude_session_id` にはUNIQUE制約があります。
+                UUIDはほぼ被りませんが、DB側の制約で「同じIDを二重登録しない」ことも守ります。
+              </p>
+            </div>
+
+            <div class="callout">
+              <strong>sessionsも「なければ追加」に揃えます</strong>
+              <p>
+                このレッスンでは、セッションも `INSERT OR IGNORE` だけで登録します。
+                `created_at`、`updated_at`、`cwd` はLesson 15の台帳にある前提なので、無ければ空文字で保存せずエラーにします。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="sequence">
+            <p class="eyebrow">Sequence</p>
+            <h2>処理の流れを見る</h2>
+            <p>
+              `main()` はJSON台帳を読み込み、DBへ接続し、テーブルを用意してから、ユーザー、セッションの順に登録します。
+              親である `users` を先に入れてから、子である `sessions` を入れるのがポイントです。
+            </p>
+
+            <button class="diagram-frame" type="button" data-diagram-open aria-label="JSON台帳をSQLiteへ登録する流れを拡大表示">
+              <img src="../assets/img/lesson-19-import-registry-sequence.svg" alt="JSON台帳を読み込み、usersとsessionsへ登録して結果を表示する流れ">
+            </button>
+          </section>
+
+          <section class="lesson-section" id="hands-on">
+            <p class="eyebrow">Hands-on</p>
+            <h2>コードを書く</h2>
+            <p>
+              `python-labs/practice/lesson_19_import_registry_to_sqlite.py` に、次のコードを入力してください。
+              Agentは実行せず、すでに保存済みのJSON台帳をDBに移します。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>python-labs/practice/lesson_19_import_registry_to_sqlite.py</span>
+              </div>
+              <pre><code>import json
+import sqlite3
+from typing import Any
+
+from lesson_18_create_sqlite_tables import connect_database, create_schema
+from shared.display import print_section
+from shared.paths import OUTPUT_DIR
+
+
+SESSION_REGISTRY_PATH = OUTPUT_DIR / &quot;lesson_15_session_registry.json&quot;
+
+
+# Lesson 15で作ったJSON台帳を読み込む関数です。
+def load_registry() -&gt; dict[str, Any]:
+    if not SESSION_REGISTRY_PATH.exists():
+        raise FileNotFoundError(
+            &quot;Lesson 15の台帳が見つかりません。&quot;
+            &quot;先に `uv run python scripts/lesson_15_capture_session_id.py` を実行してください。&quot;
+        )
+
+    return json.loads(SESSION_REGISTRY_PATH.read_text(encoding=&quot;utf-8&quot;))
+
+
+# ユーザー記録のsessions配列を、安全にリストとして取り出す関数です。
+def get_session_records(user_record: dict[str, Any]) -&gt; list[dict[str, Any]]:
+    sessions = user_record.get(&quot;sessions&quot;, [])
+    if not isinstance(sessions, list):
+        return []
+    return sessions
+
+
+# usersテーブルに、まだ存在しないユーザーだけを追加する関数です。
+def insert_user_if_missing(
+    connection: sqlite3.Connection,
+    user_id: str,
+) -&gt; None:
+    connection.execute(
+        &quot;&quot;&quot;
+        INSERT OR IGNORE INTO users (
+            user_id,
+            status
+        )
+        VALUES (?, &#39;active&#39;)
+        &quot;&quot;&quot;,
+        (user_id,),
+    )
+
+
+# セッション記録から、必須項目の文字列値を取り出す関数です。
+def require_session_value(
+    session_record: dict[str, Any],
+    key: str,
+) -&gt; str:
+    value = session_record.get(key)
+    if value is None or value == &quot;&quot;:
+        raise ValueError(f&quot;session_recordに必須項目 {key} がありません。&quot;)
+    return str(value)
+
+
+# sessionsテーブルに、まだ存在しないセッションだけを追加する関数です。
+def insert_session_if_missing(
+    connection: sqlite3.Connection,
+    user_id: str,
+    session_record: dict[str, Any],
+) -&gt; None:
+    claude_session_id = require_session_value(session_record, &quot;session_id&quot;)
+    title = str(session_record.get(&quot;title&quot;, &quot;Untitled session&quot;))
+    cwd = require_session_value(session_record, &quot;cwd&quot;)
+    created_at = require_session_value(session_record, &quot;created_at&quot;)
+    updated_at = require_session_value(session_record, &quot;updated_at&quot;)
+    last_resumed_at = str(session_record.get(&quot;last_resumed_at&quot;, &quot;&quot;))
+
+    connection.execute(
+        &quot;&quot;&quot;
+        INSERT OR IGNORE INTO sessions (
+            user_id,
+            claude_session_id,
+            title,
+            cwd,
+            created_at,
+            updated_at,
+            last_resumed_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        &quot;&quot;&quot;,
+        (
+            user_id,
+            claude_session_id,
+            title,
+            cwd,
+            created_at,
+            updated_at,
+            last_resumed_at,
+        ),
+    )
+
+
+# JSON台帳に入っている全ユーザーと全セッションをDBへ登録する関数です。
+def import_registry_to_database(
+    connection: sqlite3.Connection,
+    registry: dict[str, Any],
+) -&gt; None:
+    users = registry.get(&quot;users&quot;, [])
+
+    for user_record in users:
+        user_id = str(user_record[&quot;user_id&quot;])
+        insert_user_if_missing(connection, user_id)
+
+        for session_record in get_session_records(user_record):
+            insert_session_if_missing(connection, user_id, session_record)
+
+    connection.commit()
+
+
+# 指定したテーブルのレコード件数を数える関数です。
+def count_rows(
+    connection: sqlite3.Connection,
+    table_name: str,
+) -&gt; int:
+    row = connection.execute(f&quot;SELECT COUNT(*) FROM {table_name}&quot;).fetchone()
+    return int(row[0])
+
+
+# sessionsテーブルに入った会話一覧を表示する関数です。
+def fetch_session_summary(connection: sqlite3.Connection) -&gt; list[dict[str, str]]:
+    rows = connection.execute(
+        &quot;&quot;&quot;
+        SELECT
+            user_id,
+            claude_session_id,
+            title,
+            updated_at
+        FROM sessions
+        ORDER BY updated_at DESC
+        &quot;&quot;&quot;
+    ).fetchall()
+
+    return [
+        {
+            &quot;user_id&quot;: str(row[0]),
+            &quot;claude_session_id&quot;: str(row[1]),
+            &quot;title&quot;: str(row[2]),
+            &quot;updated_at&quot;: str(row[3]),
+        }
+        for row in rows
+    ]
+
+
+# 登録結果を、ターミナルで読みやすく表示する関数です。
+def print_import_summary(connection: sqlite3.Connection) -&gt; None:
+    print_section(&quot;Imported row counts&quot;)
+    print(f&quot;users: {count_rows(connection, &#39;users&#39;)}&quot;)
+    print(f&quot;sessions: {count_rows(connection, &#39;sessions&#39;)}&quot;)
+    print(f&quot;messages: {count_rows(connection, &#39;messages&#39;)}&quot;)
+
+    print_section(&quot;Session summary&quot;)
+    for session in fetch_session_summary(connection):
+        print(f&quot;- {session[&#39;user_id&#39;]} / {session[&#39;claude_session_id&#39;]}&quot;)
+        print(f&quot;  title: {session[&#39;title&#39;]}&quot;)
+        print(f&quot;  updated_at: {session[&#39;updated_at&#39;]}&quot;)
+
+
+# このファイルを直接実行したときの入口になる関数です。
+def main() -&gt; None:
+    registry = load_registry()
+
+    with connect_database() as connection:
+        create_schema(connection)
+        import_registry_to_database(connection, registry)
+        print_import_summary(connection)
+
+
+if __name__ == &quot;__main__&quot;:
+    main()</code></pre>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="run">
+            <p class="eyebrow">Run</p>
+            <h2>実行して確認</h2>
+            <p>`python-labs/` から実行します。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Windows / macOS / Linux</span>
+              </div>
+              <pre><code>uv run python practice/lesson_19_import_registry_to_sqlite.py</code></pre>
+            </div>
+
+            <p>
+              正常に動くと、`Imported row counts` に `users`、`sessions`、`messages` の件数が表示されます。
+              今回は本文をまだ登録しないため、`messages` は `0` のままで正常です。
+            </p>
+
+            <p>完成版だけを確認したい場合は、次を実行します。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Windows / macOS / Linux</span>
+              </div>
+              <pre><code>uv run python scripts/lesson_19_import_registry_to_sqlite.py</code></pre>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="db-browser">
+            <p class="eyebrow">DB Browser</p>
+            <h2>画面で登録結果を見る</h2>
+            <p>
+              DB Browser for SQLiteで `python-labs/data/agent_sessions.sqlite3` を開きます。
+              `Browse Data` タブで `users` と `sessions` を切り替えると、JSON台帳から移したデータを確認できます。
+            </p>
+
+            <div class="callout">
+              <strong>database is locked が出た場合</strong>
+              <p>
+                DB Browserで編集中のまま保存していると、Python側の書き込みが失敗することがあります。
+                その場合はDB Browser側で変更を保存または閉じてから、もう一度スクリプトを実行してください。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="review">
+            <p class="eyebrow">Review</p>
+            <h2>確認問題</h2>
+            <ol class="review-list">
+              <li>今回 `messages` に本文を入れなかった理由は何ですか。</li>
+              <li>`users` を先に登録してから `sessions` を登録する理由は何ですか。</li>
+              <li>`INSERT OR IGNORE` は、同じ `user_id` がすでにあるときに何をしますか。</li>
+              <li>`session_id` をDBでは `claude_session_id` として保存する理由をもう一度説明してください。</li>
+              <li>DB Browserで `users` と `sessions` のどの列を確認すると、登録成功が分かりますか。</li>
+            </ol>
+            <p>
+              次のレッスンでは、`transcript_path` のファイル本文を読み、`messages` テーブルへ保存していきます。
+            </p>
+          </section>
+
+          <nav class="lesson-nav-bottom" aria-label="レッスン移動">
+            <a href="lesson-18.html">前へ: SQLiteでテーブルを作成する</a>
+            <a href="#" aria-disabled="true">次のレッスンは準備中</a>
+          </nav>
+        </article>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <p>Claude Agent SDK Learning Portal</p>
+      <a href="#top">ページ上部へ戻る</a>
+    </footer>
+  </body>
+</html>

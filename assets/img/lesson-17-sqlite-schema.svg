@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="720" viewBox="0 0 1120 720" role="img" aria-labelledby="title desc">
+  <title id="title">Lesson 17 SQLite schema design</title>
+  <desc id="desc">A diagram showing how the learning JSON registry maps to SQLite tables: users, sessions, and messages.</desc>
+  <defs>
+    <style>
+      .bg { fill: #f8fbff; }
+      .table { fill: #ffffff; stroke: #c9d8ee; stroke-width: 2; }
+      .head { fill: #0b1f3f; }
+      .headText { fill: #ffffff; font: 700 20px Arial, sans-serif; }
+      .col { fill: #17345f; font: 15px Consolas, monospace; }
+      .role { fill: #52677f; font: 14px Arial, sans-serif; }
+      .arrow { stroke: #2f6fdd; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }
+      .label { fill: #17345f; font: 700 16px Arial, sans-serif; }
+      .note { fill: #fff7db; stroke: #e1bc4f; stroke-width: 1.5; }
+      .noteText { fill: #294562; font: 15px Arial, sans-serif; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2f6fdd"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" width="1120" height="720" rx="18"/>
+
+  <g transform="translate(60 70)">
+    <rect class="table" width="280" height="250" rx="10"/>
+    <rect class="head" width="280" height="52" rx="10"/>
+    <text class="headText" x="140" y="33" text-anchor="middle">users</text>
+    <text class="col" x="24" y="86">id</text>
+    <text class="role" x="132" y="86">アプリ側の主キー</text>
+    <text class="col" x="24" y="122">user_id</text>
+    <text class="role" x="132" y="122">利用者識別子</text>
+    <text class="col" x="24" y="158">status</text>
+    <text class="role" x="132" y="158">現在状態</text>
+  </g>
+
+  <g transform="translate(420 70)">
+    <rect class="table" width="310" height="360" rx="10"/>
+    <rect class="head" width="310" height="52" rx="10"/>
+    <text class="headText" x="155" y="33" text-anchor="middle">sessions</text>
+    <text class="col" x="24" y="86">id</text>
+    <text class="role" x="164" y="86">アプリ側の主キー</text>
+    <text class="col" x="24" y="122">user_id</text>
+    <text class="role" x="164" y="122">usersへ対応</text>
+    <text class="col" x="24" y="158">claude_session_id</text>
+    <text class="role" x="164" y="158">resumeに渡すID</text>
+    <text class="col" x="24" y="194">title</text>
+    <text class="role" x="164" y="194">会話一覧の名前</text>
+    <text class="col" x="24" y="230">cwd</text>
+    <text class="role" x="164" y="230">作業ディレクトリ</text>
+    <text class="col" x="24" y="266">updated_at</text>
+    <text class="role" x="164" y="266">最後の更新日時</text>
+    <text class="col" x="24" y="302">last_resumed_at</text>
+    <text class="role" x="164" y="302">最後のresume日時</text>
+  </g>
+
+  <g transform="translate(810 70)">
+    <rect class="table" width="260" height="300" rx="10"/>
+    <rect class="head" width="260" height="52" rx="10"/>
+    <text class="headText" x="130" y="33" text-anchor="middle">messages</text>
+    <text class="col" x="24" y="86">id</text>
+    <text class="role" x="142" y="86">行の主キー</text>
+    <text class="col" x="24" y="122">claude_session_id</text>
+    <text class="role" x="142" y="122">sessionsへ対応</text>
+    <text class="col" x="24" y="158">role</text>
+    <text class="role" x="142" y="158">user/assistant</text>
+    <text class="col" x="24" y="194">content</text>
+    <text class="role" x="142" y="194">本文</text>
+    <text class="col" x="24" y="230">turn_number</text>
+    <text class="role" x="142" y="230">順序</text>
+    <text class="col" x="24" y="266">created_at</text>
+    <text class="role" x="142" y="266">保存日時</text>
+  </g>
+
+  <path class="arrow" d="M 340 185 H 420"/>
+  <text class="label" x="380" y="164" text-anchor="middle">1 user</text>
+  <text class="label" x="380" y="210" text-anchor="middle">many sessions</text>
+
+  <path class="arrow" d="M 730 230 H 810"/>
+  <text class="label" x="770" y="208" text-anchor="middle">1 session</text>
+  <text class="label" x="770" y="254" text-anchor="middle">many messages</text>
+
+  <g transform="translate(80 520)">
+    <rect class="note" width="960" height="100" rx="10"/>
+    <text class="noteText" x="28" y="34">JSON台帳の users[].sessions[] は、SQLiteでは users と sessions に分ける。</text>
+    <text class="noteText" x="28" y="64">users.status は現在状態を表す。無効化・再有効化の履歴は、必要なら将来 user_events に分ける。</text>
+  </g>
+</svg>

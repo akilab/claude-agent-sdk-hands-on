@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1080" height="700" viewBox="0 0 1080 700" role="img" aria-labelledby="title desc">
   <title id="title">Lesson 15 session registry sequence</title>
-  <desc id="desc">The script sends a prompt through ClaudeSDKClient, receives ResultMessage.session_id, and saves the session ID into an application-owned JSON registry.</desc>
+  <desc id="desc">The script sends a prompt through ClaudeSDKClient, receives ResultMessage.session_id, and saves the session ID under a user record in an application-owned JSON registry.</desc>
   <defs>
     <style>
       .bg { fill: #f8fbff; }
@@ -89,15 +89,15 @@
     <text class="stepText" x="160" y="510" text-anchor="middle">5</text>
     <path class="arrow" d="M 175 505 H 962"/>
     <text class="label" x="195" y="492">write_json_file(session_registry)</text>
-    <text class="text" x="195" y="524">user_id、session_id、cwd、状態をアプリ側の台帳に保存</text>
+    <text class="text" x="195" y="524">user_record の sessions に session_id、cwd、状態を保存</text>
   </g>
 
   <g transform="translate(635 568)">
     <rect class="store" width="360" height="88" rx="10"/>
     <rect class="storeHead" width="360" height="28" rx="10"/>
     <text class="code" x="18" y="20">outputs/lesson_15_session_registry.json</text>
-    <text class="code" x="18" y="52">"user_id": "learner-001"</text>
-    <text class="code" x="18" y="74">"session_id": "...", "cwd": "..."</text>
+    <text class="code" x="18" y="52">users[0].user_id: "learner-001"</text>
+    <text class="code" x="18" y="74">users[0].sessions[]: session_id, cwd</text>
   </g>
 
   <g>

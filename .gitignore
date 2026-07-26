@@ -1,6 +1,7 @@
 working-memory/
 python-labs/outputs/*
 !python-labs/outputs/.gitkeep
+python-labs/data/agent_sessions.sqlite3
 .uv-cache/
 **/.uv-cache/
 .venv/

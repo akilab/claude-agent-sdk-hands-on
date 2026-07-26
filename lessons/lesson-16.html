@@ -86,6 +86,7 @@
               <li>`resume` は特定の `session_id` を指定して再開する設定だと説明できる</li>
               <li>`continue_conversation` と `resume` の探し方の違いを説明できる</li>
               <li>Lesson 15のJSON台帳から `session_id` を読み込める</li>
+              <li>Lesson 15で保存した元のtranscriptと、Lesson 16で保存するresume結果を分けて考えられる</li>
               <li>`cwd` が一致していないと、想定したセッションを見つけられない理由を説明できる</li>
             </ul>
           </section>
@@ -117,6 +118,7 @@
               <p>
                 `resume` にはセッションIDが必要です。
                 `outputs/lesson_15_session_registry.json` がない場合、このレッスンのコードは明示的にエラーを出します。
+                Lesson 15を複数回実行している場合は、同じユーザーの `sessions` に複数の `session_id` が並んでいるはずです。
               </p>
             </div>
           </section>
@@ -159,10 +161,28 @@
                     <td>Lesson 15で作ったJSON台帳を読み込む。</td>
                   </tr>
                   <tr>
-                    <td><code>find_session_entry()</code></td>
+                    <td><code>find_user_record()</code></td>
                     <td>この教材で書く関数</td>
                     <td>台帳辞書と <code>user_id</code></td>
-                    <td>再開したいユーザーのセッション情報を探す。</td>
+                    <td><code>users</code> の中から、再開したいユーザーの記録を探す。</td>
+                  </tr>
+                  <tr>
+                    <td><code>select_session_record()</code></td>
+                    <td>この教材で書く関数</td>
+                    <td>ユーザー記録と、選択した <code>session_id</code></td>
+                    <td>そのユーザーの <code>sessions</code> から、再開する1件を選ぶ。</td>
+                  </tr>
+                  <tr>
+                    <td><code>session_record.transcript_path</code></td>
+                    <td>Lesson 15で保存した台帳項目</td>
+                    <td>元セッションのtranscriptファイルパス</td>
+                    <td>再開対象の元の実行結果がどこにあるかを示す。</td>
+                  </tr>
+                  <tr>
+                    <td><code>last_resume_transcript_path</code></td>
+                    <td>Lesson 16で追加する台帳項目</td>
+                    <td>resume結果のtranscriptファイルパス</td>
+                    <td>今回の続きの応答を、元セッションに紐づく結果として保存する。</td>
                   </tr>
                   <tr>
                     <td><code>build_resume_options()</code></td>
@@ -231,6 +251,9 @@
             <p>
               今回の流れは、アプリ側の台帳を読むところから始まります。
               SDKに渡すのは、台帳から取り出した `session_id` です。
+              この教材コードでは `SELECTED_SESSION_ID` が `None` の場合は最後に保存したセッションを使い、
+              値を入れた場合はその `session_id` の会話を探します。
+              resume結果は `outputs/lesson_16_resume_transcripts/` に保存し、台帳側には最後のresume結果へのパスを追加します。
             </p>
 
             <button class="diagram-frame" type="button" data-diagram-open aria-label="resume処理フローを拡大表示">
@@ -268,13 +291,14 @@ from shared.messages import append_result_message, print_assistant_message
 from shared.paths import OUTPUT_DIR, PROJECT_ROOT
 
 
-USER_ID = "learner-001"
-SESSION_REGISTRY_PATH = OUTPUT_DIR / "lesson_15_session_registry.json"
-RESUME_TRANSCRIPT_PATH = OUTPUT_DIR / "lesson_16_resume_transcript.txt"
+USER_ID = &quot;learner-001&quot;
+SELECTED_SESSION_ID = None
+SESSION_REGISTRY_PATH = OUTPUT_DIR / &quot;lesson_15_session_registry.json&quot;
+RESUME_TRANSCRIPT_DIR = OUTPUT_DIR / &quot;lesson_16_resume_transcripts&quot;
 
 FOLLOW_UP_PROMPT = (
-    "前回のセッションで説明した内容を前提に、"
-    "Webアプリでsession_idをDBに保存するときの注意点を3つ教えてください。"
+    &quot;前回のセッションで説明した内容を前提に、&quot;
+    &quot;Webアプリでsession_idをDBに保存するときの注意点を3つ教えてください。&quot;
 )
 
 
@@ -283,25 +307,56 @@ def now_iso() -&gt; str:
     return datetime.now(timezone.utc).isoformat()
 
 
+# ファイル名に使いやすいUTC時刻文字列を作る関数です。
+def now_file_stamp() -&gt; str:
+    return datetime.now(timezone.utc).strftime(&quot;%Y%m%dT%H%M%SZ&quot;)
+
+
 # Lesson 15で作ったセッション台帳を読み込む関数です。
 def load_registry() -&gt; dict[str, Any]:
     if not SESSION_REGISTRY_PATH.exists():
         raise FileNotFoundError(
-            "セッション台帳が見つかりません。先にLesson 15を実行してください。"
+            &quot;セッション台帳が見つかりません。先にLesson 15を実行してください。&quot;
         )
 
-    return json.loads(SESSION_REGISTRY_PATH.read_text(encoding="utf-8"))
+    return json.loads(SESSION_REGISTRY_PATH.read_text(encoding=&quot;utf-8&quot;))
 
 
-# セッション台帳から、指定したuser_idのセッション情報を探す関数です。
-def find_session_entry(registry: dict[str, Any], user_id: str) -&gt; dict[str, Any]:
-    sessions = registry.get("sessions", [])
+# セッション台帳から、指定したuser_idのユーザー記録を探す関数です。
+def find_user_record(registry: dict[str, Any], user_id: str) -&gt; dict[str, Any]:
+    users = registry.get(&quot;users&quot;, [])
 
-    for session in sessions:
-        if session.get("user_id") == user_id:
-            return session
+    for user_record in users:
+        if user_record.get(&quot;user_id&quot;) == user_id:
+            return user_record
 
-    raise ValueError(f"user_id={user_id} のセッションが台帳にありません。")
+    raise ValueError(f&quot;user_id={user_id} のユーザー記録が台帳にありません。&quot;)
+
+
+# ユーザー記録から、再開したいセッション記録を取り出す関数です。
+def select_session_record(
+    user_record: dict[str, Any],
+    selected_session_id,
+) -&gt; dict[str, Any]:
+    sessions = user_record.get(&quot;sessions&quot;, [])
+
+    if not sessions:
+        raise ValueError(f&quot;user_id={user_record.get(&#39;user_id&#39;)} のセッションが台帳にありません。&quot;)
+
+    if selected_session_id is None:
+        return sessions[-1]
+
+    for session_record in sessions:
+        if session_record.get(&quot;session_id&quot;) == selected_session_id:
+            return session_record
+
+    raise ValueError(f&quot;session_id={selected_session_id} が台帳にありません。&quot;)
+
+
+# resume結果を保存するtranscriptファイルの保存先を作る関数です。
+def build_resume_transcript_path(session_id: str):
+    file_name = f&quot;{session_id}_{now_file_stamp()}.txt&quot;
+    return RESUME_TRANSCRIPT_DIR / file_name
 
 
 # 保存済みsession_idを使って、特定の過去セッションを再開する設定を作る関数です。
@@ -310,10 +365,10 @@ def build_resume_options(session_id: str) -&gt; ClaudeAgentOptions:
         cwd=str(PROJECT_ROOT),
         resume=session_id,
         system_prompt=(
-            "あなたはClaude Agent SDKを学ぶ日本語教材の補助者です。"
-            "前回の会話文脈を踏まえ、短く実務的に答えてください。"
+            &quot;あなたはClaude Agent SDKを学ぶ日本語教材の補助者です。&quot;
+            &quot;前回の会話文脈を踏まえ、短く実務的に答えてください。&quot;
         ),
-        disallowed_tools=["Read", "Glob", "Grep", "Write", "Edit", "Bash"],
+        disallowed_tools=[&quot;Read&quot;, &quot;Glob&quot;, &quot;Grep&quot;, &quot;Write&quot;, &quot;Edit&quot;, &quot;Bash&quot;],
         max_turns=2,
     )
 
@@ -321,8 +376,8 @@ def build_resume_options(session_id: str) -&gt; ClaudeAgentOptions:
 # Agentからの応答を最後まで読み、ResultMessageと表示用テキストを返す関数です。
 async def receive_response(
     client: ClaudeSDKClient,
-) -&gt; tuple[ResultMessage | None, list[str]]:
-    result_message = None
+):
+    result_message: ResultMessage | None = None
     output_lines: list[str] = []
 
     async for message in client.receive_response():
@@ -330,68 +385,112 @@ async def receive_response(
             print_assistant_message(message, output_lines)
         elif isinstance(message, ResultMessage):
             result_message = message
-            append_result_message(message, output_lines, include_result=False)
+            append_result_message(result_message, output_lines, include_result=False)
+
+    if result_message is None:
+        raise RuntimeError(&quot;ResultMessageを受け取れなかったため、resume結果を保存できません。&quot;)
 
     return result_message, output_lines
+
+
+# 保存済みsession_idを使ってClaudeSDKClientに続きの質問を送る関数です。
+async def run_resume_agent(session_id: str):
+    async with ClaudeSDKClient(options=build_resume_options(session_id)) as client:
+        await client.query(FOLLOW_UP_PROMPT)
+        return await receive_response(client)
+
+
+# resume実行結果を、transcriptファイルに書き込む行リストへ整える関数です。
+def build_resume_transcript(
+    session_id: str,
+    result_message: ResultMessage,
+    transcript_lines: list[str],
+) -&gt; list[str]:
+    return [
+        &quot;ClaudeSDKClient resume transcript&quot;,
+        &quot;&quot;,
+        f&quot;user_id: {USER_ID}&quot;,
+        f&quot;resume_session_id: {session_id}&quot;,
+        f&quot;result_session_id: {result_message.session_id}&quot;,
+        &quot;&quot;,
+        &quot;Prompt:&quot;,
+        FOLLOW_UP_PROMPT,
+        &quot;&quot;,
+        &quot;Response:&quot;,
+        *transcript_lines,
+    ]
 
 
 # resume後の状態を、Lesson 15のセッション台帳へ追記する関数です。
 def update_registry_after_resume(
     registry: dict[str, Any],
-    entry: dict[str, Any],
+    session_record: dict[str, Any],
     result_message: ResultMessage,
+    resume_transcript_path: str,
 ) -&gt; dict[str, Any]:
-    entry["last_resumed_at"] = now_iso()
-    entry["last_subtype"] = result_message.subtype
-    entry["is_error"] = result_message.is_error
-    entry["num_turns"] = result_message.num_turns
-    entry["updated_at"] = now_iso()
-    entry["last_result_session_id"] = result_message.session_id
+    session_record[&quot;last_resumed_at&quot;] = now_iso()
+    session_record[&quot;last_subtype&quot;] = result_message.subtype
+    session_record[&quot;is_error&quot;] = result_message.is_error
+    session_record[&quot;num_turns&quot;] = result_message.num_turns
+    session_record[&quot;updated_at&quot;] = now_iso()
+    session_record[&quot;last_result_session_id&quot;] = result_message.session_id
+    session_record[&quot;last_resume_transcript_path&quot;] = resume_transcript_path
 
-    registry["updated_at"] = now_iso()
+    registry[&quot;updated_at&quot;] = now_iso()
     return registry
+
+
+# resume結果を保存し、台帳にも最後のresume情報を反映する関数です。
+def save_resume_result(
+    registry: dict[str, Any],
+    session_record: dict[str, Any],
+    result_message: ResultMessage,
+    transcript_lines: list[str],
+) -&gt; str:
+    session_id = str(session_record[&quot;session_id&quot;])
+    resume_transcript_path = build_resume_transcript_path(session_id)
+    transcript = build_resume_transcript(session_id, result_message, transcript_lines)
+    updated_registry = update_registry_after_resume(
+        registry,
+        session_record,
+        result_message,
+        str(resume_transcript_path),
+    )
+
+    write_json_file(SESSION_REGISTRY_PATH, updated_registry)
+    write_text_lines(resume_transcript_path, transcript)
+    return str(resume_transcript_path)
 
 
 # 保存済みsession_idを読み込み、ClaudeSDKClientで会話を再開する関数です。
 async def resume_saved_session() -&gt; None:
     registry = load_registry()
-    entry = find_session_entry(registry, USER_ID)
-    session_id = str(entry["session_id"])
+    user_record = find_user_record(registry, USER_ID)
+    session_record = select_session_record(user_record, SELECTED_SESSION_ID)
+    session_id = str(session_record[&quot;session_id&quot;])
 
-    print_section("Resume target")
-    print(f"user_id: {USER_ID}")
-    print(f"session_id: {session_id}")
-    print(f"cwd: {entry.get('cwd')}")
+    print_section(&quot;Resume target&quot;)
+    print(f&quot;user_id: {USER_ID}&quot;)
+    print(f&quot;session_id: {session_id}&quot;)
+    print(f&quot;cwd: {session_record.get(&#39;cwd&#39;)}&quot;)
+    print(f&quot;original_transcript: {session_record.get(&#39;transcript_path&#39;)}&quot;)
 
-    async with ClaudeSDKClient(options=build_resume_options(session_id)) as client:
-        await client.query(FOLLOW_UP_PROMPT)
-        result_message, transcript_lines = await receive_response(client)
+    agent_response = await run_resume_agent(session_id)
+    if agent_response is None:
+        raise RuntimeError(&quot;Agentの応答を受け取れませんでした。&quot;)
 
-    if result_message is None:
-        raise RuntimeError("ResultMessageを受け取れなかったため、resume結果を保存できません。")
+    result_message = agent_response[0]
+    transcript_lines = agent_response[1]
+    resume_transcript_path = save_resume_result(
+        registry,
+        session_record,
+        result_message,
+        transcript_lines,
+    )
 
-    updated_registry = update_registry_after_resume(registry, entry, result_message)
-
-    transcript = [
-        "ClaudeSDKClient resume transcript",
-        "",
-        f"user_id: {USER_ID}",
-        f"resume_session_id: {session_id}",
-        f"result_session_id: {result_message.session_id}",
-        "",
-        "Prompt:",
-        FOLLOW_UP_PROMPT,
-        "",
-        "Response:",
-        *transcript_lines,
-    ]
-
-    write_json_file(SESSION_REGISTRY_PATH, updated_registry)
-    write_text_lines(RESUME_TRANSCRIPT_PATH, transcript)
-
-    print_section("Saved resume result")
-    print(f"registry: {SESSION_REGISTRY_PATH}")
-    print(f"transcript: {RESUME_TRANSCRIPT_PATH}")
+    print_section(&quot;Saved resume result&quot;)
+    print(f&quot;registry: {SESSION_REGISTRY_PATH}&quot;)
+    print(f&quot;transcript: {resume_transcript_path}&quot;)
 
 
 # このファイルを直接実行したときの入口になる関数です。
@@ -399,7 +498,7 @@ def main() -&gt; None:
     asyncio.run(resume_saved_session())
 
 
-if __name__ == "__main__":
+if __name__ == &quot;__main__&quot;:
     main()
 </code></pre>
             </div>
@@ -417,20 +516,36 @@ if __name__ == "__main__":
               <pre><code>uv run python practice/lesson_16_resume_session.py</code></pre>
             </div>
 
-            <p>再開結果のtranscriptを確認します。</p>
+            <p>再開結果のtranscriptファイルを確認します。</p>
 
             <div class="code-block">
               <div class="code-block__header">
                 <span>Windows</span>
               </div>
-              <pre><code>Get-Content outputs/lesson_16_resume_transcript.txt</code></pre>
+              <pre><code>Get-ChildItem outputs/lesson_16_resume_transcripts</code></pre>
             </div>
 
             <div class="code-block">
               <div class="code-block__header">
                 <span>macOS / Linux</span>
               </div>
-              <pre><code>cat outputs/lesson_16_resume_transcript.txt</code></pre>
+              <pre><code>ls outputs/lesson_16_resume_transcripts</code></pre>
+            </div>
+
+            <p>台帳に `last_resume_transcript_path` が追加されたことも確認します。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Windows</span>
+              </div>
+              <pre><code>Get-Content outputs/lesson_15_session_registry.json</code></pre>
+            </div>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>macOS / Linux</span>
+              </div>
+              <pre><code>cat outputs/lesson_15_session_registry.json</code></pre>
             </div>
 
             <p>完成版だけを確認したい場合は、次を実行します。</p>
@@ -450,17 +565,19 @@ if __name__ == "__main__":
               <li>`resume` は関数ですか、`ClaudeAgentOptions` に渡す設定ですか。</li>
               <li>`continue_conversation=True` と `resume=session_id` は、セッションの探し方がどう違いますか。</li>
               <li>Lesson 16を実行する前にLesson 15の台帳が必要な理由を説明してください。</li>
+              <li>Lesson 15の `transcript_path` と、Lesson 16の `last_resume_transcript_path` は何が違いますか。</li>
               <li>`cwd` が一致しないと、なぜ想定したセッションへ戻れない可能性がありますか。</li>
               <li>Webアプリで会話一覧を表示する場合、`session_id` 以外にどの情報を保存したいですか。</li>
             </ol>
             <p>
-              次のレッスンでは、複数ユーザー相当の会話を分けるために、複数の `user_id` と `session_id` を扱います。
+              ここまでで、アプリ側の台帳からユーザーを探し、そのユーザーのセッションを選んで `resume` する流れを作りました。
+              Web UIを作る場合は、この `sessions` の一覧を画面に出し、選ばれた `session_id` を使います。
             </p>
           </section>
 
           <nav class="lesson-nav-bottom" aria-label="レッスン移動">
             <a href="lesson-15.html">前へ: session_idを保存する</a>
-            <a href="#" aria-disabled="true">次のレッスンは準備中</a>
+            <a href="lesson-17.html">次へ: SQLite保存を設計する</a>
           </nav>
         </article>
       </div>

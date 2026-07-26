@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="720" viewBox="0 0 1120 720" role="img" aria-labelledby="title desc">
+  <title id="title">Lesson 18 SQLite table creation flow</title>
+  <desc id="desc">A sequence diagram showing how the Python script creates a SQLite database and the users, sessions, and messages tables.</desc>
+  <defs>
+    <style>
+      .bg { fill: #f8fbff; }
+      .lane { fill: #ffffff; stroke: #c9d8ee; stroke-width: 2; }
+      .head { fill: #0b1f3f; }
+      .headText { fill: #ffffff; font: 700 18px Arial, sans-serif; }
+      .line { stroke: #9fb4ce; stroke-width: 2; stroke-dasharray: 8 8; }
+      .arrow { stroke: #2f6fdd; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }
+      .text { fill: #17345f; font: 15px Arial, sans-serif; }
+      .step { fill: #eaf2ff; stroke: #9fc0f2; stroke-width: 1.5; }
+      .note { fill: #fff7db; stroke: #e1bc4f; stroke-width: 1.5; }
+      .noteText { fill: #294562; font: 15px Arial, sans-serif; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2f6fdd"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" width="1120" height="720" rx="18"/>
+
+  <g transform="translate(80 60)">
+    <rect class="lane" width="220" height="520" rx="10"/>
+    <rect class="head" width="220" height="52" rx="10"/>
+    <text class="headText" x="110" y="33" text-anchor="middle">main()</text>
+    <line class="line" x1="110" y1="70" x2="110" y2="500"/>
+  </g>
+
+  <g transform="translate(450 60)">
+    <rect class="lane" width="220" height="520" rx="10"/>
+    <rect class="head" width="220" height="52" rx="10"/>
+    <text class="headText" x="110" y="33" text-anchor="middle">sqlite3</text>
+    <line class="line" x1="110" y1="70" x2="110" y2="500"/>
+  </g>
+
+  <g transform="translate(820 60)">
+    <rect class="lane" width="220" height="520" rx="10"/>
+    <rect class="head" width="220" height="52" rx="10"/>
+    <text class="headText" x="110" y="33" text-anchor="middle">data DB</text>
+    <line class="line" x1="110" y1="70" x2="110" y2="500"/>
+  </g>
+
+  <path class="arrow" d="M 190 150 H 560"/>
+  <rect class="step" x="245" y="124" width="260" height="42" rx="8"/>
+  <text class="text" x="375" y="151" text-anchor="middle">connect_database()</text>
+
+  <path class="arrow" d="M 560 205 H 930"/>
+  <rect class="step" x="625" y="179" width="240" height="42" rx="8"/>
+  <text class="text" x="745" y="206" text-anchor="middle">agent_sessions.sqlite3</text>
+
+  <path class="arrow" d="M 190 275 H 560"/>
+  <rect class="step" x="230" y="249" width="300" height="42" rx="8"/>
+  <text class="text" x="380" y="276" text-anchor="middle">CREATE TABLE users</text>
+
+  <path class="arrow" d="M 190 340 H 560"/>
+  <rect class="step" x="230" y="314" width="300" height="42" rx="8"/>
+  <text class="text" x="380" y="341" text-anchor="middle">CREATE TABLE sessions</text>
+
+  <path class="arrow" d="M 190 405 H 560"/>
+  <rect class="step" x="230" y="379" width="300" height="42" rx="8"/>
+  <text class="text" x="380" y="406" text-anchor="middle">CREATE TABLE messages</text>
+
+  <path class="arrow" d="M 560 470 H 190"/>
+  <rect class="step" x="276" y="444" width="200" height="42" rx="8"/>
+  <text class="text" x="376" y="471" text-anchor="middle">list_tables()</text>
+
+  <g transform="translate(80 620)">
+    <rect class="note" width="960" height="68" rx="10"/>
+    <text class="noteText" x="28" y="29">このレッスンではAgentを実行しない。DB作成だけを独立した準備コードにする。</text>
+    <text class="noteText" x="28" y="52">作成先は python-labs/data/agent_sessions.sqlite3。後続レッスンでも同じDBを使う。</text>
+  </g>
+</svg>

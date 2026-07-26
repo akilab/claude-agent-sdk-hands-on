@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1080" height="700" viewBox="0 0 1080 700" role="img" aria-labelledby="title desc">
   <title id="title">Lesson 16 resume sequence</title>
-  <desc id="desc">The script reads a saved session ID from a JSON registry, passes it to ClaudeAgentOptions resume, sends a follow-up prompt with ClaudeSDKClient, and saves the resumed result.</desc>
+  <desc id="desc">The script reads a saved user record and session record from a JSON registry, passes the selected session ID to ClaudeAgentOptions resume, sends a follow-up prompt with ClaudeSDKClient, and saves the resumed result as a session-linked transcript.</desc>
   <defs>
     <style>
       .bg { fill: #f8fbff; }
@@ -64,8 +64,8 @@
     <circle class="step" cx="420" cy="235" r="15"/>
     <text class="stepText" x="420" y="240" text-anchor="middle">2</text>
     <path class="return" d="M 405 235 H 160"/>
-    <text class="label" x="205" y="222">session_id と cwd を取得</text>
-    <text class="text" x="205" y="254">アプリ側がどの会話を再開するか決める</text>
+    <text class="label" x="205" y="222">user_record から session_record を選ぶ</text>
+    <text class="text" x="205" y="254">選ばれた会話の session_id と cwd を取得</text>
   </g>
 
   <g>
@@ -89,15 +89,15 @@
     <text class="stepText" x="962" y="510" text-anchor="middle">5</text>
     <path class="return" d="M 947 505 H 160"/>
     <text class="label" x="340" y="492">ResultMessage と応答本文</text>
-    <text class="text" x="340" y="524">再開結果を受け取り、台帳と transcript を保存する</text>
+    <text class="text" x="340" y="524">再開結果を受け取り、台帳に保存先を追記する</text>
   </g>
 
   <g transform="translate(610 565)">
     <rect class="store" width="390" height="88" rx="10"/>
     <rect class="storeHead" width="390" height="28" rx="10"/>
-    <text class="code" x="18" y="20">outputs/lesson_16_resume_transcript.txt</text>
-    <text class="code" x="18" y="52">resume_session_id: "..."</text>
-    <text class="code" x="18" y="74">result_session_id: "..."</text>
+    <text class="code" x="18" y="20">outputs/lesson_16_resume_transcripts/</text>
+    <text class="code" x="18" y="52">&lt;session_id&gt;_&lt;timestamp&gt;.txt</text>
+    <text class="code" x="18" y="74">registry.last_resume_transcript_path</text>
   </g>
 
   <g>

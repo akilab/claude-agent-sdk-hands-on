@@ -80,7 +80,7 @@
             <h2>このレッスンのゴール</h2>
             <p class="lesson-one-liner">
               <span>このレッスンを一言で</span>
-              SDKから返る `session_id` を、自分のアプリが後で使える形で保存します。
+              SDKから返る `session_id` を、ユーザーごとの会話一覧として保存します。
             </p>
             <ul class="check-list">
               <li>`ResultMessage.session_id` はSDKが返す会話識別子だと説明できる</li>
@@ -186,6 +186,36 @@
                     <td>保存先パスとPythonオブジェクトを渡す</td>
                     <td>辞書を読みやすいJSONとして `outputs/` に保存する。</td>
                   </tr>
+                  <tr>
+                    <td><code>run_agent()</code></td>
+                    <td>この教材で書く非同期関数</td>
+                    <td>内部で <code>client.query(PROMPT)</code> を呼ぶ</td>
+                    <td>ClaudeSDKClientで質問を送り、<code>ResultMessage</code> とtranscriptを返す。</td>
+                  </tr>
+                  <tr>
+                    <td><code>receive_response()</code></td>
+                    <td>この教材で書く非同期関数</td>
+                    <td><code>ClaudeSDKClient</code> を受け取る</td>
+                    <td>Agentから返るメッセージを読み、最後の <code>ResultMessage</code> を返す。</td>
+                  </tr>
+                  <tr>
+                    <td><code>save_session_to_registry()</code></td>
+                    <td>この教材で書く関数</td>
+                    <td><code>ResultMessage</code> とtranscriptを渡す</td>
+                    <td><code>session_id</code> を保存用レコードに変換し、JSON台帳へ保存する。</td>
+                  </tr>
+                  <tr>
+                    <td><code>find_user_record()</code></td>
+                    <td>この教材で書く関数</td>
+                    <td>台帳辞書と <code>user_id</code> を渡す</td>
+                    <td><code>users</code> の中から、対象ユーザーの記録を探す。</td>
+                  </tr>
+                  <tr>
+                    <td><code>upsert_user_session()</code></td>
+                    <td>この教材で書く関数</td>
+                    <td>台帳辞書、<code>user_id</code>、1会話分の記録を渡す</td>
+                    <td>同じユーザーの過去セッションを残したまま、新しいセッションを追加する。</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -201,7 +231,9 @@
             <h2>保存するJSONの形</h2>
             <p>
               今回は、次のような台帳を作ります。
-              `session_id` だけを裸で保存するのではなく、誰の会話か、どの作業ディレクトリの会話か、最後の状態はどうだったかを一緒に保存します。
+              `session_id` だけを裸で保存するのではなく、
+              `users` の下にユーザーごとの `sessions` を持つ形にします。
+              下のサンプルでは、2人のユーザーがそれぞれ2つの会話セッションを持っています。
             </p>
 
             <div class="code-block">
@@ -210,28 +242,81 @@
               </div>
               <pre><code>{
   "version": 1,
-  "updated_at": "2026-07-26T10:00:00+00:00",
-  "sessions": [
+  "updated_at": "2026-07-26T10:30:00+00:00",
+  "users": [
     {
       "user_id": "learner-001",
-      "title": "ClaudeSDKClient session capture",
-      "session_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-      "cwd": "D:\\Claude\\agent-sdk\\python-labs",
-      "last_subtype": "success",
-      "is_error": false,
-      "num_turns": 1,
-      "created_at": "2026-07-26T10:00:00+00:00",
-      "updated_at": "2026-07-26T10:00:00+00:00"
+      "sessions": [
+        {
+          "session_id": "session-001-a",
+          "title": "SDKの基本相談",
+          "cwd": "D:\\Claude\\agent-sdk\\python-labs",
+          "transcript_path": "D:\\Claude\\agent-sdk\\python-labs\\outputs\\lesson_15_transcripts\\session-001-a.txt",
+          "last_subtype": "success",
+          "is_error": false,
+          "num_turns": 1,
+          "created_at": "2026-07-26T10:00:00+00:00",
+          "updated_at": "2026-07-26T10:00:00+00:00"
+        },
+        {
+          "session_id": "session-001-b",
+          "title": "resumeの練習",
+          "cwd": "D:\\Claude\\agent-sdk\\python-labs",
+          "transcript_path": "D:\\Claude\\agent-sdk\\python-labs\\outputs\\lesson_15_transcripts\\session-001-b.txt",
+          "last_subtype": "success",
+          "is_error": false,
+          "num_turns": 1,
+          "created_at": "2026-07-26T10:10:00+00:00",
+          "updated_at": "2026-07-26T10:10:00+00:00"
+        }
+      ]
+    },
+    {
+      "user_id": "learner-002",
+      "sessions": [
+        {
+          "session_id": "session-002-a",
+          "title": "Optionsの確認",
+          "cwd": "D:\\Claude\\agent-sdk\\python-labs",
+          "transcript_path": "D:\\Claude\\agent-sdk\\python-labs\\outputs\\lesson_15_transcripts\\session-002-a.txt",
+          "last_subtype": "success",
+          "is_error": false,
+          "num_turns": 1,
+          "created_at": "2026-07-26T10:20:00+00:00",
+          "updated_at": "2026-07-26T10:20:00+00:00"
+        },
+        {
+          "session_id": "session-002-b",
+          "title": "構造化出力の相談",
+          "cwd": "D:\\Claude\\agent-sdk\\python-labs",
+          "transcript_path": "D:\\Claude\\agent-sdk\\python-labs\\outputs\\lesson_15_transcripts\\session-002-b.txt",
+          "last_subtype": "success",
+          "is_error": false,
+          "num_turns": 2,
+          "created_at": "2026-07-26T10:30:00+00:00",
+          "updated_at": "2026-07-26T10:30:00+00:00"
+        }
+      ]
     }
   ]
 }</code></pre>
             </div>
 
             <div class="callout">
+              <strong>名前を分けて読むと混乱しにくくなります</strong>
+              <p>
+                台帳全体は `registry`、`users` の中の1人分は `user_record`、
+                `sessions` の中の1会話分は `session_record` と呼びます。
+                `user_id` は `user_record` にあり、`session_id` は `session_record` にあります。
+              </p>
+            </div>
+
+            <div class="callout">
               <strong>この台帳はSDKの内部保存ではありません</strong>
               <p>
-                SDKはセッション履歴を自動的にディスクへ保存します。
-                ここで作るJSONは、それとは別に「自分のアプリが会話を一覧・再開するための控え」です。
+                SDKは `session_id` で再開できる会話履歴を管理します。
+                ここで作るJSONは、それとは別に「自分のアプリがユーザー別の会話一覧を表示し、選ばれた会話を再開するための控え」です。
+                transcript本文は `session_id` ごとに別ファイルとして保存し、台帳にはそのファイルパスを持たせます。
               </p>
             </div>
           </section>
@@ -243,6 +328,45 @@
               `session_id` は自分で作る値ではありません。
               応答の最後に届く `ResultMessage` から読み取り、自分の台帳へ保存します。
             </p>
+
+            <div class="table-wrap" role="region" aria-label="Lesson 15の関数呼び出し順">
+              <table class="api-table">
+                <thead>
+                  <tr>
+                    <th>順番</th>
+                    <th>関数</th>
+                    <th>役割</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>1</td>
+                    <td><code>main()</code></td>
+                    <td>このファイルを実行したときの入口。</td>
+                  </tr>
+                  <tr>
+                    <td>2</td>
+                    <td><code>create_session_and_save_registry()</code></td>
+                    <td>Agent実行から保存までの全体をつなぐ。</td>
+                  </tr>
+                  <tr>
+                    <td>3</td>
+                    <td><code>run_agent()</code></td>
+                    <td><code>client.query(PROMPT)</code> でClaudeに質問を送る。</td>
+                  </tr>
+                  <tr>
+                    <td>4</td>
+                    <td><code>receive_response()</code></td>
+                    <td>応答を読み、<code>ResultMessage</code> とtranscriptを返す。</td>
+                  </tr>
+                  <tr>
+                    <td>5</td>
+                    <td><code>save_session_to_registry()</code></td>
+                    <td><code>ResultMessage.session_id</code> をJSON台帳へ保存する。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
 
             <button class="diagram-frame" type="button" data-diagram-open aria-label="session_id保存フローを拡大表示">
               <img src="../assets/img/lesson-15-session-registry.svg" alt="ClaudeSDKClientで問い合わせ、ResultMessage.session_idを受け取り、JSON台帳へ保存する流れ">
@@ -279,14 +403,14 @@ from shared.messages import append_result_message, print_assistant_message
 from shared.paths import OUTPUT_DIR, PROJECT_ROOT
 
 
-USER_ID = "learner-001"
-CONVERSATION_TITLE = "ClaudeSDKClient session capture"
-SESSION_REGISTRY_PATH = OUTPUT_DIR / "lesson_15_session_registry.json"
-TRANSCRIPT_PATH = OUTPUT_DIR / "lesson_15_session_transcript.txt"
+USER_ID = &quot;learner-001&quot;
+CONVERSATION_TITLE = &quot;ClaudeSDKClient session capture&quot;
+SESSION_REGISTRY_PATH = OUTPUT_DIR / &quot;lesson_15_session_registry.json&quot;
+TRANSCRIPT_DIR = OUTPUT_DIR / &quot;lesson_15_transcripts&quot;
 
 PROMPT = (
-    "Claude Agent SDKをPythonで学ぶ人に向けて、"
-    "セッションIDを保存する理由を3文で説明してください。"
+    &quot;Claude Agent SDKをPythonで学ぶ人に向けて、&quot;
+    &quot;セッションIDを保存する理由を3文で説明してください。&quot;
 )
 
 
@@ -300,10 +424,10 @@ def build_options() -&gt; ClaudeAgentOptions:
     return ClaudeAgentOptions(
         cwd=str(PROJECT_ROOT),
         system_prompt=(
-            "あなたはClaude Agent SDKを学ぶ日本語教材の補助者です。"
-            "短く、実務に結びつけて説明してください。"
+            &quot;あなたはClaude Agent SDKを学ぶ日本語教材の補助者です。&quot;
+            &quot;短く、実務に結びつけて説明してください。&quot;
         ),
-        disallowed_tools=["Read", "Glob", "Grep", "Write", "Edit", "Bash"],
+        disallowed_tools=[&quot;Read&quot;, &quot;Glob&quot;, &quot;Grep&quot;, &quot;Write&quot;, &quot;Edit&quot;, &quot;Bash&quot;],
         max_turns=2,
     )
 
@@ -312,52 +436,100 @@ def build_options() -&gt; ClaudeAgentOptions:
 def load_registry() -&gt; dict[str, Any]:
     if not SESSION_REGISTRY_PATH.exists():
         return {
-            "version": 1,
-            "updated_at": now_iso(),
-            "sessions": [],
+            &quot;version&quot;: 1,
+            &quot;updated_at&quot;: now_iso(),
+            &quot;users&quot;: [],
         }
 
-    return json.loads(SESSION_REGISTRY_PATH.read_text(encoding="utf-8"))
+    return json.loads(SESSION_REGISTRY_PATH.read_text(encoding=&quot;utf-8&quot;))
 
 
-# セッション台帳に保存する1件分の辞書を作る関数です。
-def build_session_entry(result_message: ResultMessage) -&gt; dict[str, Any]:
+# session_idごとに分けたtranscriptファイルの保存先を作る関数です。
+def build_transcript_path(session_id: str):
+    file_name = f&quot;{session_id}.txt&quot;
+    return TRANSCRIPT_DIR / file_name
+
+
+# セッション台帳に保存する、1会話分の辞書を作る関数です。
+def build_session_record(
+    result_message: ResultMessage,
+    transcript_path: str,
+) -&gt; dict[str, Any]:
     return {
-        "user_id": USER_ID,
-        "title": CONVERSATION_TITLE,
-        "session_id": result_message.session_id,
-        "cwd": str(PROJECT_ROOT),
-        "last_subtype": result_message.subtype,
-        "is_error": result_message.is_error,
-        "num_turns": result_message.num_turns,
-        "created_at": now_iso(),
-        "updated_at": now_iso(),
+        &quot;session_id&quot;: result_message.session_id,
+        &quot;title&quot;: CONVERSATION_TITLE,
+        &quot;cwd&quot;: str(PROJECT_ROOT),
+        &quot;transcript_path&quot;: transcript_path,
+        &quot;last_subtype&quot;: result_message.subtype,
+        &quot;is_error&quot;: result_message.is_error,
+        &quot;num_turns&quot;: result_message.num_turns,
+        &quot;created_at&quot;: now_iso(),
+        &quot;updated_at&quot;: now_iso(),
     }
 
 
-# 同じuser_idの古い記録を置き換え、台帳を最新状態にする関数です。
-def upsert_session_entry(
+# 台帳から指定したuser_idのユーザー記録を探す関数です。
+def find_user_record(
     registry: dict[str, Any],
-    entry: dict[str, Any],
-) -&gt; dict[str, Any]:
-    sessions = registry.get("sessions", [])
-    kept_sessions = [
-        session
-        for session in sessions
-        if session.get("user_id") != entry["user_id"]
-    ]
+    user_id: str,
+) -&gt; dict[str, Any] | None:
+    users = registry.get(&quot;users&quot;, [])
 
-    registry["version"] = 1
-    registry["updated_at"] = now_iso()
-    registry["sessions"] = [*kept_sessions, entry]
+    for user_record in users:
+        if user_record.get(&quot;user_id&quot;) == user_id:
+            return user_record
+
+    return None
+
+
+# ユーザー記録に、1会話分のセッション記録を追加または更新する関数です。
+def upsert_session_record(
+    user_record: dict[str, Any],
+    session_record: dict[str, Any],
+) -&gt; None:
+    if &quot;sessions&quot; not in user_record:
+        user_record[&quot;sessions&quot;] = []
+
+    sessions = user_record[&quot;sessions&quot;]
+
+    for index, saved_session in enumerate(sessions):
+        if saved_session.get(&quot;session_id&quot;) == session_record[&quot;session_id&quot;]:
+            sessions[index] = session_record
+            return
+
+    sessions.append(session_record)
+
+
+# user_idごとに複数のsession_idを持てる形で、台帳を更新する関数です。
+def upsert_user_session(
+    registry: dict[str, Any],
+    user_id: str,
+    session_record: dict[str, Any],
+) -&gt; dict[str, Any]:
+    user_record = find_user_record(registry, user_id)
+
+    if user_record is None:
+        user_record = {
+            &quot;user_id&quot;: user_id,
+            &quot;sessions&quot;: [],
+        }
+
+        if &quot;users&quot; not in registry:
+            registry[&quot;users&quot;] = []
+
+        registry[&quot;users&quot;].append(user_record)
+
+    upsert_session_record(user_record, session_record)
+    registry[&quot;version&quot;] = 1
+    registry[&quot;updated_at&quot;] = now_iso()
     return registry
 
 
-# Agentからの1回分の応答を最後まで読み、ResultMessageを取り出す関数です。
+# Agentからの1回分の応答を最後まで読み、ResultMessageと表示用テキストを返す関数です。
 async def receive_response(
     client: ClaudeSDKClient,
-) -&gt; tuple[ResultMessage | None, list[str]]:
-    result_message = None
+):
+    result_message: ResultMessage | None = None
     output_lines: list[str] = []
 
     async for message in client.receive_response():
@@ -365,42 +537,64 @@ async def receive_response(
             print_assistant_message(message, output_lines)
         elif isinstance(message, ResultMessage):
             result_message = message
-            append_result_message(message, output_lines, include_result=False)
+            append_result_message(result_message, output_lines, include_result=False)
+
+    if result_message is None:
+        raise RuntimeError(&quot;ResultMessageを受け取れなかったため、session_idを保存できません。&quot;)
 
     return result_message, output_lines
 
 
-# ClaudeSDKClientで問い合わせ、ResultMessage.session_idを台帳へ保存する関数です。
-async def capture_session_id() -&gt; None:
-    print_section("Prompt")
-    print(PROMPT)
-
+# ClaudeSDKClientでqueryを送り、Agentの応答を受け取る関数です。
+async def run_agent():
     async with ClaudeSDKClient(options=build_options()) as client:
         await client.query(PROMPT)
-        result_message, transcript_lines = await receive_response(client)
+        return await receive_response(client)
 
-    if result_message is None:
-        raise RuntimeError("ResultMessageを受け取れなかったため、session_idを保存できません。")
 
-    session_entry = build_session_entry(result_message)
-    registry = upsert_session_entry(load_registry(), session_entry)
+# ResultMessageから保存用レコードを作り、JSON台帳とtranscriptを書き込む関数です。
+def save_session_to_registry(
+    result_message: ResultMessage,
+    transcript_lines: list[str],
+) -&gt; dict[str, Any]:
+    transcript_path = build_transcript_path(result_message.session_id)
+    session_record = build_session_record(
+        result_message,
+        str(transcript_path),
+    )
+    registry = upsert_user_session(load_registry(), USER_ID, session_record)
 
     write_json_file(SESSION_REGISTRY_PATH, registry)
-    write_text_lines(TRANSCRIPT_PATH, transcript_lines)
+    write_text_lines(transcript_path, transcript_lines)
+    return session_record
 
-    print_section("Saved session")
-    print(f"user_id: {session_entry['user_id']}")
-    print(f"session_id: {session_entry['session_id']}")
-    print(f"registry: {SESSION_REGISTRY_PATH}")
-    print(f"transcript: {TRANSCRIPT_PATH}")
+
+# 新しいAgentセッションを作り、そのsession_idをアプリ側の台帳へ保存する関数です。
+async def create_session_and_save_registry() -&gt; None:
+    print_section(&quot;Prompt&quot;)
+    print(PROMPT)
+
+    agent_response = await run_agent()
+    if agent_response is None:
+        raise RuntimeError(&quot;Agentの応答を受け取れませんでした。&quot;)
+
+    result_message = agent_response[0]
+    transcript_lines = agent_response[1]
+    session_record = save_session_to_registry(result_message, transcript_lines)
+
+    print_section(&quot;Saved session&quot;)
+    print(f&quot;user_id: {USER_ID}&quot;)
+    print(f&quot;session_id: {session_record[&#39;session_id&#39;]}&quot;)
+    print(f&quot;registry: {SESSION_REGISTRY_PATH}&quot;)
+    print(f&quot;transcript: {session_record[&#39;transcript_path&#39;]}&quot;)
 
 
 # このファイルを直接実行したときの入口になる関数です。
 def main() -&gt; None:
-    asyncio.run(capture_session_id())
+    asyncio.run(create_session_and_save_registry())
 
 
-if __name__ == "__main__":
+if __name__ == &quot;__main__&quot;:
     main()
 </code></pre>
             </div>
@@ -432,6 +626,22 @@ if __name__ == "__main__":
                 <span>macOS / Linux</span>
               </div>
               <pre><code>cat outputs/lesson_15_session_registry.json</code></pre>
+            </div>
+
+            <p>session_idごとに保存されたtranscriptファイルも確認します。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Windows</span>
+              </div>
+              <pre><code>Get-ChildItem outputs/lesson_15_transcripts</code></pre>
+            </div>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>macOS / Linux</span>
+              </div>
+              <pre><code>ls outputs/lesson_15_transcripts</code></pre>
             </div>
 
             <p>完成版だけを確認したい場合は、次を実行します。</p>
