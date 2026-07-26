@@ -64,6 +64,7 @@
           </div>
           <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
             <a href="#goal">ゴール</a>
+            <a href="#lesson-purpose">やること</a>
             <a href="#separation">Agentと分ける理由</a>
             <a href="#database-path">保存場所</a>
             <a href="#schema">テーブル定義</a>
@@ -88,6 +89,18 @@
               <li>`users`、`sessions`、`messages` の3テーブルを作成できる</li>
               <li>作成済みテーブルを `print_database_summary()` で確認できる</li>
             </ul>
+          </section>
+          <section class="lesson-section" id="lesson-purpose">
+            <p class="eyebrow">What you will do</p>
+            <h2>このレッスンでやろうとしていること</h2>
+            <p>
+              Lesson 17で設計した `users`、`sessions`、`messages` を、実際のSQLiteテーブルとして作ります。
+              ここではAgent実行とは切り離し、DBを準備するだけに集中します。
+            </p>
+            <p>
+              完成コードでは、SQLの細部は `shared.database` に寄せ、レッスン本体では `connect_database()` と `create_schema()` を呼ぶ流れを見ます。
+              DB Browserでテーブルができていることを確認できれば、この後の保存処理へ進む準備が整います。
+            </p>
           </section>
 
           <section class="lesson-section" id="separation">

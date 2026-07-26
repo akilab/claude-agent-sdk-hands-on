@@ -64,6 +64,7 @@
           </div>
           <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
             <a href="#goal">ゴール</a>
+            <a href="#lesson-purpose">やること</a>
             <a href="#folder-rule">フォルダの使い分け</a>
             <a href="#what-to-share">共通化するもの</a>
             <a href="#shared-files">共有モジュール</a>
@@ -87,6 +88,18 @@
               <li>`shared` から共通関数をimportできる</li>
               <li>整理後のLesson 06で、`query()` と `ClaudeAgentOptions` が読みやすく残っていることを確認できる</li>
             </ul>
+          </section>
+          <section class="lesson-section" id="lesson-purpose">
+            <p class="eyebrow">What you will do</p>
+            <h2>このレッスンでやろうとしていること</h2>
+            <p>
+              Lesson 06で見たコードには、表示、保存、メッセージ処理など、毎回似た形で出てくる処理が含まれています。
+              この補足回では、それらを `scripts/shared/` に分ける理由を整理します。
+            </p>
+            <p>
+              共通化の目的はコードを短く見せることだけではありません。
+              Agent SDKの学習ポイントであるOptions、query、メッセージ型、Skill、サブエージェントが埋もれないように、周辺処理を脇へ寄せるためです。
+            </p>
           </section>
 
           <section class="lesson-section" id="folder-rule">

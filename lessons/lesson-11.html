@@ -64,6 +64,7 @@
           </div>
           <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
             <a href="#goal">ゴール</a>
+            <a href="#lesson-purpose">やること</a>
             <a href="#before-run">実行前の確認</a>
             <a href="#concepts">初出APIの見方</a>
             <a href="#definition-detail">AgentDefinitionの読み方</a>
@@ -90,6 +91,18 @@
               <li>親Agentがサブエージェントを使うには `Agent` ツールが必要だと説明できる</li>
               <li>サブエージェントに渡す役割とツール権限を小さく設計できる</li>
             </ul>
+          </section>
+          <section class="lesson-section" id="lesson-purpose">
+            <p class="eyebrow">What you will do</p>
+            <h2>このレッスンでやろうとしていること</h2>
+            <p>
+              サブエージェントは、1つのAgentにすべてを任せるのではなく、役割を分けて依頼するための仕組みです。
+              このレッスンでは、親Agentがレビュー担当のサブエージェントへ仕事を依頼する流れを見ます。
+            </p>
+            <p>
+              完成コードでは、`AgentDefinition`、`agents`、`allowed_tools=["Agent"]` の関係を観察します。
+              重要なのは、サブエージェントが親の文脈を何でも自動的に引き継ぐわけではなく、必要な役割やSkillを明示することです。
+            </p>
           </section>
 
           <section class="lesson-section" id="before-run">

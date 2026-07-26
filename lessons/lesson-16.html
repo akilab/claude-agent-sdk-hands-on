@@ -64,6 +64,7 @@
           </div>
           <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
             <a href="#goal">ゴール</a>
+            <a href="#lesson-purpose">やること</a>
             <a href="#before-run">実行前の確認</a>
             <a href="#concepts">初出APIの見方</a>
             <a href="#continue-resume">continueとの違い</a>
@@ -89,6 +90,18 @@
               <li>Lesson 15で保存した元のtranscriptと、Lesson 16で保存するresume結果を分けて考えられる</li>
               <li>`cwd` が一致していないと、想定したセッションを見つけられない理由を説明できる</li>
             </ul>
+          </section>
+          <section class="lesson-section" id="lesson-purpose">
+            <p class="eyebrow">What you will do</p>
+            <h2>このレッスンでやろうとしていること</h2>
+            <p>
+              Lesson 15で保存した `session_id` を使い、特定の過去セッションへ戻ります。
+              このレッスンでは、JSON台帳から再開対象を読み込み、`ClaudeAgentOptions(resume=...)` に渡す流れを確認します。
+            </p>
+            <p>
+              完成コードを動かすと、以前の会話文脈を前提にした返答が得られます。
+              `continue_conversation` ではなく `resume=session_id` を使うことで、どの会話へ戻るかをアプリ側で指定できる点が重要です。
+            </p>
           </section>
 
           <section class="lesson-section" id="before-run">

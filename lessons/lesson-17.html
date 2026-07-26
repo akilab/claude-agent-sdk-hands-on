@@ -64,6 +64,7 @@
           </div>
           <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
             <a href="#goal">ゴール</a>
+            <a href="#lesson-purpose">やること</a>
             <a href="#why-sqlite">なぜSQLiteか</a>
             <a href="#tables">テーブル設計</a>
             <a href="#lifecycle">状態管理</a>
@@ -89,6 +90,18 @@
               <li>Lesson 15/16のJSON構造をSQLiteのテーブルへ対応づけられる</li>
               <li>次のレッスンでDBを作る前に、必要な列を確認できる</li>
             </ul>
+          </section>
+          <section class="lesson-section" id="lesson-purpose">
+            <p class="eyebrow">What you will do</p>
+            <h2>このレッスンでやろうとしていること</h2>
+            <p>
+              JSON台帳とtranscriptファイルだけでは、Webアプリで複数ユーザーや複数会話を扱うには限界があります。
+              このレッスンでは、SQLiteに保存する前に、どの情報をどのテーブルへ分けるかを設計します。
+            </p>
+            <p>
+              完成コードはDBを作るためではなく、`users`、`sessions`、`messages` の役割を整理するために使います。
+              Claudeの `session_id` とアプリ側のユーザー管理を混ぜないことが、この後のDB実装の前提になります。
+            </p>
           </section>
 
           <section class="lesson-section" id="why-sqlite">

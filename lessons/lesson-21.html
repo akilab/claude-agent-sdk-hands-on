@@ -64,6 +64,7 @@
           </div>
           <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
             <a href="#goal">ゴール</a>
+            <a href="#lesson-purpose">やること</a>
             <a href="#before-run">実行前の確認</a>
             <a href="#design">今回の設計</a>
             <a href="#sequence">処理の流れ</a>
@@ -90,6 +91,18 @@
               <li>resume後の `user` と `assistant` を同じ `claude_session_id` へ追記できる</li>
               <li>実行するたびに、同じ最新セッションへ会話が続いていくことを確認できる</li>
             </ul>
+          </section>
+          <section class="lesson-section" id="lesson-purpose">
+            <p class="eyebrow">What you will do</p>
+            <h2>このレッスンでやろうとしていること</h2>
+            <p>
+              ClaudeSDKClient編の最後に、保存済みセッションをDBから選び、`resume` して会話を継続します。
+              ユーザーは `learner-001` に固定し、複数セッションがあれば一覧を表示したうえで、最新のものを自動選択します。
+            </p>
+            <p>
+              完成コードを実行するたびに、選ばれたセッションの `updated_at` が更新され、次回も同じセッションが最新として選ばれます。
+              Webフロントで会話一覧から選ぶUIを作る前に、Pythonだけで継続会話の核を完成させる回です。
+            </p>
           </section>
 
           <section class="lesson-section" id="before-run">

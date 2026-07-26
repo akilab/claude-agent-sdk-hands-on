@@ -64,6 +64,7 @@
           </div>
           <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
             <a href="#goal">ゴール</a>
+            <a href="#lesson-purpose">やること</a>
             <a href="#concepts">今回使うPython</a>
             <a href="#write-script">非同期の流れを動かす</a>
             <a href="#run">実行して読み解く</a>
@@ -86,6 +87,18 @@
               <li>`asyncio.gather()` で複数の処理を並行して待てる</li>
               <li>Agent SDKの `query()` を読む準備ができる</li>
             </ul>
+          </section>
+          <section class="lesson-section" id="lesson-purpose">
+            <p class="eyebrow">What you will do</p>
+            <h2>このレッスンでやろうとしていること</h2>
+            <p>
+              Claude Agent SDKのPythonコードでは、`async`、`await`、`async for` がよく出てきます。
+              これは複数の応答や途中経過を、止まらず順番に受け取るためのPythonの仕組みです。
+            </p>
+            <p>
+              ここではSDKを使う前に、短い非同期処理を完成コードで動かします。
+              何かを待つ処理、並行して進む処理、順番に結果を受け取る処理を観察し、後で `query()` や `receive_response()` を読む準備をします。
+            </p>
           </section>
 
           <section class="lesson-section" id="concepts">

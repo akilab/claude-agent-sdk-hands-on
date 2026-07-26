@@ -64,6 +64,7 @@
           </div>
           <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
             <a href="#goal">ゴール</a>
+            <a href="#lesson-purpose">やること</a>
             <a href="#before-run">実行前の確認</a>
             <a href="#concepts">初出APIの見方</a>
             <a href="#sequence">処理の流れ</a>
@@ -87,6 +88,18 @@
               <li>同じclientで2回問い合わせると、同じセッションの文脈を引き継ぐことを確認できる</li>
               <li>`ResultMessage.session_id` を見て、会話の識別子を観察できる</li>
             </ul>
+          </section>
+          <section class="lesson-section" id="lesson-purpose">
+            <p class="eyebrow">What you will do</p>
+            <h2>このレッスンでやろうとしていること</h2>
+            <p>
+              `ClaudeSDKClient` は、同じclientの中で複数回問い合わせながら会話を続けるための入口です。
+              このレッスンでは、1つのclientで2回質問し、同じセッションとして扱われることを確認します。
+            </p>
+            <p>
+              完成コードでは、`async with ClaudeSDKClient(...)`、`client.query()`、`client.receive_response()` の役割を観察します。
+              `query()` 単発との違いはまだ小さく見えますが、後のsession_id保存とresumeに向けた土台になります。
+            </p>
           </section>
 
           <section class="lesson-section" id="before-run">

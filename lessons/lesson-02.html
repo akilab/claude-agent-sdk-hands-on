@@ -64,6 +64,7 @@
           </div>
           <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
             <a href="#goal">ゴール</a>
+            <a href="#lesson-purpose">やること</a>
             <a href="#why-bare">なぜ最小構成で作るか</a>
             <a href="#initialize">uvプロジェクトを作る</a>
             <a href="#write-script">Pythonで状態を確認する</a>
@@ -86,6 +87,18 @@
               <li>`uv.lock` をGitに入れる理由を説明できる</li>
               <li>プロジェクト状態を確認するPythonスクリプトを書ける</li>
             </ul>
+          </section>
+          <section class="lesson-section" id="lesson-purpose">
+            <p class="eyebrow">What you will do</p>
+            <h2>このレッスンでやろうとしていること</h2>
+            <p>
+              このレッスンでは、uvで作られるPythonプロジェクトの状態を確認します。
+              `pyproject.toml`、`uv.lock`、`.venv` は、SDKのコードそのものではありませんが、実行環境を再現するための重要な土台です。
+            </p>
+            <p>
+              完成コードを動かして、プロジェクトに必要なファイルがあるか、依存関係が読めるか、実行場所が正しいかを観察します。
+              後でSDKのエラーを追うときに、環境まわりを切り分けられるようになることが狙いです。
+            </p>
           </section>
 
           <section class="lesson-section" id="why-bare">

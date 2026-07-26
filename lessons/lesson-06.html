@@ -64,6 +64,7 @@
           </div>
           <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
             <a href="#goal">ゴール</a>
+            <a href="#lesson-purpose">やること</a>
             <a href="#before-run">実行前の確認</a>
             <a href="#concepts">初出APIの見方</a>
             <a href="#options-detail">Optionsの読み方</a>
@@ -90,6 +91,18 @@
               <li>`AssistantMessage` と `ResultMessage` を分けて表示できる</li>
               <li>最初のAgentは、ツール利用よりも「Pythonから呼べた」流れを優先して確認できる</li>
             </ul>
+          </section>
+          <section class="lesson-section" id="lesson-purpose">
+            <p class="eyebrow">What you will do</p>
+            <h2>このレッスンでやろうとしていること</h2>
+            <p>
+              ここからClaude Agent SDKをPythonから動かします。
+              最初の目的は、複雑なツール利用やファイル操作ではなく、プロンプトを送り、Claudeから返るメッセージを受け取り、実行結果を保存する最小の流れを見ることです。
+            </p>
+            <p>
+              完成コードでは、`ClaudeAgentOptions` で実行条件を作り、`query()` へ渡し、`AssistantMessage` と `ResultMessage` を分けて扱います。
+              この回で、SDKコード全体の基本形をつかみます。
+            </p>
           </section>
 
           <section class="lesson-section" id="before-run">

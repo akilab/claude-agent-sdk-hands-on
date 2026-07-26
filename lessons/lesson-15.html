@@ -64,6 +64,7 @@
           </div>
           <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
             <a href="#goal">ゴール</a>
+            <a href="#lesson-purpose">やること</a>
             <a href="#why-save">なぜ保存するか</a>
             <a href="#concepts">初出APIの見方</a>
             <a href="#json-shape">保存するJSON</a>
@@ -88,6 +89,18 @@
               <li>`cwd` を保存しておく意味を説明できる</li>
               <li>次のレッスンで `resume` に渡せるJSON台帳を作れる</li>
             </ul>
+          </section>
+          <section class="lesson-section" id="lesson-purpose">
+            <p class="eyebrow">What you will do</p>
+            <h2>このレッスンでやろうとしていること</h2>
+            <p>
+              会話を後で再開するには、Claude側の会話IDである `session_id` をアプリ側に保存しておく必要があります。
+              このレッスンでは、`ResultMessage.session_id` を取り出し、ユーザーIDと一緒にJSON台帳へ保存します。
+            </p>
+            <p>
+              完成コードを動かし、固定ユーザー `learner-001` が複数のセッションを持てる形を確認します。
+              Claude側はアプリの `user_id` を管理しないため、user_idとsession_idの紐づけはアプリ側の責任であることを理解します。
+            </p>
           </section>
 
           <section class="lesson-section" id="why-save">

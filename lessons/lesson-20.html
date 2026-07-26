@@ -64,6 +64,7 @@
           </div>
           <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
             <a href="#goal">ゴール</a>
+            <a href="#lesson-purpose">やること</a>
             <a href="#before-run">実行前の確認</a>
             <a href="#model">保存モデル</a>
             <a href="#sequence">処理の流れ</a>
@@ -89,6 +90,18 @@
               <li>ユーザー入力とClaudeの返答を `messages` に保存できる</li>
               <li>DB Browserで、1つのセッションに複数メッセージが紐づくことを確認できる</li>
             </ul>
+          </section>
+          <section class="lesson-section" id="lesson-purpose">
+            <p class="eyebrow">What you will do</p>
+            <h2>このレッスンでやろうとしていること</h2>
+            <p>
+              このレッスンでは、Claudeと1回会話し、その会話をSQLiteへ保存します。
+              `ResultMessage` は `session_id` を取るために使い、会話本文としてDBに保存するのは `user` と `assistant` に絞ります。
+            </p>
+            <p>
+              完成コードを動かし、`sessions` に会話の箱が作られ、`messages` にユーザー入力とClaude返答が紐づくことを確認します。
+              これは、後でWeb画面に会話履歴を表示するための最小単位です。
+            </p>
           </section>
 
           <section class="lesson-section" id="before-run">

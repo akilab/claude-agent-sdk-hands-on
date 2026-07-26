@@ -64,6 +64,7 @@
           </div>
           <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
             <a href="#goal">ゴール</a>
+            <a href="#lesson-purpose">やること</a>
             <a href="#before-run">実行前の確認</a>
             <a href="#concepts">初出APIの見方</a>
             <a href="#options-detail">Optionsの読み方</a>
@@ -90,6 +91,18 @@
               <li>`system_prompt`、`cwd`、`max_turns` を組み合わせて、Agentの作業範囲を読み取り専用に寄せられる</li>
               <li>読み取り専用Agentで教材ファイルを読み、結果を `outputs/` に保存できる</li>
             </ul>
+          </section>
+          <section class="lesson-section" id="lesson-purpose">
+            <p class="eyebrow">What you will do</p>
+            <h2>このレッスンでやろうとしていること</h2>
+            <p>
+              Agentを動かすときは、何を許可し、何を禁止するかを明確にする必要があります。
+              このレッスンでは、`ClaudeAgentOptions` を使って、読み取り専用に近い実行条件を作ります。
+            </p>
+            <p>
+              完成コードでは、`allowed_tools`、`disallowed_tools`、`permission_mode`、`system_prompt`、`cwd`、`max_turns` の意味を観察します。
+              目的は、Agentに自由に動かせるのではなく、業務で扱える範囲へ制御する感覚を持つことです。
+            </p>
           </section>
 
           <section class="lesson-section" id="before-run">

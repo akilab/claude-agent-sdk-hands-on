@@ -64,6 +64,7 @@
           </div>
           <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
             <a href="#goal">ゴール</a>
+            <a href="#lesson-purpose">やること</a>
             <a href="#before-run">実行前の確認</a>
             <a href="#mapping">登録する範囲</a>
             <a href="#insert-user">ユーザー登録</a>
@@ -89,6 +90,18 @@
               <li>`sessions` テーブルへClaude側の `session_id` を登録できる</li>
               <li>DB Browserで登録結果を確認できる</li>
             </ul>
+          </section>
+          <section class="lesson-section" id="lesson-purpose">
+            <p class="eyebrow">What you will do</p>
+            <h2>このレッスンでやろうとしていること</h2>
+            <p>
+              Lesson 15で作ったJSON台帳を、Lesson 18で作ったSQLite DBへ移します。
+              ここでは会話本文ではなく、まずユーザーとセッション一覧をDBへ登録することに集中します。
+            </p>
+            <p>
+              完成コードを動かし、JSONの `users[]` と `sessions[]` がDBの `users` と `sessions` に対応する様子を確認します。
+              `messages` はまだ空でよく、会話本文は次のレッスンで実際のClaude応答から保存します。
+            </p>
           </section>
 
           <section class="lesson-section" id="before-run">

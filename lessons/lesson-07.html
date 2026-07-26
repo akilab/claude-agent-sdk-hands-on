@@ -64,6 +64,7 @@
           </div>
           <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
             <a href="#goal">ゴール</a>
+            <a href="#lesson-purpose">やること</a>
             <a href="#concepts">今回見るメッセージ</a>
             <a href="#write-script">読み分けコードを動かす</a>
             <a href="#run">実行して観察する</a>
@@ -86,6 +87,18 @@
               <li>`AssistantMessage.content` がcontent blockのリストだと理解できる</li>
               <li>最終結果と実行サマリーを `outputs/` に保存できる</li>
             </ul>
+          </section>
+          <section class="lesson-section" id="lesson-purpose">
+            <p class="eyebrow">What you will do</p>
+            <h2>このレッスンでやろうとしていること</h2>
+            <p>
+              `query()` の戻り値は、単なる文字列ではなくメッセージの流れです。
+              このレッスンでは、Claudeが話した本文と、実行が終わったことを知らせる結果メッセージを分けて読みます。
+            </p>
+            <p>
+              完成コードを動かし、`AssistantMessage`、`ResultMessage`、content block、`result` の関係を観察します。
+              ここを理解すると、後続のログ保存、構造化出力、セッション保存で何をDBやファイルに残すべきか判断しやすくなります。
+            </p>
           </section>
 
           <section class="lesson-section" id="concepts">

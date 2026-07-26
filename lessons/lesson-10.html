@@ -64,6 +64,7 @@
           </div>
           <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
             <a href="#goal">ゴール</a>
+            <a href="#lesson-purpose">やること</a>
             <a href="#before-run">実行前の確認</a>
             <a href="#concepts">初出APIの見方</a>
             <a href="#skill-file">SKILL.mdの読み方</a>
@@ -90,6 +91,18 @@
               <li>`skills=["faq-review"]` と `skills="all"` の違いを説明できる</li>
               <li>Skillの `description` が、Claudeが使う場面を判断する手がかりだと理解できる</li>
             </ul>
+          </section>
+          <section class="lesson-section" id="lesson-purpose">
+            <p class="eyebrow">What you will do</p>
+            <h2>このレッスンでやろうとしていること</h2>
+            <p>
+              Skillsは、Python関数ではなく、Agentに読み込ませる手順書です。
+              このレッスンでは、`.claude/skills/.../SKILL.md` を作り、Agentがその内容を参照して回答する流れを確認します。
+            </p>
+            <p>
+              完成コードでは、`setting_sources`、`skills`、Skillファイルの配置、特定Skillの有効化を観察します。
+              業務ルールやレビュー観点をコードに埋め込まず、外部の手順として管理する考え方を学びます。
+            </p>
           </section>
 
           <section class="lesson-section" id="before-run">

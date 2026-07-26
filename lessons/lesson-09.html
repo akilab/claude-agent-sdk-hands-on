@@ -64,6 +64,7 @@
           </div>
           <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
             <a href="#goal">ゴール</a>
+            <a href="#lesson-purpose">やること</a>
             <a href="#before-run">実行前の確認</a>
             <a href="#concepts">初出APIの見方</a>
             <a href="#schema-detail">output_formatの読み方</a>
@@ -90,6 +91,18 @@
               <li>`ResultMessage.structured_output` が `ResultMessage` の属性であると理解できる</li>
               <li>構造化出力と実行ログを別々のJSONファイルに保存できる</li>
             </ul>
+          </section>
+          <section class="lesson-section" id="lesson-purpose">
+            <p class="eyebrow">What you will do</p>
+            <h2>このレッスンでやろうとしていること</h2>
+            <p>
+              業務でAgentを使う場合、返答を文章として読むだけでは足りないことがあります。
+              このレッスンでは、JSON Schemaを渡して、Claudeから構造化された結果を受け取る流れを確認します。
+            </p>
+            <p>
+              完成コードを動かし、`output_format`、`structured_output`、実行ログ保存の関係を見ます。
+              ポイントは、Python側で後から無理にJSONへ変換するのではなく、SDKに「欲しい形」を伝えて受け取ることです。
+            </p>
           </section>
 
           <section class="lesson-section" id="before-run">
