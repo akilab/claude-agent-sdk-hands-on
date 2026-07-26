@@ -443,7 +443,9 @@ svg {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 8px;
+  margin-bottom: 11px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid rgba(216, 226, 238, 0.82);
   color: var(--ink-600);
   font-size: 12px;
   font-weight: 900;
@@ -567,6 +569,9 @@ svg {
 
 .detail-heading {
   position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 34px;
   padding-left: 42px;
 }
 
@@ -589,16 +594,10 @@ svg {
   height: 18px;
 }
 
-.detail-heading p {
-  margin: 0 0 5px;
-  color: var(--ink-500);
-  font-size: 12px;
-  font-weight: 900;
-}
-
 .detail-heading h2 {
   margin: 0;
   font-size: 18px;
+  line-height: 1.2;
 }
 
 .session-facts {

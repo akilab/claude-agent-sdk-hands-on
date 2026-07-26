@@ -1,7 +1,7 @@
 const sessions = {
   fastapi: {
     title: "FastAPI連携の相談",
-    sessionId: "ses-fastapi-001",
+    sessionId: "4bf35ad0-805b-4e54-9623-d62191b77342",
     updatedAt: "2026/07/26 15:45",
     messages: [
       {
@@ -33,7 +33,7 @@ const sessions = {
   },
   sqlite: {
     title: "SQLite履歴保存",
-    sessionId: "ses-sqlite-014",
+    sessionId: "9585f444-4265-474f-b9ed-668c8594f5ad",
     updatedAt: "2026/07/26 14:19",
     messages: [
       {
@@ -50,7 +50,7 @@ const sessions = {
   },
   stream: {
     title: "ストリーミング表示",
-    sessionId: "ses-stream-008",
+    sessionId: "cc607212-4081-4108-839c-f3cba0fe147a",
     updatedAt: "2026/07/25 18:05",
     messages: [
       {
@@ -67,7 +67,7 @@ const sessions = {
   },
   client: {
     title: "ClaudeSDKClient基礎",
-    sessionId: "ses-client-003",
+    sessionId: "2d9dcaaf-7f26-487d-aa47-5f515339629a",
     updatedAt: "2026/07/25 11:21",
     messages: [
       {
@@ -107,7 +107,7 @@ function createMessageElement(message) {
   body.className = "message-body";
   body.innerHTML = `
     <div class="message-header">
-      <span>${message.role === "user" ? "User" : "Claude"}</span>
+      <span>${message.role === "user" ? "learner-001" : "Claude"}</span>
       <span class="message-time">${message.time}</span>
     </div>
     <p>${message.text}</p>
