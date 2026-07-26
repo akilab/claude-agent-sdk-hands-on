@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lesson 20 | 会話メッセージをSQLiteへ保存する</title>
+    <meta
+      name="description"
+      content="ClaudeSDKClientで1回会話し、session_id、ユーザー入力、Claudeの返答、実行結果をSQLiteのsessionsとmessagesへ保存するレッスン。"
+    >
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <script>window.Prism = window.Prism || {}; window.Prism.manual = true;</script>
+    <script src="../assets/vendor/prism/prism-core.min.js" defer></script>
+    <script src="../assets/vendor/prism/prism-markup.min.js" defer></script>
+    <script src="../assets/vendor/prism/prism-css.min.js" defer></script>
+    <script src="../assets/vendor/prism/prism-clike.min.js" defer></script>
+    <script src="../assets/vendor/prism/prism-javascript.min.js" defer></script>
+    <script src="../assets/vendor/prism/prism-python.min.js" defer></script>
+    <script src="../assets/vendor/prism/prism-bash.min.js" defer></script>
+    <script src="../assets/vendor/prism/prism-powershell.min.js" defer></script>
+    <script src="../assets/vendor/prism/prism-json.min.js" defer></script>
+    <script src="../assets/vendor/prism/prism-toml.min.js" defer></script>
+    <script src="../assets/vendor/prism/prism-yaml.min.js" defer></script>
+    <script src="../assets/js/main.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header" id="top">
+      <a class="site-mark" href="../index.html" aria-label="Claude Agent SDK Learning Portal トップへ">
+        <span class="site-mark__symbol" aria-hidden="true">CA</span>
+        <span class="site-mark__text">Claude Agent SDK Learning</span>
+      </a>
+      <nav class="site-nav" aria-label="主要ナビゲーション">
+        <a href="../index.html#roadmap">ロードマップ</a>
+        <a href="../index.html#lessons">学習セクション</a>
+        <a href="../index.html#official-docs">公式リンク</a>
+      </nav>
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="ダークモードに切り替え" aria-pressed="false">
+        <span class="theme-toggle__track" aria-hidden="true">
+          <span class="theme-toggle__thumb"></span>
+        </span>
+      </button>
+    </header>
+
+    <main>
+      <section class="lesson-hero" aria-labelledby="lesson-title">
+        <div class="breadcrumb" aria-label="パンくず">
+          <a href="../index.html">トップ</a>
+          <span aria-hidden="true">/</span>
+          <span>Lesson 20</span>
+        </div>
+        <p class="eyebrow">Lesson 20 / ClaudeSDKClient</p>
+        <h1 id="lesson-title">会話メッセージをSQLiteへ保存する</h1>
+        <p>
+          既存ユーザーがClaudeと1回やり取りし、その会話をSQLiteへ保存します。
+          今回はセッション選択や過去会話の再開には進まず、`sessions` と `messages` の関係を見える形で作ります。
+        </p>
+      </section>
+
+      <div class="lesson-shell">
+        <aside class="lesson-sidebar" aria-label="レッスン目次">
+          <div class="lesson-sidebar__box">
+            <span class="lesson-sidebar__label">所要時間</span>
+            <strong>60分</strong>
+          </div>
+          <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
+            <a href="#goal">ゴール</a>
+            <a href="#before-run">実行前の確認</a>
+            <a href="#model">保存モデル</a>
+            <a href="#sequence">処理の流れ</a>
+            <a href="#api">初登場の関数</a>
+            <a href="#hands-on">完成コードを読む</a>
+            <a href="#run">実行して確認</a>
+            <a href="#db-browser">DB Browserで確認</a>
+            <a href="#review">確認問題</a>
+          </nav>
+        </aside>
+
+        <article class="lesson-main">
+          <section class="lesson-section" id="goal">
+            <p class="eyebrow">Goal</p>
+            <h2>このレッスンのゴール</h2>
+            <p class="lesson-one-liner">
+              <span>このレッスンを一言で</span>
+              Claudeとの1回の会話を、`sessions` と `messages` に分けてSQLiteへ保存します。
+            </p>
+            <ul class="check-list">
+              <li>既存ユーザー `learner-001` の会話として保存できる</li>
+              <li>`ResultMessage.session_id` を `sessions.claude_session_id` に保存できる</li>
+              <li>ユーザー入力とClaudeの返答を `messages` に保存できる</li>
+              <li>DB Browserで、1つのセッションに複数メッセージが紐づくことを確認できる</li>
+            </ul>
+          </section>
+
+          <section class="lesson-section" id="before-run">
+            <p class="eyebrow">Before run</p>
+            <h2>先にユーザーをDBへ入れておく</h2>
+            <p>
+              今回は「ユーザーは先に作られている」前提で進めます。
+              Lesson 19を実行して、`users` テーブルに `learner-001` が入っている状態にしてください。
+              まだの場合は、次を先に実行します。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Windows / macOS / Linux</span>
+              </div>
+              <pre><code>uv run python scripts/lesson_19_import_registry_to_sqlite.py</code></pre>
+            </div>
+
+            <div class="callout">
+              <strong>DB処理はshared.databaseにあります</strong>
+              <p>
+                Lesson 20では、`connect_database()`、`create_schema()`、`insert_session_if_missing()`、`insert_message()` などを使います。
+                これらはSQLの細部をまとめた共通部品です。
+                ただし、どのタイミングで `sessions` に入れ、どのタイミングで `messages` に入れるかは、このレッスンのコード側で見えるようにしています。
+              </p>
+            </div>
+
+            <div class="callout callout--warning">
+              <strong>以前のLesson 20を実行していた場合</strong>
+              <p>
+                以前の版では `messages.role = "result"` も保存していました。
+                今回から `messages` は `user` と `assistant` の会話本文に絞ります。
+                DB Browserで古い `result` 行が残っていて気になる場合は、DB Browserを閉じてから `data/agent_sessions.sqlite3` を削除し、Lesson 18、19、20の順に実行し直してください。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="model">
+            <p class="eyebrow">Model</p>
+            <h2>保存するデータの形</h2>
+            <p>
+              1回のClaudeとのやり取りは、1つのセッションと複数のメッセージに分けて保存します。
+              `sessions` は会話の箱、`messages` はその箱に入る発言です。
+            </p>
+
+            <div class="table-wrap" role="region" aria-label="Lesson 20で保存するデータ">
+              <table class="api-table">
+                <thead>
+                  <tr>
+                    <th>保存先</th>
+                    <th>入れる値</th>
+                    <th>意味</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>sessions.claude_session_id</code></td>
+                    <td><code>ResultMessage.session_id</code></td>
+                    <td>Claude側の会話ID</td>
+                  </tr>
+                  <tr>
+                    <td><code>messages.role = "user"</code></td>
+                    <td><code>PROMPT</code></td>
+                    <td>ユーザーが送った入力</td>
+                  </tr>
+                  <tr>
+                    <td><code>messages.role = "assistant"</code></td>
+                    <td><code>AssistantMessage.content</code></td>
+                    <td>Claudeが返した本文</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="callout">
+              <strong>ResultMessageはmessagesには保存しません</strong>
+              <p>
+                Claudeの返答本文は主に `AssistantMessage` から取ります。
+                `ResultMessage` は `session_id`、成功/失敗、turn数などを得るために使います。
+                会話履歴として保存する本文は `user` と `assistant` に絞り、`ResultMessage.result` はこのレッスンではDBへ保存しません。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="sequence">
+            <p class="eyebrow">Sequence</p>
+            <h2>処理の順番を見る</h2>
+            <p>
+              先に `client.query(PROMPT)` でClaudeへ入力を送り、`receive_response()` で `AssistantMessage` と `ResultMessage` を受け取ります。
+              そのあと、`ResultMessage.session_id` を使って `sessions` を作り、同じIDで `messages` を紐づけます。
+            </p>
+
+            <button class="diagram-frame" type="button" data-diagram-open aria-label="会話メッセージ保存の流れを拡大表示">
+              <img src="../assets/img/lesson-20-save-messages-sequence.svg" alt="ClaudeSDKClientの応答を受け取り、sessionsとmessagesへ保存する流れ">
+            </button>
+          </section>
+
+          <section class="lesson-section" id="api">
+            <p class="eyebrow">API</p>
+            <h2>初めて出てくる関数</h2>
+            <div class="table-wrap" role="region" aria-label="Lesson 20で使う関数">
+              <table class="api-table">
+                <thead>
+                  <tr>
+                    <th>名前</th>
+                    <th>種類</th>
+                    <th>役割</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>require_user_exists(connection, user_id)</code></td>
+                    <td>共通関数</td>
+                    <td>DBに対象ユーザーが存在するか確認します。なければ分かりやすいエラーを出します。</td>
+                  </tr>
+                  <tr>
+                    <td><code>insert_message(...)</code></td>
+                    <td>共通関数</td>
+                    <td>`messages` テーブルに1行追加します。引数は `session_id`、`role`、`content`、`turn_number`、`created_at` です。</td>
+                  </tr>
+                  <tr>
+                    <td><code>collect_assistant_text(message)</code></td>
+                    <td>このレッスンの関数</td>
+                    <td>`AssistantMessage.content` から、DBへ保存するテキスト本文だけを集めます。</td>
+                  </tr>
+                  <tr>
+                    <td><code>save_conversation_to_database(...)</code></td>
+                    <td>このレッスンの関数</td>
+                    <td>1回のAgent実行結果を `sessions` と `messages` に保存する中心処理です。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="hands-on">
+            <p class="eyebrow">Hands-on</p>
+            <h2>完成コードを読む</h2>
+            <p>
+              `python-labs/scripts/lesson_20_save_messages_to_sqlite.py` の完成コードを確認します。
+              長く見えますが、中心は `run_agent()` で受け取った結果を `save_conversation_to_database()` に渡す流れです。
+            </p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>python-labs/scripts/lesson_20_save_messages_to_sqlite.py</span>
+              </div>
+              <pre><code class="language-python">import asyncio
+from datetime import datetime, timezone
+
+from claude_agent_sdk import (
+    AssistantMessage,
+    ClaudeAgentOptions,
+    ClaudeSDKClient,
+    ResultMessage,
+)
+
+from shared.database import (
+    connect_database,
+    count_rows,
+    create_schema,
+    fetch_message_summary,
+    insert_message,
+    insert_session_if_missing,
+    require_user_exists,
+)
+from shared.display import print_section
+from shared.messages import print_assistant_message
+from shared.paths import PROJECT_ROOT
+
+
+USER_ID = "learner-001"
+CONVERSATION_TITLE = "ClaudeSDKClient message persistence"
+PROMPT = (
+    "ClaudeSDKClientで会話メッセージをDBに保存する理由を、"
+    "Webアプリ開発者向けに3文で説明してください。"
+)
+
+
+# UTCの現在時刻を、SQLiteに保存しやすい文字列にする関数です。
+def now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+# ClaudeSDKClientに渡す実行設定を作る関数です。
+def build_options() -> ClaudeAgentOptions:
+    return ClaudeAgentOptions(
+        cwd=str(PROJECT_ROOT),
+        system_prompt=(
+            "あなたはClaude Agent SDKを学ぶ日本語教材の補助者です。"
+            "短く、Webアプリ開発の文脈に結びつけて説明してください。"
+        ),
+        disallowed_tools=["Read", "Glob", "Grep", "Write", "Edit", "Bash"],
+        max_turns=2,
+    )
+
+
+# AssistantMessage.contentの各ブロックから、表示できるテキストを取り出す関数です。
+def collect_assistant_text(message: AssistantMessage) -> str:
+    text_parts: list[str] = []
+
+    for block in message.content:
+        text = getattr(block, "text", None)
+        if text:
+            text_parts.append(str(text))
+
+    return "\n".join(text_parts)
+
+
+# Agentからの1回分の応答を最後まで読み、本文とResultMessageを返す関数です。
+async def receive_response(client: ClaudeSDKClient):
+    result_message: ResultMessage | None = None
+    assistant_texts: list[str] = []
+
+    async for message in client.receive_response():
+        if isinstance(message, AssistantMessage):
+            text = collect_assistant_text(message)
+            if text:
+                assistant_texts.append(text)
+            print_assistant_message(message)
+        elif isinstance(message, ResultMessage):
+            result_message = message
+
+    if result_message is None:
+        raise RuntimeError("ResultMessageを受け取れなかったため、DBへ保存できません。")
+
+    return "\n\n".join(assistant_texts), result_message
+
+
+# ClaudeSDKClientで1回問い合わせ、会話本文とsession_idを含む結果を受け取る関数です。
+async def run_agent():
+    async with ClaudeSDKClient(options=build_options()) as client:
+        await client.query(PROMPT)
+        return await receive_response(client)
+
+
+# ResultMessageから、sessionsテーブルに登録する1会話分の辞書を作る関数です。
+def build_session_record(result_message: ResultMessage) -> dict[str, str]:
+    timestamp = now_iso()
+
+    return {
+        "session_id": result_message.session_id,
+        "title": CONVERSATION_TITLE,
+        "cwd": str(PROJECT_ROOT),
+        "created_at": timestamp,
+        "updated_at": timestamp,
+    }
+
+
+# 1回のAgent実行結果を、sessionsとmessagesへ保存する関数です。
+def save_conversation_to_database(
+    user_prompt: str,
+    assistant_text: str,
+    result_message: ResultMessage,
+) -> None:
+    session_record = build_session_record(result_message)
+    claude_session_id = session_record["session_id"]
+
+    with connect_database() as connection:
+        create_schema(connection)
+        require_user_exists(connection, USER_ID)
+
+        insert_session_if_missing(connection, USER_ID, session_record)
+        insert_message(connection, claude_session_id, "user", user_prompt, 1, now_iso())
+        insert_message(connection, claude_session_id, "assistant", assistant_text, 2, now_iso())
+
+        connection.commit()
+
+        print_section("Saved to database")
+        print(f"user_id: {USER_ID}")
+        print(f"session_id: {claude_session_id}")
+        print(f"result_subtype: {result_message.subtype}")
+        print(f"num_turns: {result_message.num_turns}")
+        print(f"sessions: {count_rows(connection, 'sessions')}")
+        print(f"messages: {count_rows(connection, 'messages')}")
+
+        print_section("Saved messages")
+        for message in fetch_message_summary(connection, claude_session_id):
+            print(f"- turn {message['turn_number']} / {message['role']}: {message['preview']}")
+
+
+# 新しい会話を実行し、結果をSQLiteへ保存する全体の流れをまとめる関数です。
+async def create_conversation_and_save_messages() -> None:
+    print_section("Prompt")
+    print(PROMPT)
+
+    assistant_text, result_message = await run_agent()
+    save_conversation_to_database(PROMPT, assistant_text, result_message)
+
+
+# このファイルを直接実行したときの入口になる関数です。
+def main() -> None:
+    asyncio.run(create_conversation_and_save_messages())
+
+
+if __name__ == "__main__":
+    main()</code></pre>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="run">
+            <p class="eyebrow">Run</p>
+            <h2>実行して確認</h2>
+            <p>`python-labs/` から実行します。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Windows / macOS / Linux</span>
+              </div>
+              <pre><code>uv run python scripts/lesson_20_save_messages_to_sqlite.py</code></pre>
+            </div>
+
+            <p>
+              正常に動くと、Claudeの返答が表示されたあと、`Saved to database` と `Saved messages` が表示されます。
+              `messages` の件数が増え、今回の `session_id` に2件のメッセージが紐づけば成功です。
+            </p>
+
+            <p>完成版だけを確認したい場合は、次を実行します。</p>
+
+            <div class="code-block">
+              <div class="code-block__header">
+                <span>Windows / macOS / Linux</span>
+              </div>
+              <pre><code>uv run python scripts/lesson_20_save_messages_to_sqlite.py</code></pre>
+            </div>
+
+            <div class="callout callout--warning">
+              <strong>ユーザーが見つからない場合</strong>
+              <p>
+                `learner-001 はusersテーブルに登録されていません` と出たら、Lesson 19を先に実行してください。
+                今回はWebアプリでよくある「ログイン済みユーザーが会話を始める」状態を前提にしているためです。
+              </p>
+            </div>
+          </section>
+
+          <section class="lesson-section" id="db-browser">
+            <p class="eyebrow">DB Browser</p>
+            <h2>DB Browserで確認</h2>
+            <p>
+              DB Browser for SQLiteで `python-labs/data/agent_sessions.sqlite3` を開きます。
+              `messages` テーブルを表示し、`claude_session_id`、`role`、`content`、`turn_number` を確認してください。
+            </p>
+            <p>
+              同じ `claude_session_id` の行が2件あり、`role` が `user` と `assistant` になっていれば成功です。
+              `ResultMessage` は `sessions` を作るための `session_id` と実行メタ情報として使い、会話本文としては保存しません。
+            </p>
+          </section>
+
+          <section class="lesson-section" id="review">
+            <p class="eyebrow">Review</p>
+            <h2>確認問題</h2>
+            <ol class="review-list">
+              <li>`sessions` と `messages` を分けて保存する理由は何ですか。</li>
+              <li>`AssistantMessage` と `ResultMessage` は、それぞれ何を保存するために使いましたか。</li>
+              <li>`require_user_exists()` は、なぜ `insert_user_if_missing()` ではなく確認だけにしているのですか。</li>
+              <li>`messages.claude_session_id` は、どのテーブルのどの値と対応しますか。</li>
+              <li>`ResultMessage.result` を `messages` に保存しない理由は何ですか。</li>
+            </ol>
+            <p>
+              次のレッスンでは、1回きりの保存から一歩進めて、同じセッションの複数ターンをどう扱うかを考えていきます。
+            </p>
+          </section>
+
+          <nav class="lesson-nav-bottom" aria-label="レッスン移動">
+            <a href="lesson-19.html">前へ: JSON台帳をSQLiteへ登録する</a>
+            <a href="lesson-21.html">次へ: 最新セッションをresumeして会話を継続する</a>
+          </nav>
+        </article>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <p>Claude Agent SDK Learning Portal</p>
+      <a href="#top">ページ上部へ戻る</a>
+    </footer>
+  </body>
+</html>

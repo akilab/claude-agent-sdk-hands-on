@@ -1,0 +1,176 @@
+import asyncio
+from datetime import datetime, timezone
+
+from claude_agent_sdk import (
+    AssistantMessage,
+    ClaudeAgentOptions,
+    ClaudeSDKClient,
+    ResultMessage,
+)
+
+from shared.database import (
+    connect_database,
+    count_rows,
+    create_schema,
+    fetch_message_summary,
+    fetch_user_sessions,
+    insert_message,
+    mark_session_resumed,
+    next_turn_number,
+    require_user_exists,
+)
+from shared.display import print_section
+from shared.messages import print_assistant_message
+from shared.paths import PROJECT_ROOT
+
+
+USER_ID = "learner-001"
+FOLLOW_UP_PROMPT = (
+    "このセッションでここまで話してきた内容を前提に、"
+    "Webアプリで会話履歴を保存してresumeする設計の要点を3つに整理してください。"
+)
+
+
+# UTCの現在時刻を、SQLiteに保存しやすい文字列にする関数です。
+def now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+# DBに保存されているセッション一覧から、最新のセッションを選ぶ関数です。
+def select_latest_session() -> dict[str, str]:
+    with connect_database() as connection:
+        create_schema(connection)
+        require_user_exists(connection, USER_ID)
+        sessions = fetch_user_sessions(connection, USER_ID)
+
+    if not sessions:
+        raise ValueError(
+            f"{USER_ID} のセッションがDBにありません。"
+            "先にLesson 20を実行して、少なくとも1つのセッションを保存してください。"
+        )
+
+    print_section("Available sessions")
+    if len(sessions) == 1:
+        print("保存済みセッションは1件です。")
+    else:
+        print(f"保存済みセッションが{len(sessions)}件あります。今回は最新のセッションを自動選択します。")
+
+    for index, session in enumerate(sessions, start=1):
+        marker = " <- selected" if index == 1 else ""
+        print(f"{index}. {session['claude_session_id']}{marker}")
+        print(f"   title: {session['title']}")
+        print(f"   updated_at: {session['updated_at']}")
+
+    return sessions[0]
+
+
+# 保存済みsession_idを使って、ClaudeSDKClientに渡すresume設定を作る関数です。
+def build_resume_options(session_id: str) -> ClaudeAgentOptions:
+    return ClaudeAgentOptions(
+        cwd=str(PROJECT_ROOT),
+        resume=session_id,
+        system_prompt=(
+            "あなたはClaude Agent SDKを学ぶ日本語教材の補助者です。"
+            "保存済みセッションの文脈を踏まえ、短く実務的に答えてください。"
+        ),
+        disallowed_tools=["Read", "Glob", "Grep", "Write", "Edit", "Bash"],
+        max_turns=2,
+    )
+
+
+# AssistantMessage.contentの各ブロックから、保存できるテキストを取り出す関数です。
+def collect_assistant_text(message: AssistantMessage) -> str:
+    text_parts: list[str] = []
+
+    for block in message.content:
+        text = getattr(block, "text", None)
+        if text:
+            text_parts.append(str(text))
+
+    return "\n".join(text_parts)
+
+
+# resume後の1回分の応答を最後まで読み、本文とResultMessageを返す関数です。
+async def receive_response(client: ClaudeSDKClient):
+    result_message: ResultMessage | None = None
+    assistant_texts: list[str] = []
+
+    async for message in client.receive_response():
+        if isinstance(message, AssistantMessage):
+            text = collect_assistant_text(message)
+            if text:
+                assistant_texts.append(text)
+            print_assistant_message(message)
+        elif isinstance(message, ResultMessage):
+            result_message = message
+
+    if result_message is None:
+        raise RuntimeError("ResultMessageを受け取れなかったため、resume結果を保存できません。")
+
+    return "\n\n".join(assistant_texts), result_message
+
+
+# 最新セッションをresumeして、続きの質問を送る関数です。
+async def run_resume_agent(session_id: str):
+    async with ClaudeSDKClient(options=build_resume_options(session_id)) as client:
+        await client.query(FOLLOW_UP_PROMPT)
+        return await receive_response(client)
+
+
+# resumeした会話のuser/assistantメッセージを、同じセッションへ追記する関数です。
+def save_resumed_messages(
+    session: dict[str, str],
+    user_prompt: str,
+    assistant_text: str,
+    result_message: ResultMessage,
+) -> None:
+    claude_session_id = session["claude_session_id"]
+    resumed_at = now_iso()
+
+    with connect_database() as connection:
+        next_turn = next_turn_number(connection, claude_session_id)
+        insert_message(connection, claude_session_id, "user", user_prompt, next_turn, resumed_at)
+        insert_message(
+            connection,
+            claude_session_id,
+            "assistant",
+            assistant_text,
+            next_turn + 1,
+            resumed_at,
+        )
+        mark_session_resumed(connection, claude_session_id, resumed_at)
+        connection.commit()
+
+        print_section("Saved resumed messages")
+        print(f"user_id: {USER_ID}")
+        print(f"resume_session_id: {claude_session_id}")
+        print(f"result_session_id: {result_message.session_id}")
+        print(f"result_subtype: {result_message.subtype}")
+        print(f"num_turns: {result_message.num_turns}")
+        print(f"sessions: {count_rows(connection, 'sessions')}")
+        print(f"messages: {count_rows(connection, 'messages')}")
+
+        print_section("Latest session messages")
+        for message in fetch_message_summary(connection, claude_session_id):
+            print(f"- turn {message['turn_number']} / {message['role']}: {message['preview']}")
+
+
+# 最新セッションを選び、resumeして、同じセッションへ会話を追記する全体の流れです。
+async def resume_latest_session_and_save_messages() -> None:
+    selected_session = select_latest_session()
+    session_id = selected_session["claude_session_id"]
+
+    print_section("Resume prompt")
+    print(FOLLOW_UP_PROMPT)
+
+    assistant_text, result_message = await run_resume_agent(session_id)
+    save_resumed_messages(selected_session, FOLLOW_UP_PROMPT, assistant_text, result_message)
+
+
+# このファイルを直接実行したときの入口になる関数です。
+def main() -> None:
+    asyncio.run(resume_latest_session_and_save_messages())
+
+
+if __name__ == "__main__":
+    main()

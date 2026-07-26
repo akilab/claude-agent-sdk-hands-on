@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Lesson 04 | ファイル操作と例外処理を書く</title>
+    <title>Lesson 04 | ファイル操作と例外処理を動かす</title>
     <meta
       name="description"
       content="Claude Agent SDKの実装前に、Pythonのpathlib、JSON、ファイル読み書き、例外処理を使って学習ログを作るレッスン。"
@@ -49,7 +49,7 @@
           <span>Lesson 04</span>
         </div>
         <p class="eyebrow">Lesson 04 / Python</p>
-        <h1 id="lesson-title">ファイル操作と例外処理を書く</h1>
+        <h1 id="lesson-title">ファイル操作と例外処理を動かす</h1>
         <p>
           Agentはファイルを読み、結果を書き出し、途中の状態を記録します。
           このレッスンでは、`pathlib` と `json` を使って学習ログを保存し、失敗時の扱いをPythonで書きます。
@@ -120,13 +120,13 @@
             <p class="eyebrow">Hands-on</p>
             <h2>学習ログを書く</h2>
             <p>
-              `python-labs/practice/lesson_04_file_io.py` を作り、次のコードを入力してください。
+              `python-labs/scripts/lesson_04_file_io.py` の完成コードを確認します。
               このスクリプトは `data/learning_progress.json` を読み書きし、`outputs/lesson_04_report.txt` を作ります。
             </p>
 
             <div class="code-block">
               <div class="code-block__header">
-                <span>python-labs/practice/lesson_04_file_io.py</span>
+                <span>python-labs/scripts/lesson_04_file_io.py</span>
               </div>
               <pre><code>import json
 from datetime import datetime
@@ -281,7 +281,7 @@ if __name__ == "__main__":
               <div class="code-block__header">
                 <span>PowerShell</span>
               </div>
-              <pre><code>uv run python practice/lesson_04_file_io.py</code></pre>
+              <pre><code>uv run python scripts/lesson_04_file_io.py</code></pre>
             </div>
 
             <p>作成されたファイルを確認します。</p>
@@ -316,7 +316,7 @@ Get-Content outputs/lesson_04_report.txt</code></pre>
           </section>
 
           <nav class="lesson-nav-bottom" aria-label="レッスン移動">
-            <a href="lesson-03.html">前へ: Pythonの基本を小さく書く</a>
+            <a href="lesson-03.html">前へ: Pythonの基本を小さく動かす</a>
             <a href="lesson-05.html">次へ: async / await の感覚をつかむ</a>
           </nav>
         </article>

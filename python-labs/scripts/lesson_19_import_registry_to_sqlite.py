@@ -1,8 +1,14 @@
 import json
-import sqlite3
 from typing import Any
 
-from lesson_18_create_sqlite_tables import connect_database, create_schema
+from shared.database import (
+    connect_database,
+    count_rows,
+    create_schema,
+    fetch_session_summary,
+    insert_session_if_missing,
+    insert_user_if_missing,
+)
 from shared.display import print_section
 from shared.paths import OUTPUT_DIR
 
@@ -29,125 +35,33 @@ def get_session_records(user_record: dict[str, Any]) -> list[dict[str, Any]]:
     return sessions
 
 
-# usersテーブルに、まだ存在しないユーザーだけを追加する関数です。
-def insert_user_if_missing(
-    connection: sqlite3.Connection,
-    user_id: str,
+# 1人分のユーザー記録を、usersとsessionsへ登録する関数です。
+def import_user_record(
+    connection,
+    user_record: dict[str, Any],
 ) -> None:
-    connection.execute(
-        """
-        INSERT OR IGNORE INTO users (
-            user_id,
-            status
-        )
-        VALUES (?, 'active')
-        """,
-        (user_id,),
-    )
+    user_id = str(user_record["user_id"])
+    insert_user_if_missing(connection, user_id)
 
-
-# セッション記録から、必須項目の文字列値を取り出す関数です。
-def require_session_value(
-    session_record: dict[str, Any],
-    key: str,
-) -> str:
-    value = session_record.get(key)
-    if value is None or value == "":
-        raise ValueError(f"session_recordに必須項目 {key} がありません。")
-    return str(value)
-
-
-# sessionsテーブルに、まだ存在しないセッションだけを追加する関数です。
-def insert_session_if_missing(
-    connection: sqlite3.Connection,
-    user_id: str,
-    session_record: dict[str, Any],
-) -> None:
-    claude_session_id = require_session_value(session_record, "session_id")
-    title = str(session_record.get("title", "Untitled session"))
-    cwd = require_session_value(session_record, "cwd")
-    created_at = require_session_value(session_record, "created_at")
-    updated_at = require_session_value(session_record, "updated_at")
-    last_resumed_at = str(session_record.get("last_resumed_at", ""))
-
-    connection.execute(
-        """
-        INSERT OR IGNORE INTO sessions (
-            user_id,
-            claude_session_id,
-            title,
-            cwd,
-            created_at,
-            updated_at,
-            last_resumed_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        """,
-        (
-            user_id,
-            claude_session_id,
-            title,
-            cwd,
-            created_at,
-            updated_at,
-            last_resumed_at,
-        ),
-    )
+    for session_record in get_session_records(user_record):
+        insert_session_if_missing(connection, user_id, session_record)
 
 
 # JSON台帳に入っている全ユーザーと全セッションをDBへ登録する関数です。
 def import_registry_to_database(
-    connection: sqlite3.Connection,
+    connection,
     registry: dict[str, Any],
 ) -> None:
     users = registry.get("users", [])
 
     for user_record in users:
-        user_id = str(user_record["user_id"])
-        insert_user_if_missing(connection, user_id)
-
-        for session_record in get_session_records(user_record):
-            insert_session_if_missing(connection, user_id, session_record)
+        import_user_record(connection, user_record)
 
     connection.commit()
 
 
-# 指定したテーブルのレコード件数を数える関数です。
-def count_rows(
-    connection: sqlite3.Connection,
-    table_name: str,
-) -> int:
-    row = connection.execute(f"SELECT COUNT(*) FROM {table_name}").fetchone()
-    return int(row[0])
-
-
-# sessionsテーブルに入った会話一覧を表示する関数です。
-def fetch_session_summary(connection: sqlite3.Connection) -> list[dict[str, str]]:
-    rows = connection.execute(
-        """
-        SELECT
-            user_id,
-            claude_session_id,
-            title,
-            updated_at
-        FROM sessions
-        ORDER BY updated_at DESC
-        """
-    ).fetchall()
-
-    return [
-        {
-            "user_id": str(row[0]),
-            "claude_session_id": str(row[1]),
-            "title": str(row[2]),
-            "updated_at": str(row[3]),
-        }
-        for row in rows
-    ]
-
-
 # 登録結果を、ターミナルで読みやすく表示する関数です。
-def print_import_summary(connection: sqlite3.Connection) -> None:
+def print_import_summary(connection) -> None:
     print_section("Imported row counts")
     print(f"users: {count_rows(connection, 'users')}")
     print(f"sessions: {count_rows(connection, 'sessions')}")

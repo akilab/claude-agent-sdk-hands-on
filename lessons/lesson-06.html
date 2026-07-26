@@ -69,7 +69,7 @@
             <a href="#options-detail">Optionsの読み方</a>
             <a href="#mental-model">処理の流れ</a>
             <a href="#function-flow">関数呼び出し図</a>
-            <a href="#write-script">最初のAgentを書く</a>
+            <a href="#write-script">最初のAgentを動かす</a>
             <a href="#run">実行して読み解く</a>
             <a href="#review">確認問題</a>
           </nav>
@@ -427,7 +427,7 @@ uv run python -c "import claude_agent_sdk; print('claude_agent_sdk OK')"</code><
 
           <section class="lesson-section" id="mental-model">
             <p class="eyebrow">Before coding</p>
-            <h2>コードを書く前に処理の流れを読む</h2>
+            <h2>完成コードを動かす前に処理の流れを読む</h2>
             <p>
               Lesson 06の処理は、上から順に見ると次の流れです。
               初めてのSDKコードでは、細部の属性名を暗記するよりも、どの関数が呼び出し口で、どのクラスが設定で、どのクラスが結果なのかを分けて読むことが大切です。
@@ -493,9 +493,9 @@ uv run python -c "import claude_agent_sdk; print('claude_agent_sdk OK')"</code><
 
           <section class="lesson-section" id="write-script">
             <p class="eyebrow">Hands-on</p>
-            <h2>最初のAgentを書く</h2>
+            <h2>最初のAgentを動かす</h2>
             <p>
-              `python-labs/practice/lesson_06_first_agent.py` を作り、次のコードを入力してください。
+              `python-labs/scripts/lesson_06_first_agent.py` の完成コードを確認します。
               最初のAgentなので、ファイル読み取り、編集、コマンド実行は避け、会議メモを整理してもらうだけに絞ります。
               このコードでは、Agentに依頼する文を作り、返ってくるメッセージを順に表示し、最後に `outputs/` へ保存します。
             </p>
@@ -516,7 +516,7 @@ uv run python -c "import claude_agent_sdk; print('claude_agent_sdk OK')"</code><
 
             <div class="code-block">
               <div class="code-block__header">
-                <span>python-labs/practice/lesson_06_first_agent.py</span>
+                <span>python-labs/scripts/lesson_06_first_agent.py</span>
               </div>
               <pre><code>import asyncio
 from pathlib import Path
@@ -657,7 +657,7 @@ if __name__ == "__main__":
               <div class="code-block__header">
                 <span>PowerShell</span>
               </div>
-              <pre><code>uv run python practice/lesson_06_first_agent.py</code></pre>
+              <pre><code>uv run python scripts/lesson_06_first_agent.py</code></pre>
             </div>
 
             <p>

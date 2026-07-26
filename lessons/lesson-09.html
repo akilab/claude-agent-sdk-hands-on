@@ -284,7 +284,7 @@
 
           <section class="lesson-section" id="mental-model">
             <p class="eyebrow">Before coding</p>
-            <h2>コードを書く前に処理の流れを読む</h2>
+            <h2>完成コードを動かす前に処理の流れを読む</h2>
             <p>
               Lesson 09のコードは、Agentの出力を「人が読む結果」と「プログラムが後で使うデータ」に分けて保存します。
               関数の関係は次の順番で追うと理解しやすくなります。
@@ -305,13 +305,13 @@
             <p class="eyebrow">Hands-on</p>
             <h2>構造化出力とログ保存を書く</h2>
             <p>
-              `python-labs/practice/lesson_09_structured_output_log.py` を作り、次のコードを入力してください。
-              長めですが、JSON Schema、Agent実行、ResultMessage処理、ファイル保存の関係を一つの流れとして読むため、省略せずに書きます。
+              `python-labs/scripts/lesson_09_structured_output_log.py` の完成コードを確認します。
+              長めですが、JSON Schema、Agent実行、ResultMessage処理、ファイル保存の関係を一つの流れとして読めるよう、省略せずに掲載します。
             </p>
 
             <div class="code-block">
               <div class="code-block__header">
-                <span>python-labs/practice/lesson_09_structured_output_log.py</span>
+                <span>python-labs/scripts/lesson_09_structured_output_log.py</span>
               </div>
               <pre><code>import asyncio
 import json
@@ -498,7 +498,7 @@ if __name__ == "__main__":
               <div class="code-block__header">
                 <span>Windows / macOS / Linux</span>
               </div>
-              <pre><code>uv run python practice/lesson_09_structured_output_log.py</code></pre>
+              <pre><code>uv run python scripts/lesson_09_structured_output_log.py</code></pre>
             </div>
 
             <p>保存された構造化出力を確認します。</p>

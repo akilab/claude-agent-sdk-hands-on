@@ -1,6 +1,6 @@
 # claude-agent-sdk-hands-on
 
-Claude Agent SDKを、Pythonとuvで手を動かしながら学ぶためのハンズオン学習サイトです。
+Claude Agent SDKを、Pythonとuvで完成コードを動かしながら学ぶためのハンズオン学習サイトです。
 
 このリポジトリでは、Agent SDKの基本、Pythonでの実装、権限設定、Skills、サブエージェント設計を、段階的なレッスンとして整理していきます。
 
@@ -8,7 +8,7 @@ Claude Agent SDKを、Pythonとuvで手を動かしながら学ぶためのハ�
 
 - Claude Agent SDKの全体像を理解する
 - Pythonとuvだけで学習環境を作る
-- 省略の少ないPythonコードを書いてAgent SDKを動かす
+- 完成済みのPythonコードを実行し、動作を確認してから必要に応じてソースを読む
 - Options、権限、出力、ログの扱いを学ぶ
 - Agent Skillsとサブエージェントを実務寄りに理解する
 - 小さな業務自動化ツールとしてまとめる
@@ -32,8 +32,6 @@ Claude Agent SDKを、Pythonとuvで手を動かしながら学ぶためのハ�
 │  └─ img/
 ├─ lessons/
 └─ python-labs/
-   ├─ src/
-   │  └─ agent_sdk_learning/
    ├─ scripts/
    ├─ data/
    └─ outputs/
@@ -46,19 +44,16 @@ Claude Agent SDKを、Pythonとuvで手を動かしながら学ぶためのハ�
 - `assets/js/`: サイト用JavaScript
 - `assets/img/`: サイト用画像
 - `lessons/`: 各レッスンページのHTML
-- `python-labs/src/agent_sdk_learning/`: 共通Pythonコード
-- `python-labs/scripts/`: 各レッスンで書いて実行するPythonファイル
+- `python-labs/scripts/`: 各レッスンで実行する完成済みPythonファイル
 - `python-labs/data/`: 入力サンプル
-- `python-labs/outputs/`: 実行結果やログ
-
-`python-labs/scripts/` は学習者が自由にコードを書く場所としてGit管理対象外にしています。
+- `python-labs/outputs/`: 実行結果やログ。実行しながら生成されるためGit管理対象外です。
 
 ## Curriculum
 
 1. 学習前提と公式情報を確認する
 2. uvでPythonプロジェクトを作る
-3. Pythonの基本を小さく書く
-4. ファイル操作と例外処理を書く
+3. Pythonの基本を小さく動かす
+4. ファイル操作と例外処理を動かす
 5. async / await の感覚をつかむ
 6. 最初のPython Agentを動かす
 7. メッセージと結果を読み分ける
@@ -88,7 +83,7 @@ Claude Agent SDKを、Pythonとuvで手を動かしながら学ぶためのハ�
 以下はGit管理対象外です。
 
 - `working-memory/`
-- `python-labs/scripts/`
+- `python-labs/outputs/`
 - `.venv/`
 - `__pycache__/`
 - `.pytest_cache/`

@@ -45,10 +45,10 @@
       <section class="hero" aria-labelledby="hero-title">
         <div class="hero__content">
           <p class="eyebrow">Python + uv hands-on portal</p>
-          <h1 id="hero-title">Pythonで書きながら、Agent SDKを理解する。</h1>
+          <h1 id="hero-title">Pythonを動かしながら、Agent SDKを理解する。</h1>
           <p class="hero__lead">
             Claude Agent SDKを、Pythonとuvだけに絞って学ぶための学習ポータルです。
-            省略の少ないコードを書き、Pythonの基本、SDKの流れ、Skills、サブエージェント、ClaudeSDKClientまで段階的に進めます。
+            完成コードを実行して動作を観察し、気になった部分のソースを読みながら、Pythonの基本、SDKの流れ、Skills、サブエージェント、ClaudeSDKClientまで段階的に進めます。
           </p>
           <div class="hero__actions" aria-label="開始アクション">
             <a class="button button--primary" href="#roadmap">学習ロードマップを見る</a>
@@ -63,8 +63,8 @@
           </div>
           <div class="hero-panel__item">
             <span class="hero-panel__label">形式</span>
-            <strong>書いて理解する</strong>
-            <p>各レッスンでファイルを作り、コードを省略しすぎずに動かします。</p>
+            <strong>動かして理解する</strong>
+            <p>各レッスンで完成コードを実行し、動作を見てから必要な部分だけ読みます。</p>
           </div>
           <div class="hero-panel__notice">
             <strong>注意</strong>
@@ -85,7 +85,7 @@
           </div>
           <p>
             学習内容を「Python学習編」「Claude Agent SDK 基本」「ClaudeSDKClient編」の3セクションに分けました。
-            すべての章で「読む」よりも「書いて動かす」ことを優先します。
+            すべての章で、まず完成コードを動かし、結果を確認してからソースを読む流れにします。
           </p>
         </div>
       </section>
@@ -109,8 +109,8 @@
           <li>
             <span class="step-number">02</span>
             <div>
-              <h3>Pythonを書き始める</h3>
-              <p>変数、関数、辞書、リスト、例外処理を小さなファイルで練習します。</p>
+              <h3>Pythonを動かして読む</h3>
+              <p>変数、関数、辞書、リスト、例外処理を小さな完成コードで確認します。</p>
             </div>
           </li>
           <li>
@@ -157,7 +157,7 @@
             <p class="eyebrow">Learning sections</p>
             <h2 id="lessons-title">学習セクション</h2>
           </div>
-          <p>学ぶ目的ごとに章を分けています。各レッスンは、説明を読んだあとにPythonファイルを作って動かす構成です。</p>
+          <p>学ぶ目的ごとに章を分けています。各レッスンは、説明を読んだあとに完成済みのPythonファイルを実行し、動作を確認する構成です。</p>
         </div>
 
         <div class="lesson-groups">
@@ -166,7 +166,7 @@
               <div>
                 <p class="eyebrow">Section 01</p>
                 <h3 id="python-lessons-title">Python学習編</h3>
-                <p>Pythonとuvの前提を整え、Agent SDKのコードを読めるだけの基礎を手で書いて身につけます。</p>
+                <p>Pythonとuvの前提を整え、Agent SDKのコードを読めるだけの基礎を、完成コードの実行と観察で身につけます。</p>
               </div>
               <span class="lesson-group__count">Lesson 01-05</span>
             </div>
@@ -197,8 +197,8 @@
                   <span>Lesson 03</span>
                   <span>45 min</span>
                 </div>
-                <h3>Pythonの基本を小さく書く</h3>
-                <p>変数、文字列、リスト、辞書、関数を省略せずに書き、Agentの材料を作ります。</p>
+                <h3>Pythonの基本を小さく動かす</h3>
+                <p>変数、文字列、リスト、辞書、関数を完成コードで確認し、Agentの材料を理解します。</p>
                 <a href="lessons/lesson-03.html">レッスンを開く</a>
               </article>
 
@@ -207,8 +207,8 @@
                   <span>Lesson 04</span>
                   <span>45 min</span>
                 </div>
-                <h3>ファイル操作と例外処理を書く</h3>
-                <p>設定ファイルやメモを読み書きし、失敗時の扱いをPythonのコードで学びます。</p>
+                <h3>ファイル操作と例外処理を動かす</h3>
+                <p>設定ファイルやメモの読み書き、失敗時の扱いをPythonの完成コードで学びます。</p>
                 <a href="lessons/lesson-04.html">レッスンを開く</a>
               </article>
 
@@ -218,7 +218,7 @@
                   <span>40 min</span>
                 </div>
                 <h3>async / await の感覚をつかむ</h3>
-                <p>Agent SDKで使う非同期処理を、短いサンプルから `async for` まで順に書きます。</p>
+                <p>Agent SDKで使う非同期処理を、短いサンプルから `async for` まで順に動かします。</p>
                 <a href="lessons/lesson-05.html">レッスンを開く</a>
               </article>
             </div>
@@ -324,7 +324,7 @@
                 <h3 id="client-lessons-title">ClaudeSDKClient編</h3>
                 <p>query単発から離れ、継続会話、セッション分離、ストリーミングなど、Webインターフェース化の土台を学びます。</p>
               </div>
-              <span class="lesson-group__count">Lesson 13-19</span>
+              <span class="lesson-group__count">Lesson 13-21</span>
             </div>
 
             <div class="lesson-grid">
@@ -396,6 +396,26 @@
                 <h3>JSON台帳をSQLiteへ登録する</h3>
                 <p>Lesson 15の台帳を読み、usersとsessionsへ登録してDB Browserで確認します。</p>
                 <a href="lessons/lesson-19.html">レッスンを開く</a>
+              </article>
+
+              <article class="lesson-card">
+                <div class="lesson-card__meta">
+                  <span>Lesson 20</span>
+                  <span>60 min</span>
+                </div>
+                <h3>会話メッセージをSQLiteへ保存する</h3>
+                <p>Claudeとの1回の会話を、sessionsとmessagesに分けてSQLiteへ保存します。</p>
+                <a href="lessons/lesson-20.html">レッスンを開く</a>
+              </article>
+
+              <article class="lesson-card">
+                <div class="lesson-card__meta">
+                  <span>Lesson 21</span>
+                  <span>70 min</span>
+                </div>
+                <h3>最新セッションをresumeして会話を継続する</h3>
+                <p>DBの最新セッションを自動選択し、resumeした会話を同じセッションへ追記します。</p>
+                <a href="lessons/lesson-21.html">レッスンを開く</a>
               </article>
             </div>
           </section>

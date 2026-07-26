@@ -69,7 +69,7 @@
             <a href="#architecture">完成形の読み方</a>
             <a href="#sequence">シーケンス図</a>
             <a href="#mental-model">処理の流れ</a>
-            <a href="#write-script">自動化コードを書く</a>
+            <a href="#write-script">自動化コードを動かす</a>
             <a href="#run">実行して確認</a>
             <a href="#review">確認問題</a>
           </nav>
@@ -271,7 +271,7 @@
 
           <section class="lesson-section" id="mental-model">
             <p class="eyebrow">Before coding</p>
-            <h2>コードを書く前に処理の流れを読む</h2>
+            <h2>完成コードを動かす前に処理の流れを読む</h2>
             <p>
               最終回では、関数の順番を追うことがとても大事です。
               どの関数も小さな責務を持ち、`run_agent()` がそれらを組み合わせます。
@@ -293,13 +293,13 @@
             <p class="eyebrow">Hands-on</p>
             <h2>業務向けミニ自動化を書く</h2>
             <p>
-              `python-labs/practice/lesson_12_business_automation.py` を作り、次のコードを入力してください。
+              `python-labs/scripts/lesson_12_business_automation.py` の完成コードを確認します。
               長いコードですが、入力、Skill確認、サブエージェント定義、Options、構造化出力、ログ保存を分けて読むと整理できます。
             </p>
 
             <div class="code-block">
               <div class="code-block__header">
-                <span>python-labs/practice/lesson_12_business_automation.py</span>
+                <span>python-labs/scripts/lesson_12_business_automation.py</span>
               </div>
               <pre><code>import asyncio
 import json
@@ -567,7 +567,7 @@ if __name__ == "__main__":
               <div class="code-block__header">
                 <span>Windows / macOS / Linux</span>
               </div>
-              <pre><code>uv run python practice/lesson_12_business_automation.py</code></pre>
+              <pre><code>uv run python scripts/lesson_12_business_automation.py</code></pre>
             </div>
 
             <p>保存されたファイルを確認します。</p>

@@ -69,7 +69,7 @@
             <a href="#lifecycle">状態管理</a>
             <a href="#mapping">JSONからDBへ</a>
             <a href="#sequence">設計図</a>
-            <a href="#hands-on">コードを書く</a>
+            <a href="#hands-on">完成コードを読む</a>
             <a href="#run">実行して確認</a>
             <a href="#review">確認問題</a>
           </nav>
@@ -300,15 +300,15 @@
 
           <section class="lesson-section" id="hands-on">
             <p class="eyebrow">Hands-on</p>
-            <h2>コードを書く</h2>
+            <h2>完成コードを読む</h2>
             <p>
-              `python-labs/practice/lesson_17_sqlite_design.py` に、次のコードを入力してください。
+              `python-labs/scripts/lesson_17_sqlite_design.py` の完成コードを確認します。
               今回はDBを作るのではなく、設計メモをJSONとMarkdownで出力します。
             </p>
 
             <div class="code-block">
               <div class="code-block__header">
-                <span>python-labs/practice/lesson_17_sqlite_design.py</span>
+                <span>python-labs/scripts/lesson_17_sqlite_design.py</span>
               </div>
               <pre><code>from datetime import datetime, timezone
 from typing import Any
@@ -366,8 +366,8 @@ def build_messages_table() -&gt; dict[str, Any]:
         &quot;columns&quot;: [
             {&quot;name&quot;: &quot;id&quot;, &quot;type&quot;: &quot;INTEGER&quot;, &quot;role&quot;: &quot;メッセージ行の主キー&quot;},
             {&quot;name&quot;: &quot;claude_session_id&quot;, &quot;type&quot;: &quot;TEXT&quot;, &quot;role&quot;: &quot;sessions.claude_session_idと対応する値&quot;},
-            {&quot;name&quot;: &quot;role&quot;, &quot;type&quot;: &quot;TEXT&quot;, &quot;role&quot;: &quot;user / assistant / result などの種別&quot;},
-            {&quot;name&quot;: &quot;content&quot;, &quot;type&quot;: &quot;TEXT&quot;, &quot;role&quot;: &quot;表示・復元したい本文&quot;},
+            {&quot;name&quot;: &quot;role&quot;, &quot;type&quot;: &quot;TEXT&quot;, &quot;role&quot;: &quot;user / assistant / system の種別&quot;},
+            {&quot;name&quot;: &quot;content&quot;, &quot;type&quot;: &quot;TEXT&quot;, &quot;role&quot;: &quot;表示・復元したい会話本文&quot;},
             {&quot;name&quot;: &quot;turn_number&quot;, &quot;type&quot;: &quot;INTEGER&quot;, &quot;role&quot;: &quot;会話内の順序&quot;},
             {&quot;name&quot;: &quot;created_at&quot;, &quot;type&quot;: &quot;TEXT&quot;, &quot;role&quot;: &quot;保存日時&quot;},
         ],
@@ -573,7 +573,7 @@ if __name__ == &quot;__main__&quot;:
               <div class="code-block__header">
                 <span>Windows / macOS / Linux</span>
               </div>
-              <pre><code>uv run python practice/lesson_17_sqlite_design.py</code></pre>
+              <pre><code>uv run python scripts/lesson_17_sqlite_design.py</code></pre>
             </div>
 
             <p>設計メモを確認します。</p>

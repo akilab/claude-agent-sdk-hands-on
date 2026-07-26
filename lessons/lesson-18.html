@@ -68,7 +68,7 @@
             <a href="#database-path">保存場所</a>
             <a href="#schema">テーブル定義</a>
             <a href="#sequence">処理の流れ</a>
-            <a href="#hands-on">コードを書く</a>
+            <a href="#hands-on">完成コードを読む</a>
             <a href="#run">実行して確認</a>
             <a href="#review">確認問題</a>
           </nav>
@@ -83,10 +83,10 @@
               Agentを動かさず、後続レッスンで使う `data/agent_sessions.sqlite3` に3つのテーブルを作ります。
             </p>
             <ul class="check-list">
-              <li>Python標準ライブラリの `sqlite3` でDBファイルを作成できる</li>
-              <li>`CREATE TABLE IF NOT EXISTS` の役割を説明できる</li>
+              <li>共有関数 `connect_database()` でDBファイルへ接続できる</li>
+              <li>共有関数 `create_schema()` で3テーブルを作成できる</li>
               <li>`users`、`sessions`、`messages` の3テーブルを作成できる</li>
-              <li>作成済みテーブルを `sqlite_master` と `PRAGMA table_info` で確認できる</li>
+              <li>作成済みテーブルを `print_database_summary()` で確認できる</li>
             </ul>
           </section>
 
@@ -104,6 +104,15 @@
               <p>
                 作るのはSQLiteファイルと3つのテーブルだけです。
                 ユーザーやメッセージの保存、`session_id` の登録、`resume` との接続は次のレッスン以降に回します。
+              </p>
+            </div>
+
+            <div class="callout">
+              <strong>DB処理はshared.databaseに切り出しています</strong>
+              <p>
+                この章の主役はClaude Agent SDKのセッション管理です。
+                SQLやsqlite3の細部を毎回読むと理解の妨げになるため、DB接続、テーブル作成、登録、確認の細かい処理は
+                `python-labs/scripts/shared/database.py` にまとめています。
               </p>
             </div>
           </section>
@@ -147,7 +156,8 @@
             <h2>3つのテーブルを作る</h2>
             <p>
               SQLiteでは、テーブルの形をSQL文で定義します。
-              今回は `CREATE TABLE IF NOT EXISTS` を使い、すでにテーブルがある場合は作成をスキップできるようにします。
+              ただし、この章で学びたいのはDBそのものではなく、Claudeのセッション情報をどこへ保存するかです。
+              そのためSQLの細部は `shared.database` に移し、このレッスンでは `create_schema()` を呼ぶだけにします。
             </p>
 
             <div class="table-wrap" role="region" aria-label="作成するテーブル">
@@ -190,7 +200,8 @@
             <div class="callout">
               <strong>すでにDBを作っていた場合</strong>
               <p>
-                `CREATE TABLE IF NOT EXISTS` は既存テーブルの列を作り直しません。
+                `create_schema()` の中では `CREATE TABLE IF NOT EXISTS` を使っています。
+                これは既存テーブルの列を作り直しません。
                 以前の版で `users.created_at` や `users.updated_at` を含むDBを作っていた場合は、DB Browserを閉じてから
                 `data/agent_sessions.sqlite3` を削除し、このレッスンをもう一度実行してください。
               </p>
@@ -201,8 +212,8 @@
             <p class="eyebrow">Sequence</p>
             <h2>処理の流れを見る</h2>
             <p>
-              `main()` がDBへ接続し、3つの `CREATE TABLE` を順番に実行し、最後に作成済みテーブルを確認します。
-              この流れは次回以降の保存処理からも呼び出しやすい形です。
+              `main()` がDBへ接続し、`create_schema()` で3つのテーブルを用意し、最後に作成済みテーブルを確認します。
+              DBの細かいSQLは `shared.database` に置いて、レッスン本体では流れだけを読みます。
             </p>
 
             <button class="diagram-frame" type="button" data-diagram-open aria-label="SQLiteテーブル作成の流れを拡大表示">
@@ -212,143 +223,22 @@
 
           <section class="lesson-section" id="hands-on">
             <p class="eyebrow">Hands-on</p>
-            <h2>コードを書く</h2>
+            <h2>完成コードを読む</h2>
             <p>
-              `python-labs/practice/lesson_18_create_sqlite_tables.py` に、次のコードを入力してください。
-              Python標準ライブラリの `sqlite3` だけを使うため、追加インストールは不要です。
+              `python-labs/scripts/lesson_18_create_sqlite_tables.py` の完成コードを確認します。
+              DBの細かい処理は `shared.database` に切り出してあります。
+              ここでは、後続レッスンで使うDBを準備する最小コードを確認します。
             </p>
 
             <div class="code-block">
               <div class="code-block__header">
-                <span>python-labs/practice/lesson_18_create_sqlite_tables.py</span>
+                <span>python-labs/scripts/lesson_18_create_sqlite_tables.py</span>
               </div>
-              <pre><code>import sqlite3
-from typing import Any
-
-from shared.display import print_section
-from shared.paths import DATA_DIR
-
-
-DATABASE_PATH = DATA_DIR / &quot;agent_sessions.sqlite3&quot;
-
-
-# 後続レッスンでも使うSQLiteファイルへ接続する関数です。
-def connect_database() -&gt; sqlite3.Connection:
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    connection = sqlite3.connect(DATABASE_PATH)
-    connection.execute(&quot;PRAGMA foreign_keys = ON&quot;)
-    return connection
-
-
-# アプリ側のユーザーを保存するusersテーブルを作る関数です。
-def create_users_table(connection: sqlite3.Connection) -&gt; None:
-    connection.execute(
-        &quot;&quot;&quot;
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id TEXT NOT NULL UNIQUE,
-            status TEXT NOT NULL DEFAULT &#39;active&#39;
-                CHECK (status IN (&#39;active&#39;, &#39;disabled&#39;, &#39;deleted&#39;))
-        )
-        &quot;&quot;&quot;
-    )
-
-
-# Claude Agent SDKのsession_idを、ユーザーごとの会話一覧として保存するsessionsテーブルを作る関数です。
-def create_sessions_table(connection: sqlite3.Connection) -&gt; None:
-    connection.execute(
-        &quot;&quot;&quot;
-        CREATE TABLE IF NOT EXISTS sessions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id TEXT NOT NULL,
-            claude_session_id TEXT NOT NULL UNIQUE,
-            title TEXT NOT NULL,
-            cwd TEXT NOT NULL,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL,
-            last_resumed_at TEXT NOT NULL DEFAULT &#39;&#39;,
-            FOREIGN KEY (user_id) REFERENCES users (user_id)
-        )
-        &quot;&quot;&quot;
-    )
-
-
-# 各セッションに紐づく会話本文や結果ログを保存するmessagesテーブルを作る関数です。
-def create_messages_table(connection: sqlite3.Connection) -&gt; None:
-    connection.execute(
-        &quot;&quot;&quot;
-        CREATE TABLE IF NOT EXISTS messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            claude_session_id TEXT NOT NULL,
-            role TEXT NOT NULL
-                CHECK (role IN (&#39;user&#39;, &#39;assistant&#39;, &#39;result&#39;, &#39;system&#39;)),
-            content TEXT NOT NULL,
-            turn_number INTEGER NOT NULL,
-            created_at TEXT NOT NULL,
-            FOREIGN KEY (claude_session_id) REFERENCES sessions (claude_session_id)
-        )
-        &quot;&quot;&quot;
-    )
-
-
-# 3つのCREATE TABLEをまとめて実行し、最後に保存を確定する関数です。
-def create_schema(connection: sqlite3.Connection) -&gt; None:
-    create_users_table(connection)
-    create_sessions_table(connection)
-    create_messages_table(connection)
-    connection.commit()
-
-
-# SQLite内に作成済みのテーブル名を確認する関数です。
-def list_tables(connection: sqlite3.Connection) -&gt; list[str]:
-    rows = connection.execute(
-        &quot;&quot;&quot;
-        SELECT name
-        FROM sqlite_master
-        WHERE type = &#39;table&#39;
-          AND name NOT LIKE &#39;sqlite_%&#39;
-        ORDER BY name
-        &quot;&quot;&quot;
-    ).fetchall()
-    return [row[0] for row in rows]
-
-
-# 1つのテーブルについて、列名、型、NOT NULL、主キーなどの情報を確認する関数です。
-def describe_table(
-    connection: sqlite3.Connection,
-    table_name: str,
-) -&gt; list[dict[str, Any]]:
-    rows = connection.execute(f&quot;PRAGMA table_info({table_name})&quot;).fetchall()
-    return [
-        {
-            &quot;name&quot;: row[1],
-            &quot;type&quot;: row[2],
-            &quot;not_null&quot;: bool(row[3]),
-            &quot;default&quot;: row[4],
-            &quot;primary_key&quot;: bool(row[5]),
-        }
-        for row in rows
-    ]
-
-
-# 作成したテーブルと列を、ターミナルで読みやすく表示する関数です。
-def print_database_summary(connection: sqlite3.Connection) -&gt; None:
-    print_section(&quot;Database&quot;)
-    print(DATABASE_PATH)
-
-    table_names = list_tables(connection)
-    print_section(&quot;Tables&quot;)
-    for table_name in table_names:
-        print(f&quot;- {table_name}&quot;)
-
-    print_section(&quot;Columns&quot;)
-    for table_name in table_names:
-        print(f&quot;[{table_name}]&quot;)
-        for column in describe_table(connection, table_name):
-            required = &quot;required&quot; if column[&quot;not_null&quot;] else &quot;optional&quot;
-            primary = &quot; primary_key&quot; if column[&quot;primary_key&quot;] else &quot;&quot;
-            default = f&quot; default={column[&#39;default&#39;]}&quot; if column[&quot;default&quot;] is not None else &quot;&quot;
-            print(f&quot;- {column[&#39;name&#39;]} {column[&#39;type&#39;]} {required}{primary}{default}&quot;)
+              <pre><code>from shared.database import (
+    connect_database,
+    create_schema,
+    print_database_summary,
+)
 
 
 # このファイルを直接実行したときの入口になる関数です。
@@ -372,7 +262,7 @@ if __name__ == &quot;__main__&quot;:
               <div class="code-block__header">
                 <span>Windows / macOS / Linux</span>
               </div>
-              <pre><code>uv run python practice/lesson_18_create_sqlite_tables.py</code></pre>
+              <pre><code>uv run python scripts/lesson_18_create_sqlite_tables.py</code></pre>
             </div>
 
             <p>
@@ -412,7 +302,7 @@ if __name__ == &quot;__main__&quot;:
             <ol class="review-list">
               <li>今回のDBファイルを `outputs/` ではなく `data/` に置く理由は何ですか。</li>
               <li>なぜAgent実行コードとDB作成コードを分けるのですか。</li>
-              <li>`CREATE TABLE IF NOT EXISTS` は何を避けるための指定ですか。</li>
+              <li>`create_schema()` は何を作る共有関数ですか。</li>
               <li>`sessions.id` と `sessions.claude_session_id` はどう違いますか。</li>
               <li>`messages` テーブルに本文を置く理由を説明してください。</li>
             </ol>

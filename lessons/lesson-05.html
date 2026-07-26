@@ -65,7 +65,7 @@
           <nav class="lesson-toc" aria-label="ページ内ナビゲーション">
             <a href="#goal">ゴール</a>
             <a href="#concepts">今回使うPython</a>
-            <a href="#write-script">非同期の流れを書く</a>
+            <a href="#write-script">非同期の流れを動かす</a>
             <a href="#run">実行して読み解く</a>
             <a href="#review">確認問題</a>
           </nav>
@@ -118,15 +118,15 @@
 
           <section class="lesson-section" id="write-script">
             <p class="eyebrow">Hands-on</p>
-            <h2>非同期の流れを書く</h2>
+            <h2>非同期の流れを動かす</h2>
             <p>
-              `python-labs/practice/lesson_05_async_basics.py` を作り、次のコードを入力してください。
+              `python-labs/scripts/lesson_05_async_basics.py` の完成コードを確認します。
               ここではAgentの代わりに、少しずつメッセージを返す処理を自分で作ります。
             </p>
 
             <div class="code-block">
               <div class="code-block__header">
-                <span>python-labs/practice/lesson_05_async_basics.py</span>
+                <span>python-labs/scripts/lesson_05_async_basics.py</span>
               </div>
               <pre><code>import asyncio
 from datetime import datetime
@@ -238,7 +238,7 @@ if __name__ == "__main__":
               <div class="code-block__header">
                 <span>PowerShell</span>
               </div>
-              <pre><code>uv run python practice/lesson_05_async_basics.py</code></pre>
+              <pre><code>uv run python scripts/lesson_05_async_basics.py</code></pre>
             </div>
 
             <p>表示例です。時刻は環境によって変わります。</p>
@@ -294,7 +294,7 @@ asyncio.gather: 複数の確認を並行して待つ
           </section>
 
           <nav class="lesson-nav-bottom" aria-label="レッスン移動">
-            <a href="lesson-04.html">前へ: ファイル操作と例外処理を書く</a>
+            <a href="lesson-04.html">前へ: ファイル操作と例外処理を動かす</a>
             <a href="lesson-06.html">次へ: 最初のPython Agentを動かす</a>
           </nav>
         </article>

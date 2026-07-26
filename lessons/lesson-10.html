@@ -205,7 +205,7 @@
               <pre><code>mkdir -p .claude/skills/faq-review</code></pre>
             </div>
 
-            <p>`python-labs/.claude/skills/faq-review/SKILL.md` に、次の内容を書きます。</p>
+            <p>`python-labs/.claude/skills/faq-review/SKILL.md` に、次の内容を確認します。</p>
 
             <div class="code-block">
               <div class="code-block__header">
@@ -259,10 +259,10 @@ description: 社内FAQやサポート記事の公開前レビューで、表現�
 
           <section class="lesson-section" id="mental-model">
             <p class="eyebrow">Before coding</p>
-            <h2>コードを書く前に処理の流れを読む</h2>
+            <h2>完成コードを動かす前に処理の流れを読む</h2>
             <p>
               Lesson 10では、Pythonコード、Skillファイル、Agent SDKの設定が分かれます。
-              関係を先に整理してからコードを書くと、似た形の `query()` でも目的が見えます。
+              関係を先に整理してから完成コードを読むと、似た形の `query()` でも目的が見えます。
             </p>
             <ol class="review-list">
               <li>事前に `.claude/skills/faq-review/SKILL.md` を作る</li>
@@ -279,13 +279,13 @@ description: 社内FAQやサポート記事の公開前レビューで、表現�
             <p class="eyebrow">Hands-on</p>
             <h2>Skillを読み込んでAgentから使う</h2>
             <p>
-              `python-labs/practice/lesson_10_agent_skills.py` を作り、次のコードを入力してください。
+              `python-labs/scripts/lesson_10_agent_skills.py` の完成コードを確認します。
               今回のコードは、事前に作ったSkillファイルを確認し、Skillを有効化してAgentを呼ぶ処理だけを書きます。
             </p>
 
             <div class="code-block">
               <div class="code-block__header">
-                <span>python-labs/practice/lesson_10_agent_skills.py</span>
+                <span>python-labs/scripts/lesson_10_agent_skills.py</span>
               </div>
               <pre><code>import asyncio
 
@@ -417,7 +417,7 @@ if __name__ == "__main__":
               <div class="code-block__header">
                 <span>Windows / macOS / Linux</span>
               </div>
-              <pre><code>uv run python practice/lesson_10_agent_skills.py</code></pre>
+              <pre><code>uv run python scripts/lesson_10_agent_skills.py</code></pre>
             </div>
 
             <p>Skillファイルと保存された出力を確認します。</p>

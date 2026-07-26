@@ -82,7 +82,7 @@
               表示・保存・基本メッセージ処理を共通化し、各レッスンではSDKの主役だけが目立つ形にします。
             </p>
             <ul class="check-list">
-              <li>`scripts/` と `practice/` の役割を説明できる</li>
+              <li>`scripts/` と `scripts/shared/` の役割を説明できる</li>
               <li>共通化してよい処理と、各レッスンに残すべきSDK処理を分けられる</li>
               <li>`shared` から共通関数をimportできる</li>
               <li>整理後のLesson 06で、`query()` と `ClaudeAgentOptions` が読みやすく残っていることを確認できる</li>
@@ -93,8 +93,8 @@
             <p class="eyebrow">Folder rule</p>
             <h2>フォルダの使い分け</h2>
             <p>
-              以降は、完成版と練習用ファイルを分けます。
-              学習者は `practice/` に書き、詰まったときは `scripts/` の完成版を確認します。
+              以降は、完成済みの実行ファイルを `scripts/` に置きます。
+              学習者はまず完成コードを実行し、動作を確認してから、必要な部分だけソースを読みます。
             </p>
 
             <div class="code-block">
@@ -102,13 +102,8 @@
                 <span>python-labsの構成</span>
               </div>
               <pre><code>python-labs/
-  practice/
-    lesson_06_first_agent.py        # 学習者が書く空ファイル
   scripts/
-    lesson_06_first_agent.py        # 完成版
-  practice/
-    shared/                         # 練習ファイルからimportする共通関数
-  scripts/
+    lesson_06_first_agent.py        # レッスンで実行する完成コード
     shared/                         # 完成版スクリプトからimportする共通関数
       display.py                    # 表示の共通関数
       files.py                      # 保存の共通関数
@@ -120,8 +115,8 @@
             <div class="callout">
               <strong>共有コードは `shared/` として置きます</strong>
               <p>
-                最初は `scripts/shared/` に置く案もありますが、`practice/` から実行すると `scripts/shared` をそのままimportしにくくなります。
-                そのため、完成版と練習版の両方から同じ `from shared...` で使えるように、共有コードは `scripts/shared/` と `practice/shared/` に置きます。
+                共有コードは `scripts/shared/` にまとめます。
+                各レッスンの完成コードは `python-labs/` から `uv run python scripts/...` として実行するため、同じ `from shared...` で共通関数を読み込めます。
               </p>
             </div>
           </section>
@@ -208,12 +203,12 @@ from shared.paths import PROJECT_ROOT</code></pre>
             <h2>整理後のLesson 06を見る</h2>
             <p>
               `python-labs/scripts/lesson_06_first_agent.py` は完成版です。
-              自分で手を動かす場合は、同じ内容を `python-labs/practice/lesson_06_first_agent.py` に書いて実行します。
+              必要に応じて、完成コードを読みながら処理の分け方を確認します。
             </p>
 
             <div class="code-block">
               <div class="code-block__header">
-                <span>python-labs/practice/lesson_06_first_agent.py</span>
+                <span>python-labs/scripts/lesson_06_first_agent.py</span>
               </div>
               <pre><code>import asyncio
 
@@ -316,16 +311,7 @@ if __name__ == "__main__":
           <section class="lesson-section" id="run">
             <p class="eyebrow">Run</p>
             <h2>実行して確認する</h2>
-            <p>練習用ファイルに書いた場合は、`python-labs/` から次を実行します。</p>
-
-            <div class="code-block">
-              <div class="code-block__header">
-                <span>Windows / macOS / Linux</span>
-              </div>
-              <pre><code>uv run python practice/lesson_06_first_agent.py</code></pre>
-            </div>
-
-            <p>完成版だけを確認したい場合は、次を実行します。</p>
+            <p>`python-labs/` から完成コードを実行します。</p>
 
             <div class="code-block">
               <div class="code-block__header">
@@ -333,16 +319,17 @@ if __name__ == "__main__":
               </div>
               <pre><code>uv run python scripts/lesson_06_first_agent.py</code></pre>
             </div>
+
           </section>
 
           <section class="lesson-section" id="review">
             <p class="eyebrow">Review</p>
             <h2>確認問題</h2>
             <ol class="review-list">
-              <li>`scripts/` と `practice/` は、それぞれ何のために使いますか。</li>
+              <li>`scripts/` と `scripts/shared/` は、それぞれ何のために使いますか。</li>
               <li>なぜ `ClaudeAgentOptions` は共通関数に隠さず、各レッスンに残すのでしょうか。</li>
               <li>`print_section()` や `write_text_lines()` を共通化しても、学習効果が落ちにくい理由を説明してください。</li>
-              <li>`scripts/shared/` と `practice/shared/` に共有コードを置く理由を説明してください。</li>
+              <li>完成コードをまず実行し、必要な部分だけ読む学習に変える理由を説明してください。</li>
             </ol>
             <p>
               ここから先のレッスンでは、同じ表示・保存処理に邪魔されず、メッセージ、権限、構造化出力、Skills、サブエージェントの違いを見やすくしていきます。

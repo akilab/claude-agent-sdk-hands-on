@@ -52,7 +52,7 @@
         <h1 id="lesson-title">JSON台帳をSQLiteへ登録する</h1>
         <p>
           Lesson 15で保存したJSON台帳を読み込み、Lesson 18で作ったSQLite DBへ登録します。
-          まずは会話一覧に必要な `users` と `sessions` だけを扱い、会話本文の `messages` は次回に分けます。
+          まずは会話一覧に必要な `users` と `sessions` だけを扱い、会話本文の `messages` は次の段階に分けます。
         </p>
       </section>
 
@@ -68,7 +68,7 @@
             <a href="#mapping">登録する範囲</a>
             <a href="#insert-user">ユーザー登録</a>
             <a href="#sequence">処理の流れ</a>
-            <a href="#hands-on">コードを書く</a>
+            <a href="#hands-on">完成コードを読む</a>
             <a href="#run">実行して確認</a>
             <a href="#db-browser">DB Browserで確認</a>
             <a href="#review">確認問題</a>
@@ -110,7 +110,16 @@
               <strong>Lesson 18のDB作成もコード側で呼びます</strong>
               <p>
                 今回のコードは `create_schema()` を呼ぶため、DBやテーブルがまだない状態でも実行できます。
+                `create_schema()` の中身は `shared.database` に移しているため、このレッスンではJSON台帳をDBへ渡す流れに集中します。
                 ただし、学習の流れとしてはLesson 18でDB Browserから空のテーブルを確認しておくと、今回の変化が見えやすくなります。
+              </p>
+            </div>
+
+            <div class="callout">
+              <strong>shared.databaseは説明を短くするための共通部品です</strong>
+              <p>
+                `insert_user_if_missing()` や `insert_session_if_missing()` の中ではSQLを実行しています。
+                ただしLesson 19ではSQL文そのものではなく、JSON台帳の `user_record` と `session_record` をどの順番でDBへ渡すかを読みます。
               </p>
             </div>
 
@@ -130,6 +139,7 @@
             <p>
               JSON台帳には `transcript_path` も入っていますが、今回はファイル本文を読んで `messages` に入れるところまでは進みません。
               まず、Web UIの会話一覧に必要になるユーザーとセッションだけをDB化します。
+              次のレッスンでは、新しい会話を実行しながら `messages` へ本文を保存します。
             </p>
 
             <div class="table-wrap" role="region" aria-label="JSON台帳からSQLiteへ登録する範囲">
@@ -160,7 +170,7 @@
                   <tr>
                     <td><code>users[].sessions[].transcript_path</code></td>
                     <td><code>messages.content</code></td>
-                    <td>次回扱う</td>
+                    <td>次の段階で扱う</td>
                   </tr>
                 </tbody>
               </table>
@@ -188,7 +198,7 @@
               <strong>sessionsも「なければ追加」に揃えます</strong>
               <p>
                 このレッスンでは、セッションも `INSERT OR IGNORE` だけで登録します。
-                `created_at`、`updated_at`、`cwd` はLesson 15の台帳にある前提なので、無ければ空文字で保存せずエラーにします。
+                その細かいSQLは `shared.database` に置き、Lesson 19のコードでは `insert_session_if_missing()` を呼ぶだけにします。
               </p>
             </div>
           </section>
@@ -208,21 +218,28 @@
 
           <section class="lesson-section" id="hands-on">
             <p class="eyebrow">Hands-on</p>
-            <h2>コードを書く</h2>
+            <h2>完成コードを読む</h2>
             <p>
-              `python-labs/practice/lesson_19_import_registry_to_sqlite.py` に、次のコードを入力してください。
+              `python-labs/scripts/lesson_19_import_registry_to_sqlite.py` の完成コードを確認します。
               Agentは実行せず、すでに保存済みのJSON台帳をDBに移します。
+              DBへの細かいINSERT処理は `shared.database` に切り出してあるため、ここでは台帳を1人ずつ読み解く流れに集中します。
             </p>
 
             <div class="code-block">
               <div class="code-block__header">
-                <span>python-labs/practice/lesson_19_import_registry_to_sqlite.py</span>
+                <span>python-labs/scripts/lesson_19_import_registry_to_sqlite.py</span>
               </div>
               <pre><code>import json
-import sqlite3
 from typing import Any
 
-from lesson_18_create_sqlite_tables import connect_database, create_schema
+from shared.database import (
+    connect_database,
+    count_rows,
+    create_schema,
+    fetch_session_summary,
+    insert_session_if_missing,
+    insert_user_if_missing,
+)
 from shared.display import print_section
 from shared.paths import OUTPUT_DIR
 
@@ -249,125 +266,33 @@ def get_session_records(user_record: dict[str, Any]) -&gt; list[dict[str, Any]]:
     return sessions
 
 
-# usersテーブルに、まだ存在しないユーザーだけを追加する関数です。
-def insert_user_if_missing(
-    connection: sqlite3.Connection,
-    user_id: str,
+# 1人分のユーザー記録を、usersとsessionsへ登録する関数です。
+def import_user_record(
+    connection,
+    user_record: dict[str, Any],
 ) -&gt; None:
-    connection.execute(
-        &quot;&quot;&quot;
-        INSERT OR IGNORE INTO users (
-            user_id,
-            status
-        )
-        VALUES (?, &#39;active&#39;)
-        &quot;&quot;&quot;,
-        (user_id,),
-    )
+    user_id = str(user_record[&quot;user_id&quot;])
+    insert_user_if_missing(connection, user_id)
 
-
-# セッション記録から、必須項目の文字列値を取り出す関数です。
-def require_session_value(
-    session_record: dict[str, Any],
-    key: str,
-) -&gt; str:
-    value = session_record.get(key)
-    if value is None or value == &quot;&quot;:
-        raise ValueError(f&quot;session_recordに必須項目 {key} がありません。&quot;)
-    return str(value)
-
-
-# sessionsテーブルに、まだ存在しないセッションだけを追加する関数です。
-def insert_session_if_missing(
-    connection: sqlite3.Connection,
-    user_id: str,
-    session_record: dict[str, Any],
-) -&gt; None:
-    claude_session_id = require_session_value(session_record, &quot;session_id&quot;)
-    title = str(session_record.get(&quot;title&quot;, &quot;Untitled session&quot;))
-    cwd = require_session_value(session_record, &quot;cwd&quot;)
-    created_at = require_session_value(session_record, &quot;created_at&quot;)
-    updated_at = require_session_value(session_record, &quot;updated_at&quot;)
-    last_resumed_at = str(session_record.get(&quot;last_resumed_at&quot;, &quot;&quot;))
-
-    connection.execute(
-        &quot;&quot;&quot;
-        INSERT OR IGNORE INTO sessions (
-            user_id,
-            claude_session_id,
-            title,
-            cwd,
-            created_at,
-            updated_at,
-            last_resumed_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        &quot;&quot;&quot;,
-        (
-            user_id,
-            claude_session_id,
-            title,
-            cwd,
-            created_at,
-            updated_at,
-            last_resumed_at,
-        ),
-    )
+    for session_record in get_session_records(user_record):
+        insert_session_if_missing(connection, user_id, session_record)
 
 
 # JSON台帳に入っている全ユーザーと全セッションをDBへ登録する関数です。
 def import_registry_to_database(
-    connection: sqlite3.Connection,
+    connection,
     registry: dict[str, Any],
 ) -&gt; None:
     users = registry.get(&quot;users&quot;, [])
 
     for user_record in users:
-        user_id = str(user_record[&quot;user_id&quot;])
-        insert_user_if_missing(connection, user_id)
-
-        for session_record in get_session_records(user_record):
-            insert_session_if_missing(connection, user_id, session_record)
+        import_user_record(connection, user_record)
 
     connection.commit()
 
 
-# 指定したテーブルのレコード件数を数える関数です。
-def count_rows(
-    connection: sqlite3.Connection,
-    table_name: str,
-) -&gt; int:
-    row = connection.execute(f&quot;SELECT COUNT(*) FROM {table_name}&quot;).fetchone()
-    return int(row[0])
-
-
-# sessionsテーブルに入った会話一覧を表示する関数です。
-def fetch_session_summary(connection: sqlite3.Connection) -&gt; list[dict[str, str]]:
-    rows = connection.execute(
-        &quot;&quot;&quot;
-        SELECT
-            user_id,
-            claude_session_id,
-            title,
-            updated_at
-        FROM sessions
-        ORDER BY updated_at DESC
-        &quot;&quot;&quot;
-    ).fetchall()
-
-    return [
-        {
-            &quot;user_id&quot;: str(row[0]),
-            &quot;claude_session_id&quot;: str(row[1]),
-            &quot;title&quot;: str(row[2]),
-            &quot;updated_at&quot;: str(row[3]),
-        }
-        for row in rows
-    ]
-
-
 # 登録結果を、ターミナルで読みやすく表示する関数です。
-def print_import_summary(connection: sqlite3.Connection) -&gt; None:
+def print_import_summary(connection) -&gt; None:
     print_section(&quot;Imported row counts&quot;)
     print(f&quot;users: {count_rows(connection, &#39;users&#39;)}&quot;)
     print(f&quot;sessions: {count_rows(connection, &#39;sessions&#39;)}&quot;)
@@ -404,7 +329,7 @@ if __name__ == &quot;__main__&quot;:
               <div class="code-block__header">
                 <span>Windows / macOS / Linux</span>
               </div>
-              <pre><code>uv run python practice/lesson_19_import_registry_to_sqlite.py</code></pre>
+              <pre><code>uv run python scripts/lesson_19_import_registry_to_sqlite.py</code></pre>
             </div>
 
             <p>
@@ -445,18 +370,18 @@ if __name__ == &quot;__main__&quot;:
             <ol class="review-list">
               <li>今回 `messages` に本文を入れなかった理由は何ですか。</li>
               <li>`users` を先に登録してから `sessions` を登録する理由は何ですか。</li>
-              <li>`INSERT OR IGNORE` は、同じ `user_id` がすでにあるときに何をしますか。</li>
+              <li>`import_user_record()` は、1人分のユーザー記録に対して何をしていますか。</li>
               <li>`session_id` をDBでは `claude_session_id` として保存する理由をもう一度説明してください。</li>
               <li>DB Browserで `users` と `sessions` のどの列を確認すると、登録成功が分かりますか。</li>
             </ol>
             <p>
-              次のレッスンでは、`transcript_path` のファイル本文を読み、`messages` テーブルへ保存していきます。
+              次のレッスンでは、Claudeと新しく1回やり取りし、そのユーザー入力とClaudeの返答を `messages` テーブルへ保存します。
             </p>
           </section>
 
           <nav class="lesson-nav-bottom" aria-label="レッスン移動">
             <a href="lesson-18.html">前へ: SQLiteでテーブルを作成する</a>
-            <a href="#" aria-disabled="true">次のレッスンは準備中</a>
+            <a href="lesson-20.html">次へ: 会話メッセージをSQLiteへ保存する</a>
           </nav>
         </article>
       </div>

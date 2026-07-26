@@ -54,8 +54,8 @@ def build_messages_table() -> dict[str, Any]:
         "columns": [
             {"name": "id", "type": "INTEGER", "role": "メッセージ行の主キー"},
             {"name": "claude_session_id", "type": "TEXT", "role": "sessions.claude_session_idと対応する値"},
-            {"name": "role", "type": "TEXT", "role": "user / assistant / result などの種別"},
-            {"name": "content", "type": "TEXT", "role": "表示・復元したい本文"},
+            {"name": "role", "type": "TEXT", "role": "user / assistant / system の種別"},
+            {"name": "content", "type": "TEXT", "role": "表示・復元したい会話本文"},
             {"name": "turn_number", "type": "INTEGER", "role": "会話内の順序"},
             {"name": "created_at", "type": "TEXT", "role": "保存日時"},
         ],
