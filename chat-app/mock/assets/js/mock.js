@@ -416,8 +416,6 @@ const analystEditorReset = document.querySelector("#analyst-editor-reset");
 const analystEditorSubmit = document.querySelector("#analyst-editor-submit");
 const chatForm = document.querySelector("#chat-form");
 const chatInput = document.querySelector("#chat-input");
-const activeAnalystAvatar = document.querySelector("#active-analyst-avatar");
-const activeAnalystName = document.querySelector("#active-analyst-name");
 const currentAnalystAvatar = document.querySelector("#current-analyst-avatar");
 const currentAnalystName = document.querySelector("#current-analyst-name");
 const currentAnalystRole = document.querySelector("#current-analyst-role");
@@ -572,8 +570,6 @@ function renderSessionFilter() {
 
 function renderAnalyst() {
   const analyst = analysts[activeAnalystKey];
-  activeAnalystAvatar.textContent = analyst.avatar;
-  activeAnalystName.textContent = analyst.name;
   currentAnalystAvatar.textContent = analyst.avatar;
   currentAnalystName.textContent = analyst.name;
   currentAnalystRole.textContent = analyst.role;

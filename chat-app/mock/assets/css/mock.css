@@ -128,8 +128,10 @@ svg {
 
 .product-brand h1 {
   margin: 0;
-  font-size: 20px;
-  line-height: 1.1;
+  font-family: "Zen Antique Soft", "Noto Serif JP", Georgia, serif;
+  font-size: 23px;
+  font-weight: 400;
+  line-height: 1.05;
   letter-spacing: 0;
 }
 
@@ -141,7 +143,7 @@ svg {
 }
 
 .global-nav button,
-.account-menu {
+.header-settings-button {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -156,28 +158,19 @@ svg {
 }
 
 .global-nav button:hover,
-.global-nav button:focus-visible {
+.global-nav button:focus-visible,
+.header-settings-button:hover,
+.header-settings-button:focus-visible {
   border-color: rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.08);
   outline: none;
 }
 
-.account-menu {
+.header-settings-button {
+  justify-self: end;
   margin-right: 16px;
   border-color: rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.08);
-}
-
-.account-avatar {
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: #ffffff;
-  color: var(--navy-940);
-  font-size: 12px;
-  font-weight: 900;
 }
 
 .session-search-overlay {
@@ -1375,26 +1368,6 @@ svg {
   color: var(--gray-700);
 }
 
-.sidebar-footer {
-  display: grid;
-  gap: 8px;
-  margin-top: auto;
-  padding-top: 24px;
-  flex-shrink: 0;
-}
-
-.sidebar-footer button {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  min-height: 36px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: #d9e7fb;
-  text-align: left;
-}
-
 .chat-layout {
   grid-row: 2;
   display: grid;
@@ -1992,7 +1965,7 @@ svg {
     padding-left: 0;
   }
 
-  .account-menu {
+  .header-settings-button {
     margin-right: 0;
   }
 
