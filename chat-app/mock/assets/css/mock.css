@@ -1202,7 +1202,8 @@ svg {
 }
 
 .session-list {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 8px;
   flex: 1 1 auto;
   min-height: 0;
@@ -1223,6 +1224,7 @@ svg {
   display: grid;
   grid-template-columns: 34px 1fr;
   gap: 4px 10px;
+  flex: 0 0 auto;
   width: 100%;
   min-height: 82px;
   border: 1px solid transparent;
