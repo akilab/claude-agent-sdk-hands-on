@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Claude Agent SDK Chat Lab</title>
+    <title>Incident Response | West Hawk</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&family=Noto+Sans+JP:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -17,12 +17,12 @@
             <img src="assets/img/logo-design.svg" alt="">
           </span>
           <div>
-            <p>Claude Agent SDK</p>
-            <h1>Chat Lab</h1>
+            <p>Incident Response</p>
+            <h1>West Hawk</h1>
           </div>
         </div>
         <nav class="global-nav" aria-label="グローバルナビゲーション">
-          <button type="button">
+          <button type="button" id="open-session-search">
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <path d="M6 5.5h12M6 12h12M6 18.5h8"></path>
             </svg>
@@ -43,23 +43,116 @@
           </button>
         </nav>
         <div class="account-menu">
-          <span class="account-avatar" aria-hidden="true">L</span>
-          <span>learner-001</span>
+          <span id="active-analyst-avatar" class="account-avatar" aria-hidden="true">T</span>
+          <span id="active-analyst-name">田中 明</span>
         </div>
       </header>
+
+      <div class="session-search-overlay" id="session-search-overlay" hidden>
+        <section class="session-search-dialog" role="dialog" aria-modal="true" aria-labelledby="session-search-title">
+          <header class="session-search-header">
+            <div>
+              <p>Session Archive</p>
+              <h2 id="session-search-title">セッション検索</h2>
+            </div>
+            <button type="button" class="icon-button" id="close-session-search" aria-label="セッション検索を閉じる">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M6 6l12 12M18 6 6 18"></path>
+              </svg>
+            </button>
+          </header>
+
+          <div class="session-search-controls">
+            <label>
+              <span>キーワード</span>
+              <input id="session-search-input" type="search" placeholder="タイトル、担当者、セッションIDで検索">
+            </label>
+            <label>
+              <span>ステータス</span>
+              <select id="session-search-status">
+                <option value="all">すべて</option>
+                <option value="new">新規</option>
+                <option value="investigating">調査中</option>
+                <option value="reviewing">追加確認中</option>
+                <option value="monitoring">監視中</option>
+                <option value="paused">保留</option>
+                <option value="closed">クローズ</option>
+              </select>
+            </label>
+            <label>
+              <span>更新日 From</span>
+              <input id="session-search-date-from" type="date">
+            </label>
+            <label>
+              <span>更新日 To</span>
+              <input id="session-search-date-to" type="date">
+            </label>
+            <div class="session-search-actions">
+              <button type="button" class="session-search-submit" id="session-search-submit">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <circle cx="11" cy="11" r="6.5"></circle>
+                  <path d="m16 16 4 4"></path>
+                </svg>
+                検索
+              </button>
+              <button type="button" class="session-search-clear" id="session-search-clear">
+                条件をクリア
+              </button>
+            </div>
+          </div>
+
+          <div class="session-search-summary">
+            <strong id="session-search-count">0</strong>
+            <span>件のセッション</span>
+          </div>
+
+          <div class="session-search-results" id="session-search-results" role="list"></div>
+        </section>
+      </div>
 
       <aside class="sidebar" aria-label="セッション管理">
         <button type="button" class="new-session-button">
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path d="M12 5v14M5 12h14"></path>
           </svg>
-          新しいチャット
+          新しい調査
         </button>
 
         <section class="session-section" aria-labelledby="recent-session-title">
+          <div class="status-filter" aria-label="ステータス別の絞り込み">
+            <button type="button" class="status-filter-button is-active" data-status-filter="all">
+              <span>すべて</span>
+              <strong data-status-count="all">10</strong>
+            </button>
+            <button type="button" class="status-filter-button" data-status-filter="new">
+              <span>新規</span>
+              <strong data-status-count="new">0</strong>
+            </button>
+            <button type="button" class="status-filter-button" data-status-filter="investigating">
+              <span>調査中</span>
+              <strong data-status-count="investigating">1</strong>
+            </button>
+            <button type="button" class="status-filter-button" data-status-filter="reviewing">
+              <span>追加確認中</span>
+              <strong data-status-count="reviewing">1</strong>
+            </button>
+            <button type="button" class="status-filter-button" data-status-filter="monitoring">
+              <span>監視中</span>
+              <strong data-status-count="monitoring">1</strong>
+            </button>
+            <button type="button" class="status-filter-button" data-status-filter="paused">
+              <span>保留</span>
+              <strong data-status-count="paused">0</strong>
+            </button>
+            <button type="button" class="status-filter-button" data-status-filter="closed">
+              <span>クローズ</span>
+              <strong data-status-count="closed">1</strong>
+            </button>
+          </div>
+
           <div class="section-heading">
             <h2 id="recent-session-title">最近のセッション</h2>
-            <span>4</span>
+            <span id="visible-session-count">10</span>
           </div>
 
           <div class="session-list" role="list">
@@ -70,9 +163,12 @@
                   <path d="M7.5 9h9M7.5 12.5H14"></path>
                 </svg>
               </span>
-              <span class="session-title">FastAPI連携の相談</span>
-              <span class="session-preview">セッション一覧APIの設計を確認</span>
-              <span class="session-time">今日 15:42</span>
+              <span class="session-title">Impossible Travel alert</span>
+              <span class="session-preview">異常なサインインを調査中</span>
+              <span class="session-meta">
+                <span class="session-status is-investigating">調査中</span>
+                <span class="session-time">今日 15:42</span>
+              </span>
             </button>
             <button type="button" class="session-item" data-session="sqlite">
               <span class="session-icon" aria-hidden="true">
@@ -81,9 +177,12 @@
                   <path d="M7.5 9h9M7.5 12.5H14"></path>
                 </svg>
               </span>
-              <span class="session-title">SQLite履歴保存</span>
-              <span class="session-preview">messagesテーブルの役割を整理</span>
-              <span class="session-time">今日 14:18</span>
+              <span class="session-title">Suspicious PowerShell</span>
+              <span class="session-preview">端末上の不審な実行を確認</span>
+              <span class="session-meta">
+                <span class="session-status is-reviewing">追加確認中</span>
+                <span class="session-time">今日 14:18</span>
+              </span>
             </button>
             <button type="button" class="session-item" data-session="stream">
               <span class="session-icon" aria-hidden="true">
@@ -92,9 +191,12 @@
                   <path d="M7.5 9h9M7.5 12.5H14"></path>
                 </svg>
               </span>
-              <span class="session-title">ストリーミング表示</span>
-              <span class="session-preview">返答を少しずつ描画する方法</span>
-              <span class="session-time">昨日 18:04</span>
+              <span class="session-title">Multiple Failed Logon</span>
+              <span class="session-preview">ログオン失敗の集中を分析</span>
+              <span class="session-meta">
+                <span class="session-status is-monitoring">監視中</span>
+                <span class="session-time">昨日 18:04</span>
+              </span>
             </button>
             <button type="button" class="session-item" data-session="client">
               <span class="session-icon" aria-hidden="true">
@@ -103,9 +205,96 @@
                   <path d="M7.5 9h9M7.5 12.5H14"></path>
                 </svg>
               </span>
-              <span class="session-title">ClaudeSDKClient基礎</span>
-              <span class="session-preview">queryとの違いを確認</span>
-              <span class="session-time">昨日 11:20</span>
+              <span class="session-title">Malicious Attachment</span>
+              <span class="session-preview">添付ファイル検知を確認</span>
+              <span class="session-meta">
+                <span class="session-status is-closed">クローズ</span>
+                <span class="session-time">昨日 11:20</span>
+              </span>
+            </button>
+            <button type="button" class="session-item" data-session="oauth">
+              <span class="session-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v10A1.5 1.5 0 0 1 19 17.5h-5.5L9 21v-3.5H5A1.5 1.5 0 0 1 3.5 16V6A1.5 1.5 0 0 1 5 4.5Z"></path>
+                  <path d="M7.5 9h9M7.5 12.5H14"></path>
+                </svg>
+              </span>
+              <span class="session-title">OAuth Consent Grant</span>
+              <span class="session-preview">不審な同意許可を確認</span>
+              <span class="session-meta">
+                <span class="session-status is-new">新規</span>
+                <span class="session-time">昨日 09:48</span>
+              </span>
+            </button>
+            <button type="button" class="session-item" data-session="impossible-device">
+              <span class="session-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v10A1.5 1.5 0 0 1 19 17.5h-5.5L9 21v-3.5H5A1.5 1.5 0 0 1 3.5 16V6A1.5 1.5 0 0 1 5 4.5Z"></path>
+                  <path d="M7.5 9h9M7.5 12.5H14"></path>
+                </svg>
+              </span>
+              <span class="session-title">Unmanaged Device Sign-in</span>
+              <span class="session-preview">未管理端末からのアクセス</span>
+              <span class="session-meta">
+                <span class="session-status is-investigating">調査中</span>
+                <span class="session-time">07/25 17:32</span>
+              </span>
+            </button>
+            <button type="button" class="session-item" data-session="mail-forwarding">
+              <span class="session-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v10A1.5 1.5 0 0 1 19 17.5h-5.5L9 21v-3.5H5A1.5 1.5 0 0 1 3.5 16V6A1.5 1.5 0 0 1 5 4.5Z"></path>
+                  <path d="M7.5 9h9M7.5 12.5H14"></path>
+                </svg>
+              </span>
+              <span class="session-title">Mailbox Forwarding Rule</span>
+              <span class="session-preview">外部転送ルールを確認</span>
+              <span class="session-meta">
+                <span class="session-status is-reviewing">追加確認中</span>
+                <span class="session-time">07/25 13:06</span>
+              </span>
+            </button>
+            <button type="button" class="session-item" data-session="risky-user">
+              <span class="session-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v10A1.5 1.5 0 0 1 19 17.5h-5.5L9 21v-3.5H5A1.5 1.5 0 0 1 3.5 16V6A1.5 1.5 0 0 1 5 4.5Z"></path>
+                  <path d="M7.5 9h9M7.5 12.5H14"></path>
+                </svg>
+              </span>
+              <span class="session-title">Risky User Detected</span>
+              <span class="session-preview">ユーザーリスク上昇を確認</span>
+              <span class="session-meta">
+                <span class="session-status is-paused">保留</span>
+                <span class="session-time">07/24 16:40</span>
+              </span>
+            </button>
+            <button type="button" class="session-item" data-session="admin-role">
+              <span class="session-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v10A1.5 1.5 0 0 1 19 17.5h-5.5L9 21v-3.5H5A1.5 1.5 0 0 1 3.5 16V6A1.5 1.5 0 0 1 5 4.5Z"></path>
+                  <path d="M7.5 9h9M7.5 12.5H14"></path>
+                </svg>
+              </span>
+              <span class="session-title">Privileged Role Activated</span>
+              <span class="session-preview">特権ロールの有効化を確認</span>
+              <span class="session-meta">
+                <span class="session-status is-monitoring">監視中</span>
+                <span class="session-time">07/24 10:15</span>
+              </span>
+            </button>
+            <button type="button" class="session-item" data-session="data-download">
+              <span class="session-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v10A1.5 1.5 0 0 1 19 17.5h-5.5L9 21v-3.5H5A1.5 1.5 0 0 1 3.5 16V6A1.5 1.5 0 0 1 5 4.5Z"></path>
+                  <path d="M7.5 9h9M7.5 12.5H14"></path>
+                </svg>
+              </span>
+              <span class="session-title">Large Data Download</span>
+              <span class="session-preview">大量ダウンロードを確認済み</span>
+              <span class="session-meta">
+                <span class="session-status is-closed">クローズ</span>
+                <span class="session-time">07/23 19:22</span>
+              </span>
             </button>
           </div>
         </section>
@@ -130,8 +319,8 @@
       <main class="chat-layout">
         <header class="topbar">
           <div>
-            <p class="breadcrumb">Workspace / learner-001</p>
-            <h2 id="conversation-title">FastAPI連携の相談</h2>
+            <p class="breadcrumb">調査ワークスペース / 担当者切替可</p>
+            <h2 id="conversation-title">Impossible Travel alert</h2>
           </div>
           <div class="topbar-actions">
             <span class="state-badge">resume active</span>
@@ -188,8 +377,21 @@
           </div>
           <dl class="session-facts">
             <div>
-              <dt>ユーザー</dt>
-              <dd>learner-001</dd>
+              <dt>調査セッション</dt>
+              <dd><span id="case-status" class="case-status is-investigating">調査中</span></dd>
+            </div>
+            <div>
+              <dt>ステータス変更</dt>
+              <dd>
+                <select id="case-status-select" class="case-status-select" aria-label="調査セッションのステータスを変更">
+                  <option value="new">新規</option>
+                  <option value="investigating" selected>調査中</option>
+                  <option value="reviewing">追加確認中</option>
+                  <option value="monitoring">監視中</option>
+                  <option value="paused">保留</option>
+                  <option value="closed">クローズ</option>
+                </select>
+              </dd>
             </div>
             <div>
               <dt>セッションID</dt>
@@ -210,27 +412,66 @@
           <div class="detail-heading">
             <span class="detail-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" focusable="false">
-                <ellipse cx="12" cy="6" rx="6.5" ry="2.7"></ellipse>
-                <path d="M5.5 6v6c0 1.5 2.9 2.7 6.5 2.7s6.5-1.2 6.5-2.7V6"></path>
-                <path d="M5.5 12v6c0 1.5 2.9 2.7 6.5 2.7s6.5-1.2 6.5-2.7v-6"></path>
+                <path d="M16 19.5v-1.4a3.1 3.1 0 0 0-3.1-3.1H7.6a3.1 3.1 0 0 0-3.1 3.1v1.4"></path>
+                <path d="M10.25 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"></path>
+                <path d="M19.5 19.5v-1.2a2.7 2.7 0 0 0-2-2.6"></path>
+                <path d="M15.9 4.7a3.3 3.3 0 0 1 0 6.2"></path>
               </svg>
             </span>
-            <h2>保存先</h2>
+            <h2>調査担当者</h2>
           </div>
-          <div class="storage-list">
-            <div>
-              <span class="storage-dot"></span>
+          <div class="analyst-panel">
+            <p class="field-label">現在の担当者</p>
+            <div class="active-analyst">
+              <span id="current-analyst-avatar">T</span>
               <div>
-                <strong>sessions</strong>
-                <p>会話単位のメタ情報</p>
+                <strong id="current-analyst-name">田中 明</strong>
+                <p id="current-analyst-role">Tier2</p>
               </div>
             </div>
-            <div>
-              <span class="storage-dot"></span>
-              <div>
-                <strong>messages</strong>
-                <p>user / assistant の本文</p>
-              </div>
+
+            <p class="field-label">担当者を切り替える</p>
+            <div class="analyst-switcher" role="list" aria-label="調査担当者">
+              <button type="button" class="analyst-button is-active" data-analyst="tanaka">
+                <span>T</span>
+                <strong>田中 明</strong>
+                <em>Tier2</em>
+              </button>
+              <button type="button" class="analyst-button" data-analyst="sato">
+                <span>S</span>
+                <strong>佐藤 美咲</strong>
+                <em>Tier2 Senior</em>
+              </button>
+              <button type="button" class="analyst-button" data-analyst="suzuki">
+                <span>U</span>
+                <strong>鈴木 健</strong>
+                <em>Tier2 Chief</em>
+              </button>
+              <button type="button" class="analyst-button" data-analyst="hayashi">
+                <span>H</span>
+                <strong>林 涼</strong>
+                <em>Tier2</em>
+              </button>
+              <button type="button" class="analyst-button" data-analyst="mori">
+                <span>M</span>
+                <strong>森 愛</strong>
+                <em>Tier2 Senior</em>
+              </button>
+              <button type="button" class="analyst-button" data-analyst="onodera">
+                <span>O</span>
+                <strong>小野寺 健太郎</strong>
+                <em>Tier2 Chief</em>
+              </button>
+              <button type="button" class="analyst-button" data-analyst="hasegawa">
+                <span>N</span>
+                <strong>長谷川 奈津美</strong>
+                <em>Tier2 Senior</em>
+              </button>
+              <button type="button" class="analyst-button" data-analyst="fujiwara">
+                <span>F</span>
+                <strong>藤原 真由</strong>
+                <em>Tier2</em>
+              </button>
             </div>
           </div>
         </section>
@@ -245,10 +486,10 @@
             <h2>実行ステータス</h2>
           </div>
           <div class="run-status">
-            <span></span>
+            <span id="run-status-dot"></span>
             <div>
-              <strong>待機中</strong>
-              <p>入力を送信するとAPI経由でClaudeに問い合わせます。</p>
+              <strong id="run-status-label">待機中</strong>
+              <p id="run-status-text">入力を送信するとClaudeへの問い合わせを開始します。</p>
             </div>
           </div>
         </section>
