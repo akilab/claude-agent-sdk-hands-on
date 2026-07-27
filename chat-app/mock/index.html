@@ -34,13 +34,6 @@
             </svg>
             API
           </button>
-          <button type="button">
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="M7 6.5h10M7 11h10M7 15.5h6"></path>
-              <path d="M5 3.5h14a1.5 1.5 0 0 1 1.5 1.5v14L17 17.5H5A1.5 1.5 0 0 1 3.5 16V5A1.5 1.5 0 0 1 5 3.5Z"></path>
-            </svg>
-            ログ
-          </button>
         </nav>
         <div class="account-menu">
           <span id="active-analyst-avatar" class="account-avatar" aria-hidden="true">T</span>
@@ -107,6 +100,218 @@
           </div>
 
           <div class="session-search-results" id="session-search-results" role="list"></div>
+        </section>
+      </div>
+
+      <div class="settings-overlay" id="settings-overlay" hidden>
+        <section class="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+          <header class="settings-header">
+            <div>
+              <p>Workspace Settings</p>
+              <h2 id="settings-title">設定</h2>
+            </div>
+            <button type="button" class="icon-button" id="close-settings" aria-label="設定を閉じる">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M6 6l12 12M18 6 6 18"></path>
+              </svg>
+            </button>
+          </header>
+
+          <div class="settings-body">
+            <nav class="settings-nav" aria-label="設定カテゴリ">
+              <button type="button" class="settings-nav-button is-active" data-settings-tab="general">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"></path>
+                  <path d="M19 12a7.6 7.6 0 0 0-.08-1.1l2.02-1.56-2-3.46-2.39.96a7.44 7.44 0 0 0-1.9-1.1L14.3 3.2h-4.6l-.35 2.54a7.44 7.44 0 0 0-1.9 1.1l-2.39-.96-2 3.46 2.02 1.56A7.6 7.6 0 0 0 5 12c0 .38.03.74.08 1.1l-2.02 1.56 2 3.46 2.39-.96c.58.46 1.22.83 1.9 1.1l.35 2.54h4.6l.35-2.54c.68-.27 1.32-.64 1.9-1.1l2.39.96 2-3.46-2.02-1.56c.05-.36.08-.72.08-1.1Z"></path>
+                </svg>
+                一般
+              </button>
+              <button type="button" class="settings-nav-button" data-settings-tab="claude">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M7 8h10M7 12h7M7 16h5"></path>
+                  <path d="M5 4.5h14A1.5 1.5 0 0 1 20.5 6v10A1.5 1.5 0 0 1 19 17.5h-5L10 21v-3.5H5A1.5 1.5 0 0 1 3.5 16V6A1.5 1.5 0 0 1 5 4.5Z"></path>
+                </svg>
+                Claude
+              </button>
+              <button type="button" class="settings-nav-button" data-settings-tab="analysts">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M16 19.5v-1.4a3.1 3.1 0 0 0-3.1-3.1H7.6a3.1 3.1 0 0 0-3.1 3.1v1.4"></path>
+                  <path d="M10.25 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"></path>
+                  <path d="M19.5 19.5v-1.2a2.7 2.7 0 0 0-2-2.6"></path>
+                  <path d="M15.9 4.7a3.3 3.3 0 0 1 0 6.2"></path>
+                </svg>
+                担当者
+              </button>
+              <button type="button" class="settings-nav-button" data-settings-tab="data">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M5 6.5c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5S15.9 4 12 4 5 5.1 5 6.5Z"></path>
+                  <path d="M5 6.5v5c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-5"></path>
+                  <path d="M5 11.5v5c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-5"></path>
+                </svg>
+                データ
+              </button>
+              <button type="button" class="settings-nav-button" data-settings-tab="notifications">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M18 8.5a6 6 0 0 0-12 0c0 7-2.5 7.5-2.5 7.5h17S18 15.5 18 8.5Z"></path>
+                  <path d="M9.8 19.5a2.4 2.4 0 0 0 4.4 0"></path>
+                </svg>
+                通知
+              </button>
+            </nav>
+
+            <div class="settings-content">
+              <section class="settings-panel is-active" data-settings-panel="general">
+                <div class="settings-panel-heading">
+                  <h3>一般</h3>
+                  <p>調査画面の表示と作業時の基本動作を調整します。</p>
+                </div>
+                <div class="setting-grid">
+                  <label class="setting-field">
+                    <span>表示密度</span>
+                    <select>
+                      <option>標準</option>
+                      <option>コンパクト</option>
+                      <option>ゆったり</option>
+                    </select>
+                  </label>
+                  <label class="setting-field">
+                    <span>初期表示</span>
+                    <select>
+                      <option>最新の調査セッション</option>
+                      <option>新規セッション</option>
+                      <option>前回開いていたセッション</option>
+                    </select>
+                  </label>
+                </div>
+                <label class="setting-toggle">
+                  <input type="checkbox" checked>
+                  <span>送信後にメッセージ一覧を最新位置へ移動する</span>
+                </label>
+              </section>
+
+              <section class="settings-panel" data-settings-panel="claude">
+                <div class="settings-panel-heading">
+                  <h3>Claude</h3>
+                  <p>Claude Agent SDKで問い合わせる時の基本方針を確認します。</p>
+                </div>
+                <div class="setting-grid">
+                  <label class="setting-field">
+                    <span>応答モード</span>
+                    <select>
+                      <option>調査支援</option>
+                      <option>要約優先</option>
+                      <option>根拠確認優先</option>
+                    </select>
+                  </label>
+                  <label class="setting-field">
+                    <span>実行ステータス表示</span>
+                    <select>
+                      <option>詳細</option>
+                      <option>簡易</option>
+                    </select>
+                  </label>
+                </div>
+                <label class="setting-toggle">
+                  <input type="checkbox" checked>
+                  <span>Claudeの返答を受信しながら表示する</span>
+                </label>
+              </section>
+
+              <section class="settings-panel" data-settings-panel="analysts">
+                <div class="settings-panel-heading">
+                  <h3>担当者</h3>
+                  <p>会話に記録する調査担当者を管理します。削除した担当者は新しい会話では選べなくなりますが、過去の履歴には名前が残ります。</p>
+                </div>
+                <div class="settings-list">
+                  <div>
+                    <strong>現在の担当者</strong>
+                    <span id="settings-current-analyst">田中 明 / Tier2</span>
+                  </div>
+                  <div>
+                    <strong>記録方法</strong>
+                    <span>発言ごとに担当者名を残す</span>
+                  </div>
+                </div>
+                <div class="analyst-management">
+                  <div>
+                    <div class="settings-subheading">
+                      <h4>担当者一覧</h4>
+                      <p>削除した担当者は新しい会話では選べなくなります。過去の履歴には名前が残ります。</p>
+                    </div>
+                    <div class="settings-analyst-list" id="settings-analyst-list"></div>
+                  </div>
+
+                  <form class="analyst-editor" id="analyst-editor">
+                    <input type="hidden" id="analyst-edit-key">
+                    <div class="settings-subheading">
+                      <h4 id="analyst-editor-title">新規追加</h4>
+                      <p>担当者名と役割だけを登録します。</p>
+                    </div>
+                    <label class="setting-field">
+                      <span>名前</span>
+                      <input id="analyst-name-input" type="text" placeholder="例: 山田 花子">
+                    </label>
+                    <label class="setting-field">
+                      <span>役割</span>
+                      <select id="analyst-role-select">
+                        <option>Tier2</option>
+                        <option>Tier2 Chief</option>
+                        <option>Tier2 Senior</option>
+                      </select>
+                    </label>
+                    <div class="analyst-editor-actions">
+                      <button type="button" class="settings-secondary" id="analyst-editor-reset">新規入力に戻す</button>
+                      <button type="submit" class="settings-primary" id="analyst-editor-submit">追加</button>
+                    </div>
+                  </form>
+                </div>
+              </section>
+
+              <section class="settings-panel" data-settings-panel="data">
+                <div class="settings-panel-heading">
+                  <h3>データ</h3>
+                  <p>セッション、メッセージ、調査履歴の保存先を整理します。</p>
+                </div>
+                <div class="settings-list">
+                  <div>
+                    <strong>保存先</strong>
+                    <span>SQLite / agent_sessions.sqlite3</span>
+                  </div>
+                  <div>
+                    <strong>最近のセッション</strong>
+                    <span>最新10件をサイドバーに表示</span>
+                  </div>
+                  <div>
+                    <strong>全履歴検索</strong>
+                    <span>検索ボタン押下時にAPIで取得</span>
+                  </div>
+                </div>
+              </section>
+
+              <section class="settings-panel" data-settings-panel="notifications">
+                <div class="settings-panel-heading">
+                  <h3>通知</h3>
+                  <p>調査の保留、監視、クローズに関する通知を調整します。</p>
+                </div>
+                <label class="setting-toggle">
+                  <input type="checkbox" checked>
+                  <span>監視中セッションに新しいイベントがあれば通知する</span>
+                </label>
+                <label class="setting-toggle">
+                  <input type="checkbox">
+                  <span>クローズ前の確認漏れを通知する</span>
+                </label>
+              </section>
+            </div>
+          </div>
+
+          <footer class="settings-footer">
+            <span id="settings-save-status">未保存の変更はありません</span>
+            <div>
+              <button type="button" class="settings-secondary" id="settings-cancel">キャンセル</button>
+              <button type="button" class="settings-primary" id="settings-save">保存</button>
+            </div>
+          </footer>
         </section>
       </div>
 
@@ -300,7 +505,7 @@
         </section>
 
         <div class="sidebar-footer">
-          <button type="button">
+          <button type="button" id="open-settings">
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"></path>
               <path d="M19 12a7.6 7.6 0 0 0-.08-1.1l2.02-1.56-2-3.46-2.39.96a7.44 7.44 0 0 0-1.9-1.1L14.3 3.2h-4.6l-.35 2.54a7.44 7.44 0 0 0-1.9 1.1l-2.39-.96-2 3.46 2.02 1.56A7.6 7.6 0 0 0 5 12c0 .38.03.74.08 1.1l-2.02 1.56 2 3.46 2.39-.96c.58.46 1.22.83 1.9 1.1l.35 2.54h4.6l.35-2.54c.68-.27 1.32-.64 1.9-1.1l2.39.96 2-3.46-2.02-1.56c.05-.36.08-.72.08-1.1Z"></path>
@@ -376,21 +581,17 @@
             <h2>現在の状態</h2>
           </div>
           <dl class="session-facts">
-            <div>
+            <div class="session-status-field">
               <dt>調査セッション</dt>
-              <dd><span id="case-status" class="case-status is-investigating">調査中</span></dd>
-            </div>
-            <div>
-              <dt>ステータス変更</dt>
               <dd>
-                <select id="case-status-select" class="case-status-select" aria-label="調査セッションのステータスを変更">
-                  <option value="new">新規</option>
-                  <option value="investigating" selected>調査中</option>
-                  <option value="reviewing">追加確認中</option>
-                  <option value="monitoring">監視中</option>
-                  <option value="paused">保留</option>
-                  <option value="closed">クローズ</option>
-                </select>
+                <div class="case-status-options" id="case-status-options" role="group" aria-label="調査セッションのステータスを変更">
+                  <button type="button" class="case-status-option is-new" data-status-option="new" aria-pressed="false">新規</button>
+                  <button type="button" class="case-status-option is-investigating is-active" data-status-option="investigating" aria-pressed="true">調査中</button>
+                  <button type="button" class="case-status-option is-reviewing" data-status-option="reviewing" aria-pressed="false">追加確認中</button>
+                  <button type="button" class="case-status-option is-monitoring" data-status-option="monitoring" aria-pressed="false">監視中</button>
+                  <button type="button" class="case-status-option is-paused" data-status-option="paused" aria-pressed="false">保留</button>
+                  <button type="button" class="case-status-option is-closed" data-status-option="closed" aria-pressed="false">クローズ</button>
+                </div>
               </dd>
             </div>
             <div>
@@ -431,48 +632,7 @@
             </div>
 
             <p class="field-label">担当者を切り替える</p>
-            <div class="analyst-switcher" role="list" aria-label="調査担当者">
-              <button type="button" class="analyst-button is-active" data-analyst="tanaka">
-                <span>T</span>
-                <strong>田中 明</strong>
-                <em>Tier2</em>
-              </button>
-              <button type="button" class="analyst-button" data-analyst="sato">
-                <span>S</span>
-                <strong>佐藤 美咲</strong>
-                <em>Tier2 Senior</em>
-              </button>
-              <button type="button" class="analyst-button" data-analyst="suzuki">
-                <span>U</span>
-                <strong>鈴木 健</strong>
-                <em>Tier2 Chief</em>
-              </button>
-              <button type="button" class="analyst-button" data-analyst="hayashi">
-                <span>H</span>
-                <strong>林 涼</strong>
-                <em>Tier2</em>
-              </button>
-              <button type="button" class="analyst-button" data-analyst="mori">
-                <span>M</span>
-                <strong>森 愛</strong>
-                <em>Tier2 Senior</em>
-              </button>
-              <button type="button" class="analyst-button" data-analyst="onodera">
-                <span>O</span>
-                <strong>小野寺 健太郎</strong>
-                <em>Tier2 Chief</em>
-              </button>
-              <button type="button" class="analyst-button" data-analyst="hasegawa">
-                <span>N</span>
-                <strong>長谷川 奈津美</strong>
-                <em>Tier2 Senior</em>
-              </button>
-              <button type="button" class="analyst-button" data-analyst="fujiwara">
-                <span>F</span>
-                <strong>藤原 真由</strong>
-                <em>Tier2</em>
-              </button>
-            </div>
+            <div class="analyst-switcher" id="analyst-switcher" role="list" aria-label="調査担当者"></div>
           </div>
         </section>
 

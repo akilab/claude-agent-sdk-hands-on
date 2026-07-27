@@ -364,8 +364,7 @@ const sessions = {
 const messageList = document.querySelector("#message-list");
 const messageCount = document.querySelector("#message-count");
 const conversationTitle = document.querySelector("#conversation-title");
-const caseStatus = document.querySelector("#case-status");
-const caseStatusSelect = document.querySelector("#case-status-select");
+const caseStatusOptions = document.querySelector("#case-status-options");
 const sessionId = document.querySelector("#session-id");
 const updatedAt = document.querySelector("#updated-at");
 const sessionButtons = document.querySelectorAll(".session-item");
@@ -382,7 +381,24 @@ const sessionSearchSubmit = document.querySelector("#session-search-submit");
 const sessionSearchClear = document.querySelector("#session-search-clear");
 const sessionSearchResults = document.querySelector("#session-search-results");
 const sessionSearchCount = document.querySelector("#session-search-count");
-const analystButtons = document.querySelectorAll(".analyst-button");
+const openSettingsButton = document.querySelector("#open-settings");
+const closeSettingsButton = document.querySelector("#close-settings");
+const settingsCancelButton = document.querySelector("#settings-cancel");
+const settingsSaveButton = document.querySelector("#settings-save");
+const settingsOverlay = document.querySelector("#settings-overlay");
+const settingsSaveStatus = document.querySelector("#settings-save-status");
+const settingsCurrentAnalyst = document.querySelector("#settings-current-analyst");
+const settingsNavButtons = document.querySelectorAll(".settings-nav-button");
+const settingsPanels = document.querySelectorAll(".settings-panel");
+const analystSwitcher = document.querySelector("#analyst-switcher");
+const settingsAnalystList = document.querySelector("#settings-analyst-list");
+const analystEditor = document.querySelector("#analyst-editor");
+const analystEditKey = document.querySelector("#analyst-edit-key");
+const analystEditorTitle = document.querySelector("#analyst-editor-title");
+const analystNameInput = document.querySelector("#analyst-name-input");
+const analystRoleSelect = document.querySelector("#analyst-role-select");
+const analystEditorReset = document.querySelector("#analyst-editor-reset");
+const analystEditorSubmit = document.querySelector("#analyst-editor-submit");
 const chatForm = document.querySelector("#chat-form");
 const chatInput = document.querySelector("#chat-input");
 const activeAnalystAvatar = document.querySelector("#active-analyst-avatar");
@@ -452,12 +468,9 @@ function createMessageElement(message) {
 
 function renderSession(sessionKey) {
   const session = sessions[sessionKey];
-  const status = caseStatuses[session.statusKey];
   activeSessionKey = sessionKey;
   conversationTitle.textContent = session.title;
-  caseStatus.textContent = status.label;
-  caseStatus.className = `case-status ${status.className}`;
-  caseStatusSelect.value = session.statusKey;
+  renderCaseStatusOptions(session.statusKey);
   messageCount.textContent = String(session.messages.length);
   sessionId.textContent = session.sessionId;
   updatedAt.textContent = session.updatedAt;
@@ -468,6 +481,14 @@ function renderSession(sessionKey) {
   }
 
   messageList.scrollTop = messageList.scrollHeight;
+}
+
+function renderCaseStatusOptions(statusKey) {
+  for (const button of caseStatusOptions.querySelectorAll(".case-status-option")) {
+    const isActive = button.dataset.statusOption === statusKey;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  }
 }
 
 function renderSessionStatusBadge(sessionKey) {
@@ -540,9 +561,87 @@ function renderAnalyst() {
   currentAnalystAvatar.textContent = analyst.avatar;
   currentAnalystName.textContent = analyst.name;
   currentAnalystRole.textContent = analyst.role;
+  settingsCurrentAnalyst.textContent = `${analyst.name} / ${analyst.role}`;
 
-  for (const button of analystButtons) {
+  for (const button of document.querySelectorAll(".analyst-button")) {
     button.classList.toggle("is-active", button.dataset.analyst === activeAnalystKey);
+  }
+}
+
+function getAnalystInitial(name) {
+  return name.trim().slice(0, 1).toUpperCase() || "A";
+}
+
+function createAnalystKey(name) {
+  const baseKey = `analyst-${Date.now()}`;
+  const initial = getAnalystInitial(name);
+  return `${baseKey}-${initial}`;
+}
+
+function getActiveAnalysts() {
+  return Object.entries(analysts).filter(([, analyst]) => !analyst.disabled);
+}
+
+function renderAnalystSwitcher() {
+  analystSwitcher.innerHTML = "";
+
+  for (const [analystKey, analyst] of getActiveAnalysts()) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "analyst-button";
+    button.classList.toggle("is-active", analystKey === activeAnalystKey);
+    button.dataset.analyst = analystKey;
+    button.innerHTML = `
+      <span>${analyst.avatar}</span>
+      <strong>${analyst.name}</strong>
+      <em>${analyst.role}</em>
+    `;
+    analystSwitcher.appendChild(button);
+  }
+}
+
+function resetAnalystEditor() {
+  analystEditKey.value = "";
+  analystNameInput.value = "";
+  analystRoleSelect.value = "Tier2";
+  analystEditorTitle.textContent = "新規追加";
+  analystEditorSubmit.textContent = "追加";
+}
+
+function renderSettingsAnalystList() {
+  settingsAnalystList.innerHTML = "";
+
+  for (const [analystKey, analyst] of Object.entries(analysts)) {
+    const row = document.createElement("div");
+    row.className = "settings-analyst-row";
+    row.classList.toggle("is-disabled", Boolean(analyst.disabled));
+    row.innerHTML = `
+      <span class="settings-analyst-avatar">${analyst.avatar}</span>
+      <span class="settings-analyst-name">
+        <strong>${analyst.name}</strong>
+        <span>${analyst.role}</span>
+      </span>
+      <span class="settings-analyst-status">${analyst.disabled ? "無効" : "有効"}</span>
+      <span class="settings-analyst-actions">
+        <button type="button" data-analyst-action="edit" data-analyst-key="${analystKey}">変更</button>
+        <button type="button" class="is-danger" data-analyst-action="disable" data-analyst-key="${analystKey}" ${analyst.disabled ? "disabled" : ""}>削除</button>
+      </span>
+    `;
+    settingsAnalystList.appendChild(row);
+  }
+}
+
+function renderAnalystManagement() {
+  renderAnalystSwitcher();
+  renderAnalyst();
+  renderSettingsAnalystList();
+}
+
+function chooseFallbackAnalyst() {
+  const firstActiveAnalyst = getActiveAnalysts()[0];
+
+  if (firstActiveAnalyst) {
+    activeAnalystKey = firstActiveAnalyst[0];
   }
 }
 
@@ -637,6 +736,26 @@ function closeSessionSearch() {
   sessionSearchOverlay.hidden = true;
 }
 
+function renderSettingsTab(tabKey) {
+  for (const button of settingsNavButtons) {
+    button.classList.toggle("is-active", button.dataset.settingsTab === tabKey);
+  }
+
+  for (const panel of settingsPanels) {
+    panel.classList.toggle("is-active", panel.dataset.settingsPanel === tabKey);
+  }
+}
+
+function openSettings() {
+  settingsOverlay.hidden = false;
+  settingsSaveStatus.textContent = "未保存の変更はありません";
+  renderSettingsTab("general");
+}
+
+function closeSettings() {
+  settingsOverlay.hidden = true;
+}
+
 function setRunStatus(status) {
   runStatusDot.className = "";
 
@@ -677,12 +796,16 @@ for (const button of sessionButtons) {
   });
 }
 
-for (const button of analystButtons) {
-  button.addEventListener("click", () => {
-    activeAnalystKey = button.dataset.analyst;
-    renderAnalyst();
-  });
-}
+analystSwitcher.addEventListener("click", (event) => {
+  const button = event.target.closest(".analyst-button");
+
+  if (!button) {
+    return;
+  }
+
+  activeAnalystKey = button.dataset.analyst;
+  renderAnalyst();
+});
 
 for (const button of statusFilterButtons) {
   button.addEventListener("click", () => {
@@ -702,9 +825,104 @@ sessionSearchClear.addEventListener("click", () => {
   renderSessionSearchResults();
 });
 
+openSettingsButton.addEventListener("click", openSettings);
+closeSettingsButton.addEventListener("click", closeSettings);
+settingsCancelButton.addEventListener("click", closeSettings);
+settingsSaveButton.addEventListener("click", () => {
+  settingsSaveStatus.textContent = "設定を保存しました";
+});
+
+for (const button of settingsNavButtons) {
+  button.addEventListener("click", () => {
+    renderSettingsTab(button.dataset.settingsTab);
+  });
+}
+
+settingsAnalystList.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-analyst-action]");
+
+  if (!button) {
+    return;
+  }
+
+  const analystKey = button.dataset.analystKey;
+  const analyst = analysts[analystKey];
+
+  if (button.dataset.analystAction === "edit") {
+    analystEditKey.value = analystKey;
+    analystNameInput.value = analyst.name;
+    analystRoleSelect.value = analyst.role;
+    analystEditorTitle.textContent = "担当者を変更";
+    analystEditorSubmit.textContent = "変更を保存";
+    analystNameInput.focus();
+    return;
+  }
+
+  if (getActiveAnalysts().length <= 1) {
+    settingsSaveStatus.textContent = "有効な担当者は1名以上必要です";
+    return;
+  }
+
+  analyst.disabled = true;
+
+  if (activeAnalystKey === analystKey) {
+    chooseFallbackAnalyst();
+  }
+
+  settingsSaveStatus.textContent = `${analyst.name} を削除しました。過去の履歴には残ります。`;
+  resetAnalystEditor();
+  renderAnalystManagement();
+});
+
+analystEditor.addEventListener("submit", (event) => {
+  event.preventDefault();
+
+  const name = analystNameInput.value.trim();
+
+  if (!name) {
+    settingsSaveStatus.textContent = "担当者名を入力してください";
+    analystNameInput.focus();
+    return;
+  }
+
+  const role = analystRoleSelect.value;
+  const editingKey = analystEditKey.value;
+
+  if (editingKey) {
+    analysts[editingKey].name = name;
+    analysts[editingKey].shortName = name;
+    analysts[editingKey].avatar = getAnalystInitial(name);
+    analysts[editingKey].role = role;
+    settingsSaveStatus.textContent = `${name} の変更を保存しました`;
+  } else {
+    const analystKey = createAnalystKey(name);
+    analysts[analystKey] = {
+      name,
+      shortName: name,
+      avatar: getAnalystInitial(name),
+      role,
+    };
+    settingsSaveStatus.textContent = `${name} を追加しました`;
+  }
+
+  resetAnalystEditor();
+  renderAnalystManagement();
+});
+
+analystEditorReset.addEventListener("click", () => {
+  resetAnalystEditor();
+  settingsSaveStatus.textContent = "新規入力に戻しました";
+});
+
 sessionSearchOverlay.addEventListener("click", (event) => {
   if (event.target === sessionSearchOverlay) {
     closeSessionSearch();
+  }
+});
+
+settingsOverlay.addEventListener("click", (event) => {
+  if (event.target === settingsOverlay) {
+    closeSettings();
   }
 });
 
@@ -713,13 +931,23 @@ document.addEventListener("keydown", (event) => {
     closeSessionSearch();
   }
 
+  if (event.key === "Escape" && !settingsOverlay.hidden) {
+    closeSettings();
+  }
+
   if (event.key === "Enter" && !sessionSearchOverlay.hidden) {
     renderSessionSearchResults();
   }
 });
 
-caseStatusSelect.addEventListener("change", () => {
-  sessions[activeSessionKey].statusKey = caseStatusSelect.value;
+caseStatusOptions.addEventListener("click", (event) => {
+  const button = event.target.closest(".case-status-option");
+
+  if (!button) {
+    return;
+  }
+
+  sessions[activeSessionKey].statusKey = button.dataset.statusOption;
   renderSession(activeSessionKey);
   renderSessionStatusBadge(activeSessionKey);
   renderStatusCounts();
@@ -766,7 +994,7 @@ chatForm.addEventListener("submit", (event) => {
   renderSession(activeSessionKey);
 });
 
-renderAnalyst();
+renderAnalystManagement();
 renderStatusCounts();
 renderSessionFilter();
 renderSession(activeSessionKey);
