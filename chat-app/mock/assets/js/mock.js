@@ -76,11 +76,32 @@ const caseStatuses = {
   },
 };
 
+const products = {
+  mde: {
+    label: "MDE",
+    className: "is-mde",
+  },
+  sentinel: {
+    label: "Sentinel",
+    className: "is-sentinel",
+  },
+  crowdstrike: {
+    label: "CrowdStrike",
+    className: "is-crowdstrike",
+  },
+  sentinelone: {
+    label: "SentinelOne",
+    className: "is-sentinelone",
+  },
+};
+
 const sessions = {
   fastapi: {
     title: "Impossible Travel alert",
     sessionId: "4bf35ad0-805b-4e54-9623-d62191b77342",
     statusKey: "investigating",
+    customer: "アルファ商事",
+    product: "mde",
     updatedAt: "2026/07/26 15:45",
     messages: [
       {
@@ -171,6 +192,8 @@ const sessions = {
     title: "Suspicious PowerShell",
     sessionId: "9585f444-4265-474f-b9ed-668c8594f5ad",
     statusKey: "reviewing",
+    customer: "ベータ物流",
+    product: "crowdstrike",
     updatedAt: "2026/07/26 14:19",
     messages: [
       {
@@ -190,6 +213,8 @@ const sessions = {
     title: "Multiple Failed Logon",
     sessionId: "cc607212-4081-4108-839c-f3cba0fe147a",
     statusKey: "monitoring",
+    customer: "アルファ商事",
+    product: "sentinel",
     updatedAt: "2026/07/25 18:05",
     messages: [
       {
@@ -209,6 +234,8 @@ const sessions = {
     title: "Malicious Attachment",
     sessionId: "2d9dcaaf-7f26-487d-aa47-5f515339629a",
     statusKey: "closed",
+    customer: "ガンマ製薬",
+    product: "mde",
     updatedAt: "2026/07/25 11:21",
     messages: [
       {
@@ -228,6 +255,8 @@ const sessions = {
     title: "OAuth Consent Grant",
     sessionId: "8f4014e2-7db0-4952-9a6b-4fc975d33a2d",
     statusKey: "new",
+    customer: "アルファ商事",
+    product: "sentinel",
     updatedAt: "2026/07/26 09:48",
     messages: [
       {
@@ -266,6 +295,8 @@ const sessions = {
     title: "Mailbox Forwarding Rule",
     sessionId: "61b8b8e3-a68e-45d2-a9a5-72f6e5ef0c01",
     statusKey: "reviewing",
+    customer: "ベータ物流",
+    product: "mde",
     updatedAt: "2026/07/25 13:06",
     messages: [
       {
@@ -285,6 +316,8 @@ const sessions = {
     title: "Risky User Detected",
     sessionId: "6a9118f4-4d0d-4477-8b32-3244360b8739",
     statusKey: "paused",
+    customer: "ガンマ製薬",
+    product: "sentinelone",
     updatedAt: "2026/07/24 16:40",
     messages: [
       {
@@ -304,6 +337,8 @@ const sessions = {
     title: "Privileged Role Activated",
     sessionId: "ddabf05b-f26c-4cc6-a76c-7215e95a902a",
     statusKey: "monitoring",
+    customer: "アルファ商事",
+    product: "sentinel",
     updatedAt: "2026/07/24 10:15",
     messages: [
       {
@@ -323,6 +358,8 @@ const sessions = {
     title: "Large Data Download",
     sessionId: "bda911f7-6df6-4b21-a57a-67aa3b46a6e4",
     statusKey: "closed",
+    customer: "ベータ物流",
+    product: "sentinelone",
     updatedAt: "2026/07/23 19:22",
     messages: [
       {
@@ -342,6 +379,8 @@ const sessions = {
     title: "Legacy VPN Geo Mismatch",
     sessionId: "0f62a2d5-8c0e-4c99-9ec4-2c274f99ec40",
     statusKey: "closed",
+    customer: "デルタ興業",
+    product: "crowdstrike",
     updatedAt: "2026/07/20 09:35",
     messages: [
       {
@@ -361,6 +400,8 @@ const sessions = {
     title: "Retired Device Access",
     sessionId: "1ad8f679-5ef7-48f7-baf8-943d8d6f3e7a",
     statusKey: "monitoring",
+    customer: "デルタ興業",
+    product: "sentinelone",
     updatedAt: "2026/07/18 16:12",
     messages: [
       {
@@ -380,6 +421,8 @@ const sessions = {
     title: "Stale Token Activity",
     sessionId: "827ac974-1533-4977-aea6-f5474992d729",
     statusKey: "paused",
+    customer: "ガンマ製薬",
+    product: "sentinel",
     updatedAt: "2026/07/15 11:28",
     messages: [
       {
@@ -399,6 +442,8 @@ const sessions = {
     title: "Shared Inbox Rule Review",
     sessionId: "49c1a358-a8a5-46c6-b314-8432aa7c4ec5",
     statusKey: "reviewing",
+    customer: "デルタ興業",
+    product: "mde",
     updatedAt: "2026/07/12 13:44",
     messages: [
       {
@@ -417,10 +462,11 @@ const sessions = {
 };
 
 const messageList = document.querySelector("#message-list");
-const messageCount = document.querySelector("#message-count");
 const conversationTitle = document.querySelector("#conversation-title");
 const caseStatusOptions = document.querySelector("#case-status-options");
 const sessionId = document.querySelector("#session-id");
+const sessionCustomer = document.querySelector("#session-customer");
+const sessionProduct = document.querySelector("#session-product");
 const updatedAt = document.querySelector("#updated-at");
 const ownClientId = document.querySelector("#own-client-id");
 const sessionButtons = document.querySelectorAll(".session-item");
@@ -542,13 +588,35 @@ function createMessageElement(message) {
   return article;
 }
 
+function renderSessionCustomer(customerName) {
+  if (customerName) {
+    sessionCustomer.textContent = customerName;
+    sessionCustomer.classList.remove("is-unset");
+  } else {
+    sessionCustomer.textContent = "未設定";
+    sessionCustomer.classList.add("is-unset");
+  }
+}
+
+function renderSessionProduct(productKey) {
+  const product = products[productKey];
+
+  if (!product) {
+    sessionProduct.innerHTML = '<span class="product-badge is-unset">未設定</span>';
+    return;
+  }
+
+  sessionProduct.innerHTML = `<span class="product-badge ${product.className}">${product.label}</span>`;
+}
+
 function renderSession(sessionKey) {
   const session = sessions[sessionKey];
   activeSessionKey = sessionKey;
   conversationTitle.textContent = session.title;
   renderCaseStatusOptions(session.statusKey);
-  messageCount.textContent = String(session.messages.length);
   sessionId.textContent = session.sessionId;
+  renderSessionCustomer(session.customer);
+  renderSessionProduct(session.product);
   updatedAt.textContent = session.updatedAt;
   isSessionLocked = Boolean(session.isLocked);
   renderLockBadge();
