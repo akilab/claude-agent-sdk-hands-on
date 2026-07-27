@@ -381,6 +381,21 @@ const sessionSearchSubmit = document.querySelector("#session-search-submit");
 const sessionSearchClear = document.querySelector("#session-search-clear");
 const sessionSearchResults = document.querySelector("#session-search-results");
 const sessionSearchCount = document.querySelector("#session-search-count");
+const openNewInvestigationButton = document.querySelector("#open-new-investigation");
+const closeNewInvestigationButton = document.querySelector("#close-new-investigation");
+const newInvestigationCancelButton = document.querySelector("#new-investigation-cancel");
+const newInvestigationOverlay = document.querySelector("#new-investigation-overlay");
+const investigationMethods = document.querySelectorAll(".investigation-method");
+const investigationPanels = document.querySelectorAll(".investigation-panel");
+const incidentUrlInput = document.querySelector("#incident-url-input");
+const incidentProductSelect = document.querySelector("#incident-product-select");
+const incidentIdInput = document.querySelector("#incident-id-input");
+const detectedProduct = document.querySelector("#detected-product");
+const investigationPreviewMethod = document.querySelector("#investigation-preview-method");
+const investigationPreviewProduct = document.querySelector("#investigation-preview-product");
+const investigationPreviewAnalyst = document.querySelector("#investigation-preview-analyst");
+const newInvestigationStatus = document.querySelector("#new-investigation-status");
+const startInvestigationButton = document.querySelector("#start-investigation");
 const openSettingsButton = document.querySelector("#open-settings");
 const closeSettingsButton = document.querySelector("#close-settings");
 const settingsCancelButton = document.querySelector("#settings-cancel");
@@ -413,6 +428,7 @@ const runStatusText = document.querySelector("#run-status-text");
 let activeSessionKey = "fastapi";
 let activeAnalystKey = "tanaka";
 let activeStatusFilter = "all";
+let activeInvestigationMethod = "url";
 
 function getMessageAuthor(message) {
   if (message.role === "claude") {
@@ -635,6 +651,7 @@ function renderAnalystManagement() {
   renderAnalystSwitcher();
   renderAnalyst();
   renderSettingsAnalystList();
+  renderInvestigationPreview();
 }
 
 function chooseFallbackAnalyst() {
@@ -643,6 +660,156 @@ function chooseFallbackAnalyst() {
   if (firstActiveAnalyst) {
     activeAnalystKey = firstActiveAnalyst[0];
   }
+}
+
+function getProductLabel(productKey) {
+  const productLabels = {
+    mde: "Microsoft Defender for Endpoint (MDE)",
+    sentinelone: "SentinelOne",
+    crowdstrike: "CrowdStrike",
+  };
+
+  return productLabels[productKey] ?? "未判定";
+}
+
+function inferProductFromUrl(url) {
+  const normalizedUrl = url.toLowerCase();
+
+  if (normalizedUrl.includes("security.microsoft.com") || normalizedUrl.includes("defender.microsoft.com")) {
+    return "mde";
+  }
+
+  if (normalizedUrl.includes("sentinelone") || normalizedUrl.includes("sentinelone.net")) {
+    return "sentinelone";
+  }
+
+  if (normalizedUrl.includes("crowdstrike") || normalizedUrl.includes("falcon")) {
+    return "crowdstrike";
+  }
+
+  return "";
+}
+
+function getInvestigationProductKey() {
+  if (activeInvestigationMethod === "blank") {
+    return "";
+  }
+
+  if (activeInvestigationMethod === "id") {
+    return incidentProductSelect.value;
+  }
+
+  return inferProductFromUrl(incidentUrlInput.value.trim());
+}
+
+function renderInvestigationMethod(methodKey) {
+  activeInvestigationMethod = methodKey;
+
+  for (const button of investigationMethods) {
+    const isActive = button.dataset.investigationMethod === methodKey;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  }
+
+  for (const panel of investigationPanels) {
+    panel.classList.toggle("is-active", panel.dataset.investigationPanel === methodKey);
+  }
+
+  renderInvestigationPreview();
+}
+
+function renderInvestigationPreview() {
+  const productKey = getInvestigationProductKey();
+  const productLabel = getProductLabel(productKey);
+  const analyst = analysts[activeAnalystKey];
+  const methodLabels = {
+    blank: "空で開始",
+    url: "URLから開始",
+    id: "製品とIDから開始",
+  };
+
+  investigationPreviewMethod.textContent = methodLabels[activeInvestigationMethod];
+  investigationPreviewProduct.textContent = activeInvestigationMethod === "blank" ? "未指定" : productLabel;
+  investigationPreviewAnalyst.textContent = analyst.name;
+  detectedProduct.textContent = activeInvestigationMethod === "url" ? productLabel : "URLから開始する場合に推測します";
+}
+
+function resetNewInvestigationForm() {
+  incidentUrlInput.value = "";
+  incidentProductSelect.value = "mde";
+  incidentIdInput.value = "";
+  newInvestigationStatus.textContent = "入力内容をもとに調査セッションを作成します";
+  renderInvestigationMethod("url");
+}
+
+function openNewInvestigation() {
+  newInvestigationOverlay.hidden = false;
+  renderInvestigationPreview();
+  incidentUrlInput.focus();
+}
+
+function closeNewInvestigation() {
+  newInvestigationOverlay.hidden = true;
+}
+
+function startInvestigation() {
+  const productKey = getInvestigationProductKey();
+
+  if (activeInvestigationMethod === "url" && !productKey) {
+    newInvestigationStatus.textContent = "製品を推測できません。製品とIDから開始してください。";
+    return;
+  }
+
+  if (activeInvestigationMethod === "id" && !incidentIdInput.value.trim()) {
+    newInvestigationStatus.textContent = "インシデントIDを入力してください。";
+    incidentIdInput.focus();
+    return;
+  }
+
+  const productLabel = getProductLabel(productKey);
+  const isBlankInvestigation = activeInvestigationMethod === "blank";
+  const sourceLabel = activeInvestigationMethod === "url" ? "URL" : `ID: ${incidentIdInput.value.trim()}`;
+  const sessionTitle = isBlankInvestigation ? "New investigation" : `${productLabel} investigation`;
+  const userMessage = isBlankInvestigation
+    ? "まだ製品やインシデント情報は指定せず、新しい調査セッションを開始します。"
+    : `${productLabel} の ${sourceLabel} から新しい調査を開始します。`;
+  const claudeMessage = isBlankInvestigation
+    ? "新しい調査セッションを開始しました。調査対象が分かり次第、URL、製品名、インシデントID、気になっている事象のいずれかを入力してください。"
+    : "調査対象を受け取りました。対象製品から取得すべき概要、主要エンティティ、初動確認の観点を整理します。";
+  const now = getCurrentTime();
+
+  sessions.fastapi.title = sessionTitle;
+  sessions.fastapi.statusKey = "new";
+  sessions.fastapi.updatedAt = `2026/07/27 ${now}`;
+  sessions.fastapi.messages = [
+    {
+      role: "user",
+      analystId: activeAnalystKey,
+      time: now,
+      text: userMessage,
+    },
+    {
+      role: "claude",
+      time: now,
+      text: claudeMessage,
+    },
+  ];
+
+  const activeSidebarTitle = document.querySelector('[data-session="fastapi"] .session-title');
+  const activeSidebarPreview = document.querySelector('[data-session="fastapi"] .session-preview');
+  const activeSidebarTime = document.querySelector('[data-session="fastapi"] .session-time');
+
+  activeSidebarTitle.textContent = sessionTitle;
+  activeSidebarPreview.textContent = "新しい調査を開始";
+  activeSidebarTime.textContent = `今日 ${now}`;
+  setActiveButton("fastapi");
+  renderSession("fastapi");
+  renderSessionStatusBadge("fastapi");
+  renderStatusCounts();
+  renderSessionFilter();
+  renderSessionSearchResults();
+  closeNewInvestigation();
+  resetNewInvestigationForm();
 }
 
 function getSessionOwner(session) {
@@ -805,6 +972,7 @@ analystSwitcher.addEventListener("click", (event) => {
 
   activeAnalystKey = button.dataset.analyst;
   renderAnalyst();
+  renderInvestigationPreview();
 });
 
 for (const button of statusFilterButtons) {
@@ -824,6 +992,27 @@ sessionSearchClear.addEventListener("click", () => {
   sessionSearchDateTo.value = "";
   renderSessionSearchResults();
 });
+
+openNewInvestigationButton.addEventListener("click", openNewInvestigation);
+closeNewInvestigationButton.addEventListener("click", closeNewInvestigation);
+newInvestigationCancelButton.addEventListener("click", closeNewInvestigation);
+startInvestigationButton.addEventListener("click", startInvestigation);
+incidentUrlInput.addEventListener("input", renderInvestigationPreview);
+incidentProductSelect.addEventListener("change", renderInvestigationPreview);
+incidentIdInput.addEventListener("input", renderInvestigationPreview);
+
+for (const button of investigationMethods) {
+  button.addEventListener("click", () => {
+    renderInvestigationMethod(button.dataset.investigationMethod);
+  });
+}
+
+for (const panel of investigationPanels) {
+  panel.addEventListener("submit", (event) => {
+    event.preventDefault();
+    startInvestigation();
+  });
+}
 
 openSettingsButton.addEventListener("click", openSettings);
 closeSettingsButton.addEventListener("click", closeSettings);
@@ -926,9 +1115,19 @@ settingsOverlay.addEventListener("click", (event) => {
   }
 });
 
+newInvestigationOverlay.addEventListener("click", (event) => {
+  if (event.target === newInvestigationOverlay) {
+    closeNewInvestigation();
+  }
+});
+
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !sessionSearchOverlay.hidden) {
     closeSessionSearch();
+  }
+
+  if (event.key === "Escape" && !newInvestigationOverlay.hidden) {
+    closeNewInvestigation();
   }
 
   if (event.key === "Escape" && !settingsOverlay.hidden) {
@@ -937,6 +1136,10 @@ document.addEventListener("keydown", (event) => {
 
   if (event.key === "Enter" && !sessionSearchOverlay.hidden) {
     renderSessionSearchResults();
+  }
+
+  if (event.key === "Enter" && !newInvestigationOverlay.hidden) {
+    startInvestigation();
   }
 });
 

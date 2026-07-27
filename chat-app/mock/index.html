@@ -103,6 +103,96 @@
         </section>
       </div>
 
+      <div class="new-investigation-overlay" id="new-investigation-overlay" hidden>
+        <section class="new-investigation-dialog" role="dialog" aria-modal="true" aria-labelledby="new-investigation-title">
+          <header class="new-investigation-header">
+            <div>
+              <p>New Investigation</p>
+              <h2 id="new-investigation-title">新しい調査を開始</h2>
+            </div>
+            <button type="button" class="icon-button" id="close-new-investigation" aria-label="新しい調査を閉じる">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M6 6l12 12M18 6 6 18"></path>
+              </svg>
+            </button>
+          </header>
+
+          <div class="new-investigation-body">
+            <div class="investigation-methods" role="tablist" aria-label="調査開始方法">
+              <button type="button" class="investigation-method" data-investigation-method="blank" aria-pressed="false">
+                空で開始
+              </button>
+              <button type="button" class="investigation-method is-active" data-investigation-method="url" aria-pressed="true">
+                URLから開始
+              </button>
+              <button type="button" class="investigation-method" data-investigation-method="id" aria-pressed="false">
+                製品とIDから開始
+              </button>
+            </div>
+
+            <form class="investigation-panel" id="investigation-blank-panel" data-investigation-panel="blank">
+              <div class="blank-investigation">
+                <strong>まずは会話から始めます</strong>
+                <p>製品やインシデント情報がまだ手元にない場合でも、空の調査セッションを作成してClaudeに相談できます。</p>
+              </div>
+            </form>
+
+            <form class="investigation-panel is-active" id="investigation-url-panel" data-investigation-panel="url">
+              <label class="investigation-field">
+                <span>インシデントURL</span>
+                <input id="incident-url-input" type="url" placeholder="https://security.microsoft.com/incidents/...">
+              </label>
+              <div class="product-detection">
+                <span>推測された製品</span>
+                <strong id="detected-product">URLを入力すると製品を推測します</strong>
+              </div>
+              <p class="investigation-note">URLに含まれるドメインから、MDE、SentinelOne、CrowdStrikeを推測します。</p>
+            </form>
+
+            <form class="investigation-panel" id="investigation-id-panel" data-investigation-panel="id">
+              <div class="investigation-grid">
+                <label class="investigation-field">
+                  <span>製品</span>
+                  <select id="incident-product-select">
+                    <option value="mde">Microsoft Defender for Endpoint (MDE)</option>
+                    <option value="sentinelone">SentinelOne</option>
+                    <option value="crowdstrike">CrowdStrike</option>
+                  </select>
+                </label>
+                <label class="investigation-field">
+                  <span>インシデントID</span>
+                  <input id="incident-id-input" type="text" placeholder="例: INC-2026-0042">
+                </label>
+              </div>
+              <p class="investigation-note">IDだけでは製品を判定できないため、製品を選んでから開始します。</p>
+            </form>
+
+            <section class="investigation-preview" aria-label="作成される調査">
+              <div>
+                <span>開始方法</span>
+                <strong id="investigation-preview-method">URLから開始</strong>
+              </div>
+              <div>
+                <span>製品</span>
+                <strong id="investigation-preview-product">未判定</strong>
+              </div>
+              <div>
+                <span>担当者</span>
+                <strong id="investigation-preview-analyst">田中 明</strong>
+              </div>
+            </section>
+          </div>
+
+          <footer class="new-investigation-footer">
+            <span id="new-investigation-status">入力内容をもとに調査セッションを作成します</span>
+            <div>
+              <button type="button" class="settings-secondary" id="new-investigation-cancel">キャンセル</button>
+              <button type="button" class="settings-primary" id="start-investigation">調査を開始</button>
+            </div>
+          </footer>
+        </section>
+      </div>
+
       <div class="settings-overlay" id="settings-overlay" hidden>
         <section class="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title">
           <header class="settings-header">
@@ -316,7 +406,7 @@
       </div>
 
       <aside class="sidebar" aria-label="セッション管理">
-        <button type="button" class="new-session-button">
+        <button type="button" class="new-session-button" id="open-new-investigation">
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path d="M12 5v14M5 12h14"></path>
           </svg>
