@@ -422,6 +422,7 @@ const conversationTitle = document.querySelector("#conversation-title");
 const caseStatusOptions = document.querySelector("#case-status-options");
 const sessionId = document.querySelector("#session-id");
 const updatedAt = document.querySelector("#updated-at");
+const ownClientId = document.querySelector("#own-client-id");
 const sessionButtons = document.querySelectorAll(".session-item");
 const statusFilterButtons = document.querySelectorAll(".status-filter-button");
 const visibleSessionCount = document.querySelector("#visible-session-count");
@@ -462,6 +463,11 @@ const settingsNavButtons = document.querySelectorAll(".settings-nav-button");
 const settingsPanels = document.querySelectorAll(".settings-panel");
 const analystSwitcher = document.querySelector("#analyst-switcher");
 const settingsAnalystList = document.querySelector("#settings-analyst-list");
+const lockToggleButton = document.querySelector("#lock-toggle-button");
+const lockConfirmOverlay = document.querySelector("#lock-confirm-overlay");
+const lockConfirmCancelButton = document.querySelector("#lock-confirm-cancel");
+const lockConfirmAcquireButton = document.querySelector("#lock-confirm-acquire");
+const closeLockConfirmButton = document.querySelector("#close-lock-confirm");
 const analystEditor = document.querySelector("#analyst-editor");
 const analystEditKey = document.querySelector("#analyst-edit-key");
 const analystEditorTitle = document.querySelector("#analyst-editor-title");
@@ -471,6 +477,7 @@ const analystEditorReset = document.querySelector("#analyst-editor-reset");
 const analystEditorSubmit = document.querySelector("#analyst-editor-submit");
 const chatForm = document.querySelector("#chat-form");
 const chatInput = document.querySelector("#chat-input");
+const sendButton = document.querySelector("#send-button");
 const currentAnalystAvatar = document.querySelector("#current-analyst-avatar");
 const currentAnalystName = document.querySelector("#current-analyst-name");
 const currentAnalystRole = document.querySelector("#current-analyst-role");
@@ -543,6 +550,8 @@ function renderSession(sessionKey) {
   messageCount.textContent = String(session.messages.length);
   sessionId.textContent = session.sessionId;
   updatedAt.textContent = session.updatedAt;
+  isSessionLocked = Boolean(session.isLocked);
+  renderLockBadge();
   messageList.innerHTML = "";
 
   for (const message of session.messages) {
@@ -974,6 +983,70 @@ function closeSettings() {
   settingsOverlay.hidden = true;
 }
 
+const lockIcons = {
+  locked:
+    '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>',
+  unlocked:
+    '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 7.5-2"></path></svg>',
+};
+
+const sendButtonIcons = {
+  enabled:
+    '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 12 20 4l-4.8 16-3.1-6.1L4 12Z"></path><path d="m12.1 13.9 3.2-3.2"></path></svg>',
+  disabled:
+    '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>',
+};
+
+let isSessionLocked = false;
+
+function renderLockBadge() {
+  lockToggleButton.classList.toggle("is-locked", isSessionLocked);
+  lockToggleButton.classList.toggle("is-unlocked", !isSessionLocked);
+  lockToggleButton.innerHTML = `${isSessionLocked ? lockIcons.locked : lockIcons.unlocked}${
+    isSessionLocked ? "ロック中" : "未ロック"
+  }`;
+
+  sendButton.disabled = !isSessionLocked;
+  sendButton.innerHTML = `${isSessionLocked ? sendButtonIcons.enabled : sendButtonIcons.disabled}送信`;
+}
+
+function releaseLock() {
+  isSessionLocked = false;
+  sessions[activeSessionKey].isLocked = false;
+  renderLockBadge();
+}
+
+function openLockConfirm() {
+  lockConfirmOverlay.hidden = false;
+}
+
+function closeLockConfirm() {
+  lockConfirmOverlay.hidden = true;
+}
+
+function acquireLock() {
+  isSessionLocked = true;
+  sessions[activeSessionKey].isLocked = true;
+  renderLockBadge();
+  closeLockConfirm();
+}
+
+function getOrCreateOwnClientId() {
+  const storageKey = "west-hawk-client-id";
+  let clientId = window.localStorage.getItem(storageKey);
+
+  if (!clientId) {
+    clientId = crypto.randomUUID();
+    window.localStorage.setItem(storageKey, clientId);
+  }
+
+  return clientId;
+}
+
+function renderOwnClientId() {
+  ownClientId.textContent = getOrCreateOwnClientId();
+}
+
 function setRunStatus(status) {
   runStatusDot.className = "";
 
@@ -1172,6 +1245,24 @@ newInvestigationOverlay.addEventListener("click", (event) => {
   }
 });
 
+lockConfirmOverlay.addEventListener("click", (event) => {
+  if (event.target === lockConfirmOverlay) {
+    closeLockConfirm();
+  }
+});
+
+lockToggleButton.addEventListener("click", () => {
+  if (isSessionLocked) {
+    releaseLock();
+  } else {
+    openLockConfirm();
+  }
+});
+
+lockConfirmCancelButton.addEventListener("click", closeLockConfirm);
+closeLockConfirmButton.addEventListener("click", closeLockConfirm);
+lockConfirmAcquireButton.addEventListener("click", acquireLock);
+
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !sessionSearchOverlay.hidden) {
     closeSessionSearch();
@@ -1183,6 +1274,10 @@ document.addEventListener("keydown", (event) => {
 
   if (event.key === "Escape" && !settingsOverlay.hidden) {
     closeSettings();
+  }
+
+  if (event.key === "Escape" && !lockConfirmOverlay.hidden) {
+    closeLockConfirm();
   }
 
   if (event.key === "Enter" && !sessionSearchOverlay.hidden) {
@@ -1211,6 +1306,10 @@ caseStatusOptions.addEventListener("click", (event) => {
 
 chatForm.addEventListener("submit", (event) => {
   event.preventDefault();
+
+  if (!isSessionLocked) {
+    return;
+  }
 
   const text = chatInput.value.trim();
   if (!text) {
@@ -1252,3 +1351,4 @@ renderAnalystManagement();
 renderStatusCounts();
 renderSessionFilter();
 renderSession(activeSessionKey);
+renderOwnClientId();

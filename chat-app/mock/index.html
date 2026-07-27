@@ -415,6 +415,32 @@
         </section>
       </div>
 
+      <div class="lock-confirm-overlay" id="lock-confirm-overlay" hidden>
+        <section class="lock-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="lock-confirm-title">
+          <header class="lock-confirm-header">
+            <div>
+              <p>Session Lock</p>
+              <h2 id="lock-confirm-title">ロックを取得しますか？</h2>
+            </div>
+            <button type="button" class="icon-button" id="close-lock-confirm" aria-label="ロック確認を閉じる">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M6 6l12 12M18 6 6 18"></path>
+              </svg>
+            </button>
+          </header>
+
+          <div class="lock-confirm-body">
+            <p><strong>a53f9d2c-88b1-4e0a-9c77-3d1b6f0a92e4</strong> がロックしています。</p>
+            <p>ロックを取得すると、この端末から質問を送信できるようになります。</p>
+          </div>
+
+          <footer class="lock-confirm-footer">
+            <button type="button" class="settings-secondary" id="lock-confirm-cancel">キャンセル</button>
+            <button type="button" class="settings-primary" id="lock-confirm-acquire">ロックを取得</button>
+          </footer>
+        </section>
+      </div>
+
       <aside class="sidebar" aria-label="セッション管理">
         <button type="button" class="new-session-button" id="open-new-investigation">
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -613,7 +639,13 @@
             <h2 id="conversation-title">Impossible Travel alert</h2>
           </div>
           <div class="topbar-actions">
-            <span class="state-badge">resume active</span>
+            <button type="button" class="lock-badge is-unlocked" id="lock-toggle-button" aria-label="ロック状態を切り替える">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <rect x="5" y="11" width="14" height="9" rx="2"></rect>
+                <path d="M8 11V7a4 4 0 0 1 7.5-2"></path>
+              </svg>
+              未ロック
+            </button>
             <button type="button">
               <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                 <path d="M20 12a8 8 0 1 1-2.35-5.65"></path>
@@ -643,10 +675,10 @@
               </svg>
             </button>
             <input id="chat-input" name="message" type="text" autocomplete="off" placeholder="Claudeに質問する">
-            <button type="submit" class="send-button">
+            <button type="submit" class="send-button" id="send-button" disabled>
               <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <path d="M4 12 20 4l-4.8 16-3.1-6.1L4 12Z"></path>
-                <path d="m12.1 13.9 3.2-3.2"></path>
+                <rect x="5" y="11" width="14" height="9" rx="2"></rect>
+                <path d="M8 11V7a4 4 0 0 1 8 0v4"></path>
               </svg>
               送信
             </button>
@@ -690,6 +722,10 @@
             <div>
               <dt>最終更新</dt>
               <dd id="updated-at">2026/07/26 15:45</dd>
+            </div>
+            <div>
+              <dt>自身のUUID</dt>
+              <dd id="own-client-id">-</dd>
             </div>
           </dl>
         </section>
