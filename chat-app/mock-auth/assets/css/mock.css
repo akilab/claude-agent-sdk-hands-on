@@ -1894,11 +1894,21 @@ svg {
   text-align: center;
 }
 
-.case-status-option:hover,
-.case-status-option:focus-visible {
+.case-status-option:hover:not(:disabled),
+.case-status-option:focus-visible:not(:disabled) {
   border-color: var(--blue-700);
   color: var(--blue-700);
   outline: none;
+}
+
+.case-status-option:disabled {
+  cursor: not-allowed;
+}
+
+.case-status-option:disabled:not(.is-active) {
+  border-color: var(--line);
+  background: var(--gray-100);
+  color: var(--ink-500);
 }
 
 .case-status-option.is-active {

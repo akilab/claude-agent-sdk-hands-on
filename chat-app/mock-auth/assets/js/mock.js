@@ -645,10 +645,13 @@ function renderSession(sessionKey) {
 }
 
 function renderCaseStatusOptions(statusKey) {
+  const owned = isOwnSession(activeSessionKey);
+
   for (const button of caseStatusOptions.querySelectorAll(".case-status-option")) {
     const isActive = button.dataset.statusOption === statusKey;
     button.classList.toggle("is-active", isActive);
     button.setAttribute("aria-pressed", String(isActive));
+    button.disabled = !owned;
   }
 }
 
@@ -749,6 +752,7 @@ function renderAnalyst() {
   renderSessionFilter();
   renderStatusCounts();
   renderSessionOwnerBadges();
+  renderCaseStatusOptions(sessions[activeSessionKey].statusKey);
   renderComposerAccess();
   renderVisibilityBadge();
   renderSessionSearchResults();
@@ -1404,7 +1408,7 @@ document.addEventListener("keydown", (event) => {
 caseStatusOptions.addEventListener("click", (event) => {
   const button = event.target.closest(".case-status-option");
 
-  if (!button) {
+  if (!button || !isOwnSession(activeSessionKey)) {
     return;
   }
 
