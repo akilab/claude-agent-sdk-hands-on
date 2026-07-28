@@ -215,6 +215,33 @@
         </section>
       </div>
 
+      <div class="rename-session-overlay" id="rename-session-overlay" hidden>
+        <section class="rename-session-dialog" role="dialog" aria-modal="true" aria-labelledby="rename-session-title">
+          <header class="rename-session-header">
+            <div>
+              <p>Session Title</p>
+              <h2 id="rename-session-title">タイトルを変更</h2>
+            </div>
+            <button type="button" class="icon-button" id="close-rename-session" aria-label="タイトル変更を閉じる">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M6 6l12 12M18 6 6 18"></path>
+              </svg>
+            </button>
+          </header>
+          <form class="rename-session-form" id="rename-session-form">
+            <label class="investigation-field">
+              <span>セッションタイトル</span>
+              <input id="rename-session-input" type="text" autocomplete="off" maxlength="80">
+            </label>
+            <p id="rename-session-status" class="rename-session-status">自分のセッションだけタイトルを変更できます。</p>
+            <footer class="rename-session-footer">
+              <button type="button" class="settings-secondary" id="rename-session-cancel">キャンセル</button>
+              <button type="submit" class="settings-primary">変更を保存</button>
+            </footer>
+          </form>
+        </section>
+      </div>
+
       <div class="settings-overlay" id="settings-overlay" hidden>
         <section class="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title">
           <header class="settings-header">
@@ -479,9 +506,17 @@
 
       <main class="chat-layout">
         <header class="topbar">
-          <div>
+          <div class="topbar-title">
             <p class="breadcrumb">調査ワークスペース / 担当者切替可</p>
-            <h2 id="conversation-title">Impossible Travel alert</h2>
+            <div class="conversation-title-row">
+              <h2 id="conversation-title">Impossible Travel alert</h2>
+              <button type="button" class="title-edit-button" id="open-rename-session" aria-label="セッションタイトルを変更">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M12 20h9"></path>
+                  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4 11.5-11.5Z"></path>
+                </svg>
+              </button>
+            </div>
           </div>
           <div class="topbar-actions">
             <button type="button" class="visibility-badge is-public" id="visibility-toggle-button" aria-label="公開範囲を切り替える">

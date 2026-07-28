@@ -528,6 +528,13 @@ const SESSION_ICON_SVG = `
 
 const messageList = document.querySelector("#message-list");
 const conversationTitle = document.querySelector("#conversation-title");
+const openRenameSessionButton = document.querySelector("#open-rename-session");
+const closeRenameSessionButton = document.querySelector("#close-rename-session");
+const renameSessionOverlay = document.querySelector("#rename-session-overlay");
+const renameSessionForm = document.querySelector("#rename-session-form");
+const renameSessionInput = document.querySelector("#rename-session-input");
+const renameSessionCancelButton = document.querySelector("#rename-session-cancel");
+const renameSessionStatus = document.querySelector("#rename-session-status");
 const caseStatusOptions = document.querySelector("#case-status-options");
 const sessionId = document.querySelector("#session-id");
 const sessionCustomer = document.querySelector("#session-customer");
@@ -696,6 +703,7 @@ function renderSession(sessionKey) {
   renderSessionProduct(session.product);
   renderSessionOwner(session.ownerAnalystId);
   updatedAt.textContent = session.updatedAt;
+  renderTitleEditAccess();
   renderVisibilityBadge();
   renderComposerAccess();
   messageList.innerHTML = "";
@@ -727,6 +735,7 @@ function renderSidebarSessionList() {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "session-item";
+    button.classList.toggle("is-owned", session.ownerAnalystId === activeAnalystKey);
     button.dataset.session = sessionKey;
     button.innerHTML = `
       <span class="session-icon" aria-hidden="true">${SESSION_ICON_SVG}</span>
@@ -735,7 +744,6 @@ function renderSidebarSessionList() {
       <span class="session-meta">
         <span class="session-status ${status.className}">${status.label}</span>
         <span class="session-time">${session.sidebarTimeLabel}</span>
-        <span class="session-owner-badge" hidden>自分</span>
       </span>
     `;
     sessionListContainer.appendChild(button);
@@ -758,14 +766,10 @@ function renderSessionStatusBadge(sessionKey) {
   badge.className = `session-status ${status.className}`;
 }
 
-function renderSessionOwnerBadges() {
+function renderOwnedSessionIcons() {
   for (const button of sessionButtons) {
     const session = sessions[button.dataset.session];
-    const badge = button.querySelector(".session-owner-badge");
-
-    if (badge) {
-      badge.hidden = session.ownerAnalystId !== activeAnalystKey;
-    }
+    button.classList.toggle("is-owned", session.ownerAnalystId === activeAnalystKey);
   }
 }
 
@@ -837,7 +841,7 @@ function renderAnalyst() {
 
   renderSessionFilter();
   renderStatusCounts();
-  renderSessionOwnerBadges();
+  renderOwnedSessionIcons();
   renderCaseStatusOptions(sessions[activeSessionKey].statusKey);
   renderComposerAccess();
   renderVisibilityBadge();
@@ -1185,10 +1189,7 @@ function renderSessionSearchResults() {
     resultButton.innerHTML = `
       <span class="session-result-title">
         <strong>${session.title}</strong>
-        <span>
-          ${getSessionOwner(session)}
-          ${session.ownerAnalystId === activeAnalystKey ? '<span class="session-result-owner-badge">自分</span>' : ""}
-        </span>
+        <span>${getSessionOwner(session)}</span>
       </span>
       <span class="session-status ${status.className}">${status.label}</span>
       <span class="session-result-time">${session.updatedAt}</span>
@@ -1301,6 +1302,58 @@ function renderComposerAccess() {
 }
 
 // ============================================================
+// セッションタイトル変更（所有者のみ）
+// ============================================================
+
+function renderTitleEditAccess() {
+  const owned = isOwnSession(activeSessionKey);
+  openRenameSessionButton.disabled = !owned;
+  openRenameSessionButton.title = owned ? "セッションタイトルを変更" : "他の担当者のセッションは変更できません";
+}
+
+function openRenameSession() {
+  if (!isOwnSession(activeSessionKey)) {
+    return;
+  }
+
+  renameSessionInput.value = sessions[activeSessionKey].title;
+  renameSessionStatus.textContent = "自分のセッションだけタイトルを変更できます。";
+  renameSessionStatus.classList.remove("is-error");
+  renameSessionOverlay.hidden = false;
+  renameSessionInput.focus();
+  renameSessionInput.select();
+}
+
+function closeRenameSession() {
+  renameSessionOverlay.hidden = true;
+}
+
+function renameActiveSession(newTitle) {
+  if (!isOwnSession(activeSessionKey)) {
+    return;
+  }
+
+  const title = newTitle.trim();
+
+  if (!title) {
+    renameSessionStatus.textContent = "タイトルを入力してください。";
+    renameSessionStatus.classList.add("is-error");
+    renameSessionInput.focus();
+    return;
+  }
+
+  sessions[activeSessionKey].title = title;
+  sessions[activeSessionKey].updatedAt = `2026/07/29 ${getCurrentTime()}`;
+  renderSidebarSessionList();
+  setActiveButton(activeSessionKey);
+  renderSession(activeSessionKey);
+  renderStatusCounts();
+  renderSessionFilter();
+  renderSessionSearchResults();
+  closeRenameSession();
+}
+
+// ============================================================
 // 実行ステータス（待機中/問い合わせ中/保存中）表示
 // ============================================================
 
@@ -1391,6 +1444,14 @@ for (const panel of investigationPanels) {
     startInvestigation();
   });
 }
+
+openRenameSessionButton.addEventListener("click", openRenameSession);
+closeRenameSessionButton.addEventListener("click", closeRenameSession);
+renameSessionCancelButton.addEventListener("click", closeRenameSession);
+renameSessionForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  renameActiveSession(renameSessionInput.value);
+});
 
 openSettingsButton.addEventListener("click", openSettings);
 closeSettingsButton.addEventListener("click", closeSettings);
@@ -1499,6 +1560,12 @@ newInvestigationOverlay.addEventListener("click", (event) => {
   }
 });
 
+renameSessionOverlay.addEventListener("click", (event) => {
+  if (event.target === renameSessionOverlay) {
+    closeRenameSession();
+  }
+});
+
 visibilityToggleButton.addEventListener("click", toggleSessionVisibility);
 
 document.addEventListener("keydown", (event) => {
@@ -1512,6 +1579,10 @@ document.addEventListener("keydown", (event) => {
 
   if (event.key === "Escape" && !settingsOverlay.hidden) {
     closeSettings();
+  }
+
+  if (event.key === "Escape" && !renameSessionOverlay.hidden) {
+    closeRenameSession();
   }
 
   if (event.key === "Enter" && !sessionSearchOverlay.hidden) {
