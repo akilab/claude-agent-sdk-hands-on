@@ -1,5 +1,5 @@
 // ============================================================
-// データ: 調査担当者・ステータス種別・製品種別・セッション本体
+// データ: アナリスト・ステータス種別・製品種別・セッション本体
 // ============================================================
 
 const analysts = {
@@ -146,6 +146,39 @@ const customers = {
   },
   delta: {
     name: "デルタ興業",
+  },
+};
+
+const investigationPrompts = {
+  summary: {
+    title: "調査サマリーを作成",
+    description: "現在の状況、確認済み、未確認、次のアクションを整理します。",
+    prompt: "この調査セッションの会話履歴と調査メモをもとに、現在の状況、確認済み事項、未確認事項、次のアクションをMarkdownで要約してください。",
+  },
+  nextSteps: {
+    title: "次に確認すべき項目を整理",
+    description: "ログ、端末、ユーザー、横展開などの追加確認を洗い出します。",
+    prompt: "この調査セッションの現在の会話履歴と調査メモを確認し、次に確認すべき項目を優先度順にMarkdownで整理してください。各項目には、確認理由と期待する判断材料も添えてください。",
+  },
+  customerReport: {
+    title: "顧客向け報告文を下書き",
+    description: "顧客に共有しやすい落ち着いた文面へ整えます。",
+    prompt: "この調査セッションの内容をもとに、顧客へ共有するための報告文をMarkdownで下書きしてください。断定しすぎず、判明している事実、対応状況、追加確認中の事項、次回報告予定が分かる文面にしてください。",
+  },
+  containment: {
+    title: "封じ込めアクションを整理",
+    description: "即時対応、追加確認、監視移行の判断を分けます。",
+    prompt: "この調査セッションの内容をもとに、封じ込めアクションをMarkdownで整理してください。即時実施、追加確認後に実施、監視へ移行する条件の3つに分け、運用チームへ渡せる粒度で記載してください。",
+  },
+  riskReview: {
+    title: "未確認リスクを洗い出し",
+    description: "クローズ前に残っているリスクや確認漏れを点検します。",
+    prompt: "この調査セッションをクローズまたは監視へ移す前提で、未確認リスクと確認漏れの可能性をMarkdownで洗い出してください。重大度、確認方法、放置した場合の影響が分かる形にしてください。",
+  },
+  closeDecision: {
+    title: "クローズ判断を支援",
+    description: "クローズ、監視継続、追加確認の判断材料をまとめます。",
+    prompt: "この調査セッションの会話履歴と調査メモをもとに、クローズ可能か、監視継続か、追加確認が必要かを判断するための材料をMarkdownで整理してください。結論、根拠、不足情報、推奨ステータスを分けてください。",
   },
 };
 
@@ -595,6 +628,9 @@ const renameSessionInput = document.querySelector("#rename-session-input");
 const renameSessionCancelButton = document.querySelector("#rename-session-cancel");
 const renameSessionStatus = document.querySelector("#rename-session-status");
 const caseStatusOptions = document.querySelector("#case-status-options");
+const currentCaseStatusButton = document.querySelector("#current-case-status-button");
+const currentCaseStatusLabel = document.querySelector("#current-case-status-label");
+const caseStatusPopover = document.querySelector("#case-status-popover");
 const sessionId = document.querySelector("#session-id");
 const sessionCustomer = document.querySelector("#session-customer");
 const sessionProduct = document.querySelector("#session-product");
@@ -602,6 +638,8 @@ const updatedAt = document.querySelector("#updated-at");
 const sessionListContainer = document.querySelector("#session-list");
 const statusFilterButtons = document.querySelectorAll(".status-filter-button");
 const visibleSessionCount = document.querySelector("#visible-session-count");
+const refreshRecentSessionsButton = document.querySelector("#refresh-recent-sessions");
+const sessionRefreshStatus = document.querySelector("#session-refresh-status");
 const openSessionSearchButton = document.querySelector("#open-session-search");
 const closeSessionSearchButton = document.querySelector("#close-session-search");
 const sessionSearchOverlay = document.querySelector("#session-search-overlay");
@@ -642,9 +680,20 @@ const settingsNavButtons = document.querySelectorAll(".settings-nav-button");
 const settingsPanels = document.querySelectorAll(".settings-panel");
 const analystRosterToggle = document.querySelector("#analyst-roster-toggle");
 const analystRosterCount = document.querySelector("#analyst-roster-count");
+const refreshAnalystRosterButton = document.querySelector("#refresh-analyst-roster");
+const analystRosterStatus = document.querySelector("#analyst-roster-status");
 const analystRoster = document.querySelector("#analyst-roster");
 const settingsAnalystList = document.querySelector("#settings-analyst-list");
 const visibilityToggleButton = document.querySelector("#visibility-toggle-button");
+const openInvestigationPromptButton = document.querySelector("#open-investigation-prompt");
+const closeInvestigationPromptButton = document.querySelector("#close-investigation-prompt");
+const investigationPromptOverlay = document.querySelector("#investigation-prompt-overlay");
+const investigationPromptList = document.querySelector("#investigation-prompt-list");
+const investigationPromptHint = document.querySelector("#investigation-prompt-hint");
+const investigationPromptText = document.querySelector("#investigation-prompt-text");
+const investigationPromptStatus = document.querySelector("#investigation-prompt-status");
+const investigationPromptCancelButton = document.querySelector("#investigation-prompt-cancel");
+const sendInvestigationPromptButton = document.querySelector("#send-investigation-prompt");
 const attachFileButton = document.querySelector("#attach-file-button");
 const attachmentInput = document.querySelector("#attachment-input");
 const attachmentTray = document.querySelector("#attachment-tray");
@@ -654,8 +703,12 @@ const sendButton = document.querySelector("#send-button");
 const currentAnalystAvatar = document.querySelector("#current-analyst-avatar");
 const currentAnalystName = document.querySelector("#current-analyst-name");
 const currentAnalystRole = document.querySelector("#current-analyst-role");
+const headerUser = document.querySelector("#header-user");
+const headerUserButton = document.querySelector("#header-user-button");
 const headerUserAvatar = document.querySelector("#header-user-avatar");
 const headerUserName = document.querySelector("#header-user-name");
+const headerUserPopover = document.querySelector("#header-user-popover");
+const headerUserMenuStatus = document.querySelector("#header-user-menu-status");
 const headerWorkStatus = document.querySelector("#header-work-status");
 const headerWorkStatusButton = document.querySelector("#header-work-status-button");
 const headerWorkStatusDot = document.querySelector("#header-work-status-dot");
@@ -670,17 +723,20 @@ const sessionNoteList = document.querySelector("#session-note-list");
 const sessionNoteStatus = document.querySelector("#session-note-status");
 
 // ============================================================
-// 状態（現在選択中のセッション・担当者・フィルタなど）
+// 状態（現在選択中のセッション・アナリスト・フィルタなど）
 // ============================================================
 
 let activeSessionKey = "fastapi";
 let activeAnalystKey = "tanaka";
 let activeStatusFilter = "all";
 let activeInvestigationMethod = "url";
+let activeInvestigationPromptKey = "summary";
 let sessionButtons = [];
 let analystRosterExpanded = localStorage.getItem("west-hawk-analyst-roster") === "open";
 let runStatusState = "idle";
 let selectedAttachments = [];
+
+const CHAT_INPUT_MAX_HEIGHT = 156;
 
 // ============================================================
 // メッセージ一覧の描画
@@ -719,8 +775,12 @@ function createMessageElement(message) {
         <span class="message-time">${message.time}</span>
       </span>
     </div>
-    <p>${message.text}</p>
   `;
+
+  const messageText = document.createElement("div");
+  messageText.className = "message-markdown";
+  messageText.innerHTML = renderMarkdown(message.text);
+  body.appendChild(messageText);
 
   if (message.role === "claude") {
     const copyButton = document.createElement("button");
@@ -798,6 +858,123 @@ async function copyTextToClipboard(text) {
   }
 }
 
+function escapeHtml(text) {
+  return text
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function renderInlineMarkdown(text) {
+  return escapeHtml(text)
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+}
+
+function renderMarkdown(markdown) {
+  const lines = markdown.split(/\r?\n/);
+  const html = [];
+  let paragraph = [];
+  let listItems = [];
+  let orderedListItems = [];
+  let codeLines = [];
+  let inCodeBlock = false;
+
+  const flushParagraph = () => {
+    if (paragraph.length === 0) {
+      return;
+    }
+
+    html.push(`<p>${paragraph.map(renderInlineMarkdown).join("<br>")}</p>`);
+    paragraph = [];
+  };
+
+  const flushList = () => {
+    if (listItems.length > 0) {
+      html.push(`<ul>${listItems.map((item) => `<li>${renderInlineMarkdown(item)}</li>`).join("")}</ul>`);
+      listItems = [];
+    }
+
+    if (orderedListItems.length > 0) {
+      html.push(`<ol>${orderedListItems.map((item) => `<li>${renderInlineMarkdown(item)}</li>`).join("")}</ol>`);
+      orderedListItems = [];
+    }
+  };
+
+  const flushCodeBlock = () => {
+    html.push(`<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
+    codeLines = [];
+  };
+
+  for (const line of lines) {
+    if (line.trim().startsWith("```")) {
+      if (inCodeBlock) {
+        flushCodeBlock();
+        inCodeBlock = false;
+      } else {
+        flushParagraph();
+        flushList();
+        inCodeBlock = true;
+      }
+      continue;
+    }
+
+    if (inCodeBlock) {
+      codeLines.push(line);
+      continue;
+    }
+
+    if (line.trim() === "") {
+      flushParagraph();
+      flushList();
+      continue;
+    }
+
+    const heading = line.match(/^(#{1,3})\s+(.+)$/);
+    if (heading) {
+      flushParagraph();
+      flushList();
+      html.push(`<h${heading[1].length}>${renderInlineMarkdown(heading[2])}</h${heading[1].length}>`);
+      continue;
+    }
+
+    const unorderedListItem = line.match(/^\s*[-*]\s+(.+)$/);
+    if (unorderedListItem) {
+      flushParagraph();
+      if (orderedListItems.length > 0) {
+        html.push(`<ol>${orderedListItems.map((item) => `<li>${renderInlineMarkdown(item)}</li>`).join("")}</ol>`);
+        orderedListItems = [];
+      }
+      listItems.push(unorderedListItem[1]);
+      continue;
+    }
+
+    const orderedListItem = line.match(/^\s*\d+\.\s+(.+)$/);
+    if (orderedListItem) {
+      flushParagraph();
+      if (listItems.length > 0) {
+        html.push(`<ul>${listItems.map((item) => `<li>${renderInlineMarkdown(item)}</li>`).join("")}</ul>`);
+        listItems = [];
+      }
+      orderedListItems.push(orderedListItem[1]);
+      continue;
+    }
+
+    paragraph.push(line);
+  }
+
+  if (inCodeBlock) {
+    flushCodeBlock();
+  }
+
+  flushParagraph();
+  flushList();
+
+  return html.join("");
+}
+
 async function copyClaudeMessage(button, text) {
   const copied = await copyTextToClipboard(text);
 
@@ -864,6 +1041,14 @@ function clearSelectedAttachments() {
   renderAttachmentTray();
 }
 
+function resizeChatInput() {
+  chatInput.style.height = "auto";
+
+  const nextHeight = Math.min(chatInput.scrollHeight, CHAT_INPUT_MAX_HEIGHT);
+  chatInput.style.height = `${nextHeight}px`;
+  chatInput.style.overflowY = chatInput.scrollHeight > CHAT_INPUT_MAX_HEIGHT ? "auto" : "hidden";
+}
+
 // ============================================================
 // セッション詳細（右パネル）・サイドバー一覧・ステータス表示
 // ============================================================
@@ -901,6 +1086,7 @@ function renderSession(sessionKey) {
   updatedAt.textContent = session.updatedAt;
   renderTitleEditAccess();
   renderVisibilityBadge();
+  renderInvestigationPromptAccess();
   renderComposerAccess();
   renderSessionNote();
   messageList.innerHTML = "";
@@ -919,7 +1105,7 @@ function renderSessionNote() {
   sessionNoteList.innerHTML = "";
   sessionNoteInput.value = "";
   sessionNoteInput.disabled = false;
-  sessionNoteStatus.textContent = "担当者は誰でもこのセッションにメモを残せます。";
+  sessionNoteStatus.textContent = "アナリストは誰でもこのセッションにメモを残せます。";
 
   if (notes.length === 0) {
     const emptyNote = document.createElement("p");
@@ -936,7 +1122,7 @@ function renderSessionNote() {
 
 function createSessionNoteElement(note) {
   const analyst = analysts[note.analystId] ?? {
-    name: "不明な担当者",
+    name: "不明なアナリスト",
   };
   const article = document.createElement("article");
   article.className = "session-note-item";
@@ -954,13 +1140,52 @@ function createSessionNoteElement(note) {
 
 function renderCaseStatusOptions(statusKey) {
   const owned = isOwnSession(activeSessionKey);
+  const status = caseStatuses[statusKey];
 
-  for (const button of caseStatusOptions.querySelectorAll(".case-status-option")) {
-    const isActive = button.dataset.statusOption === statusKey;
+  currentCaseStatusButton.className = `case-status-current ${status.className}`;
+  currentCaseStatusButton.disabled = !owned;
+  currentCaseStatusButton.title = owned ? "調査ステータスを変更" : "他のアナリストのセッションは変更できません";
+  currentCaseStatusLabel.textContent = status.label;
+
+  caseStatusPopover.innerHTML = "";
+
+  for (const [optionKey, option] of Object.entries(caseStatuses)) {
+    const isActive = optionKey === statusKey;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "case-status-choice";
     button.classList.toggle("is-active", isActive);
-    button.setAttribute("aria-pressed", String(isActive));
-    button.disabled = !owned;
+    button.dataset.statusOption = optionKey;
+    button.setAttribute("role", "menuitemradio");
+    button.setAttribute("aria-checked", String(isActive));
+    button.textContent = option.label;
+    caseStatusPopover.appendChild(button);
   }
+}
+
+function openCaseStatusMenu() {
+  if (!isOwnSession(activeSessionKey)) {
+    return;
+  }
+
+  closeWorkStatusMenu();
+  closeUserMenu();
+  caseStatusPopover.hidden = false;
+  currentCaseStatusButton.setAttribute("aria-expanded", "true");
+}
+
+function closeCaseStatusMenu() {
+  caseStatusPopover.hidden = true;
+  currentCaseStatusButton.setAttribute("aria-expanded", "false");
+}
+
+function toggleCaseStatusMenu() {
+  if (caseStatusPopover.hidden) {
+    openCaseStatusMenu();
+    return;
+  }
+
+  closeCaseStatusMenu();
 }
 
 function renderSidebarSessionList() {
@@ -1065,8 +1290,25 @@ function renderSessionFilter() {
   }
 }
 
+function refreshRecentSessions() {
+  refreshRecentSessionsButton.classList.remove("is-refreshing");
+  void refreshRecentSessionsButton.offsetWidth;
+  refreshRecentSessionsButton.classList.add("is-refreshing");
+  refreshRecentSessionsButton.disabled = true;
+  sessionRefreshStatus.textContent = "最近のセッションを更新しています...";
+
+  window.setTimeout(() => {
+    renderSidebarSessionList();
+    renderStatusCounts();
+    renderSessionFilter();
+    setActiveButton(activeSessionKey);
+    sessionRefreshStatus.textContent = `更新しました ${getCurrentTime()}`;
+    refreshRecentSessionsButton.disabled = false;
+  }, 450);
+}
+
 // ============================================================
-// ログイン中の担当者表示・セッション担当者表示・担当者マスタ管理
+// ログイン中のアナリスト表示・セッションアナリスト表示・アナリスト管理
 // ============================================================
 
 function renderAnalyst() {
@@ -1127,13 +1369,50 @@ function closeWorkStatusMenu() {
   headerWorkStatusButton.setAttribute("aria-expanded", "false");
 }
 
+function openUserMenu() {
+  closeWorkStatusMenu();
+  closeCaseStatusMenu();
+  headerUserPopover.hidden = false;
+  headerUserButton.setAttribute("aria-expanded", "true");
+}
+
+function closeUserMenu() {
+  headerUserPopover.hidden = true;
+  headerUserButton.setAttribute("aria-expanded", "false");
+}
+
 function toggleWorkStatusMenu() {
   if (workStatusPopover.hidden) {
+    closeUserMenu();
+    closeCaseStatusMenu();
     openWorkStatusMenu();
     return;
   }
 
   closeWorkStatusMenu();
+}
+
+function toggleUserMenu() {
+  if (headerUserPopover.hidden) {
+    openUserMenu();
+    return;
+  }
+
+  closeUserMenu();
+}
+
+function handleUserMenuAction(action) {
+  if (action === "profile") {
+    closeUserMenu();
+    openSettings();
+    renderSettingsTab("general");
+    settingsSaveStatus.textContent = "プロフィール情報は認証基盤から取得する想定です";
+    return;
+  }
+
+  if (action === "sign-out") {
+    headerUserMenuStatus.textContent = "Mockではサインアウト処理は実行しません。";
+  }
 }
 
 function updateActiveWorkStatus(statusKey) {
@@ -1154,7 +1433,7 @@ function renderSessionOwner(ownerAnalystId) {
   if (!analyst) {
     currentAnalystAvatar.textContent = "?";
     currentAnalystName.textContent = "未設定";
-    currentAnalystRole.textContent = "担当者情報が見つかりません";
+    currentAnalystRole.textContent = "アナリスト情報が見つかりません";
     return;
   }
 
@@ -1199,6 +1478,23 @@ function renderAnalystRoster() {
   }
 
   renderAnalystRosterToggle();
+}
+
+function refreshAnalystRoster(source = "manual") {
+  if (source === "manual") {
+    refreshAnalystRosterButton.classList.remove("is-refreshing");
+    void refreshAnalystRosterButton.offsetWidth;
+    refreshAnalystRosterButton.classList.add("is-refreshing");
+    refreshAnalystRosterButton.disabled = true;
+    analystRosterStatus.textContent = "登録アナリスト一覧を更新しています...";
+  }
+
+  window.setTimeout(() => {
+    renderAnalystRoster();
+    analystRosterStatus.textContent =
+      source === "auto" ? `自動更新しました ${getCurrentTime()}` : `更新しました ${getCurrentTime()}`;
+    refreshAnalystRosterButton.disabled = false;
+  }, source === "auto" ? 0 : 450);
 }
 
 function renderSettingsAnalystList() {
@@ -1583,6 +1879,16 @@ function renderVisibilityBadge() {
   }`;
 }
 
+function renderInvestigationPromptAccess() {
+  const owned = isOwnSession(activeSessionKey);
+  const busy = runStatusState === "running" || runStatusState === "saving" || runStatusState === "summarizing";
+
+  openInvestigationPromptButton.disabled = !owned || busy;
+  openInvestigationPromptButton.title = owned
+    ? "定型の調査プロンプトを選んでClaudeへ送信"
+    : "他のアナリストのセッションでは調査プロンプトを送信できません";
+}
+
 function toggleSessionVisibility() {
   if (!isOwnSession(activeSessionKey)) {
     return;
@@ -1602,7 +1908,8 @@ function renderComposerAccess() {
   attachFileButton.disabled = !owned;
   sendButton.disabled = !owned;
   sendButton.innerHTML = `${owned ? sendButtonIcons.enabled : sendButtonIcons.disabled}送信`;
-  chatInput.placeholder = owned ? "Claudeに質問する" : "他の担当者のセッションのため閲覧のみです";
+  chatInput.placeholder = owned ? "Claudeに質問する" : "他のアナリストのセッションのため閲覧のみです";
+  resizeChatInput();
 
   if (!owned) {
     setRunStatus("readonly");
@@ -1614,6 +1921,247 @@ function renderComposerAccess() {
   }
 }
 
+function getLatestUserMessage(session) {
+  const latestUserMessage = [...session.messages].reverse().find((message) => message.role === "user");
+  return latestUserMessage?.text ?? "まだアナリストからの質問はありません。";
+}
+
+function createInvestigationSummary(session) {
+  const status = caseStatuses[session.statusKey]?.label ?? "未設定";
+  const product = products[session.product]?.label ?? "未設定";
+  const owner = analysts[session.ownerAnalystId]?.name ?? "未設定";
+  const noteCount = session.notes?.length ?? 0;
+
+  return [
+    "## 調査サマリー",
+    "",
+    `**セッション:** ${session.title}`,
+    `**顧客:** ${session.customer ?? "未設定"}`,
+    `**製品:** ${product}`,
+    `**ステータス:** ${status}`,
+    `**アナリスト:** ${owner}`,
+    "",
+    "### 現在の見立て",
+    `- 直近の確認内容: ${getLatestUserMessage(session)}`,
+    "- 会話履歴と調査メモをもとに、判断材料を整理しました。",
+    `- 調査メモは ${noteCount} 件記録されています。`,
+    "",
+    "### 確認済み",
+    "- 主要なログ、対象ユーザー、端末、送信元情報の確認状況を整理します。",
+    "- 封じ込めや追加確認が必要な項目を、次のアナリストが追える形にまとめます。",
+    "",
+    "### 未確認",
+    "- 影響範囲の最終確認",
+    "- 同一送信元や関連エンティティへの横展開確認",
+    "- クローズ前の顧客連絡または運用チームへの引き継ぎ",
+    "",
+    "### 次のアクション",
+    "1. 調査メモと会話履歴を確認する",
+    "2. 未確認項目をつぶしてステータスを更新する",
+    "3. 必要なら監視中へ移し、追加イベントの有無を確認する",
+  ].join("\n");
+}
+
+function createPromptResponse(promptKey, session) {
+  if (promptKey === "summary") {
+    return createInvestigationSummary(session);
+  }
+
+  const status = caseStatuses[session.statusKey]?.label ?? "未設定";
+  const product = products[session.product]?.label ?? "未設定";
+
+  if (promptKey === "nextSteps") {
+    return [
+      "## 次に確認すべき項目",
+      "",
+      `**対象:** ${session.customer ?? "未設定"} / ${product}`,
+      `**現在のステータス:** ${status}`,
+      "",
+      "### 優先度 高",
+      "- 直近24時間の成功/失敗サインインとMFA結果を時系列で確認する",
+      "- 対象ユーザーの端末ID、管理状態、初回利用かどうかを確認する",
+      "- 同一IP、ASN、国から他ユーザーへのアクセスがないか検索する",
+      "",
+      "### 優先度 中",
+      "- SharePoint、Teams、メールボックスなど主要アプリの操作履歴を確認する",
+      "- 条件付きアクセスの評価結果と例外適用の有無を確認する",
+      "",
+      "### 判断材料",
+      "- 正常な業務利用で説明できるか",
+      "- セッション失効やパスワードリセット後に再発していないか",
+      "- 追加の横展開兆候がないか",
+    ].join("\n");
+  }
+
+  if (promptKey === "customerReport") {
+    return [
+      "## 顧客向け報告文ドラフト",
+      "",
+      "現在、対象アラートについて確認を進めています。現時点では、通常とは異なるアクセス条件が確認されており、対象ユーザー、端末、送信元情報、関連アプリケーションの操作履歴を中心に調査しています。",
+      "",
+      "### 現時点で確認している内容",
+      "- 対象セッションの基本情報と関連ログを確認中です。",
+      "- 追加の不審操作や横展開の有無を確認しています。",
+      "- 必要に応じて封じ込め対応と監視継続を検討します。",
+      "",
+      "### 次回報告予定",
+      "追加ログの確認結果がまとまり次第、影響範囲と推奨対応を含めて続報します。",
+    ].join("\n");
+  }
+
+  if (promptKey === "containment") {
+    return [
+      "## 封じ込めアクション",
+      "",
+      "### 即時実施",
+      "- 対象ユーザーの有効セッションを失効する",
+      "- パスワードリセットとMFA再登録の要否を確認する",
+      "- 未管理端末からのアクセス制限を検討する",
+      "",
+      "### 追加確認後に実施",
+      "- 関連IPや端末に横展開が見つかった場合、対象範囲を広げて調査する",
+      "- SharePointなどで閲覧・ダウンロード範囲が広い場合、影響範囲を顧客と確認する",
+      "",
+      "### 監視へ移行する条件",
+      "- 本人確認とセッション失効が完了している",
+      "- 追加の不審操作や横展開が確認されていない",
+      "- 監視対象と期間が明確になっている",
+    ].join("\n");
+  }
+
+  if (promptKey === "riskReview") {
+    return [
+      "## 未確認リスク",
+      "",
+      "### 重大度 高",
+      "- 同一IPからの横展開: 他ユーザーのサインインログを検索し、被害範囲の過小評価を避ける",
+      "- 未管理端末からの継続アクセス: 端末IDと条件付きアクセス結果を確認し、再侵入や追加操作を防ぐ",
+      "",
+      "### 重大度 中",
+      "- SharePoint閲覧範囲の未確認: ファイル閲覧・ダウンロード履歴を確認し、情報流出範囲を明確にする",
+      "- 顧客への連絡要否未判断: 影響範囲と対応状況を整理し、報告遅延や対応漏れを防ぐ",
+    ].join("\n");
+  }
+
+  return [
+    "## クローズ判断の材料",
+    "",
+    "### 推奨ステータス",
+    `現時点では **${status}** として扱い、未確認項目が残る場合はクローズを急がない判断が自然です。`,
+    "",
+    "### クローズ可能と見る条件",
+    "- 本人確認が完了している",
+    "- セッション失効などの必要な封じ込めが完了している",
+    "- 追加の不審操作、横展開、データ閲覧拡大が確認されていない",
+    "",
+    "### 監視継続が必要な条件",
+    "- 影響範囲の確認が一部残っている",
+    "- 類似イベントが短時間に再発する可能性がある",
+    "- 顧客または運用チームへの申し送りが未完了である",
+  ].join("\n");
+}
+
+function renderInvestigationPromptList() {
+  investigationPromptList.innerHTML = "";
+
+  for (const [promptKey, prompt] of Object.entries(investigationPrompts)) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "investigation-prompt-option";
+    button.classList.toggle("is-active", promptKey === activeInvestigationPromptKey);
+    button.dataset.promptKey = promptKey;
+    button.innerHTML = `
+      <strong>${prompt.title}</strong>
+      <span>${prompt.description}</span>
+    `;
+    investigationPromptList.appendChild(button);
+  }
+}
+
+function selectInvestigationPrompt(promptKey) {
+  const prompt = investigationPrompts[promptKey];
+
+  if (!prompt) {
+    return;
+  }
+
+  activeInvestigationPromptKey = promptKey;
+  investigationPromptHint.textContent = prompt.description;
+  investigationPromptText.value = prompt.prompt;
+  investigationPromptStatus.textContent = "選択したプロンプトは、ユーザーの発言として会話履歴に残ります。";
+  investigationPromptStatus.classList.remove("is-error");
+  renderInvestigationPromptList();
+}
+
+function openInvestigationPrompt() {
+  if (!isOwnSession(activeSessionKey)) {
+    return;
+  }
+
+  selectInvestigationPrompt(activeInvestigationPromptKey);
+  sendInvestigationPromptButton.disabled = false;
+  investigationPromptOverlay.hidden = false;
+  investigationPromptText.focus();
+}
+
+function closeInvestigationPrompt() {
+  investigationPromptOverlay.hidden = true;
+}
+
+function sendInvestigationPrompt() {
+  if (!isOwnSession(activeSessionKey)) {
+    return;
+  }
+
+  const promptText = investigationPromptText.value.trim();
+
+  if (!promptText) {
+    investigationPromptStatus.textContent = "Claudeへ送るプロンプトを入力してください。";
+    investigationPromptStatus.classList.add("is-error");
+    investigationPromptText.focus();
+    return;
+  }
+
+  const session = sessions[activeSessionKey];
+  const currentTime = getCurrentTime();
+  const responseText = createPromptResponse(activeInvestigationPromptKey, session);
+
+  session.messages.push({
+    role: "user",
+    analystId: activeAnalystKey,
+    time: currentTime,
+    text: promptText,
+  });
+
+  setRunStatus("summarizing");
+  openInvestigationPromptButton.disabled = true;
+  sendInvestigationPromptButton.disabled = true;
+  closeInvestigationPrompt();
+  renderSession(activeSessionKey);
+
+  window.setTimeout(() => {
+    session.messages.push({
+      role: "claude",
+      time: getCurrentTime(),
+      text: responseText,
+    });
+    session.updatedAt = getCurrentDateTimeLabel();
+    session.sidebarTimeLabel = "たった今";
+
+    setRunStatus("saving");
+    renderSidebarSessionList();
+    setActiveButton(activeSessionKey);
+    renderSession(activeSessionKey);
+    renderSessionSearchResults();
+
+    window.setTimeout(() => {
+      setRunStatus("idle");
+      sendInvestigationPromptButton.disabled = false;
+      renderInvestigationPromptAccess();
+    }, 700);
+  }, 650);
+}
+
 // ============================================================
 // セッションタイトル変更（所有者のみ）
 // ============================================================
@@ -1621,7 +2169,7 @@ function renderComposerAccess() {
 function renderTitleEditAccess() {
   const owned = isOwnSession(activeSessionKey);
   openRenameSessionButton.disabled = !owned;
-  openRenameSessionButton.title = owned ? "セッションタイトルを変更" : "他の担当者のセッションは変更できません";
+  openRenameSessionButton.title = owned ? "セッションタイトルを変更" : "他のアナリストのセッションは変更できません";
 }
 
 function openRenameSession() {
@@ -1677,21 +2225,28 @@ function setRunStatus(status) {
   if (status === "readonly") {
     runStatusDot.classList.add("is-readonly");
     runStatusLabel.textContent = "閲覧のみ";
-    runStatusText.textContent = "他の担当者のセッションでは、会話の確認と調査メモの投稿ができます。";
+    runStatusText.textContent = "他のアナリストのセッションでは、会話の確認と調査メモの投稿ができます。";
     return;
   }
 
   if (status === "running") {
     runStatusDot.classList.add("is-running");
     runStatusLabel.textContent = "Claudeに問い合わせ中";
-    runStatusText.textContent = "選択中の調査担当者として質問を送信しています。";
+    runStatusText.textContent = "選択中のアナリストとして質問を送信しています。";
     return;
   }
 
   if (status === "saving") {
     runStatusDot.classList.add("is-saving");
     runStatusLabel.textContent = "保存中";
-    runStatusText.textContent = "Claudeの返答と担当者情報を会話履歴へ保存しています。";
+    runStatusText.textContent = "Claudeの返答とアナリスト情報を会話履歴へ保存しています。";
+    return;
+  }
+
+  if (status === "summarizing") {
+    runStatusDot.classList.add("is-running");
+    runStatusLabel.textContent = "調査プロンプト実行中";
+    runStatusText.textContent = "選択した調査プロンプトをClaudeへ送信しています。";
     return;
   }
 
@@ -1728,6 +2283,8 @@ for (const button of statusFilterButtons) {
     renderSessionFilter();
   });
 }
+
+refreshRecentSessionsButton.addEventListener("click", refreshRecentSessions);
 
 sessionListContainer.addEventListener("click", (event) => {
   const button = event.target.closest(".session-item");
@@ -1795,6 +2352,11 @@ headerWorkStatusButton.addEventListener("click", (event) => {
   toggleWorkStatusMenu();
 });
 
+headerUserButton.addEventListener("click", (event) => {
+  event.stopPropagation();
+  toggleUserMenu();
+});
+
 workStatusPopover.addEventListener("click", (event) => {
   const button = event.target.closest("[data-work-status]");
 
@@ -1805,8 +2367,22 @@ workStatusPopover.addEventListener("click", (event) => {
   updateActiveWorkStatus(button.dataset.workStatus);
 });
 
+headerUserPopover.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-user-action]");
+
+  if (!button) {
+    return;
+  }
+
+  handleUserMenuAction(button.dataset.userAction);
+});
+
 analystRosterToggle.addEventListener("click", () => {
   setAnalystRosterExpanded(!analystRosterExpanded);
+});
+
+refreshAnalystRosterButton.addEventListener("click", () => {
+  refreshAnalystRoster("manual");
 });
 
 attachFileButton.addEventListener("click", () => {
@@ -1839,6 +2415,17 @@ attachmentTray.addEventListener("click", (event) => {
   }
 
   renderAttachmentTray();
+});
+
+chatInput.addEventListener("input", resizeChatInput);
+
+chatInput.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" || (!event.ctrlKey && !event.metaKey)) {
+    return;
+  }
+
+  event.preventDefault();
+  chatForm.requestSubmit();
 });
 
 for (const button of settingsNavButtons) {
@@ -1890,17 +2477,49 @@ renameSessionOverlay.addEventListener("click", (event) => {
   }
 });
 
+investigationPromptOverlay.addEventListener("click", (event) => {
+  if (event.target === investigationPromptOverlay) {
+    closeInvestigationPrompt();
+  }
+});
+
 document.addEventListener("click", (event) => {
   if (!headerWorkStatus.contains(event.target)) {
     closeWorkStatusMenu();
   }
+
+  if (!headerUser.contains(event.target)) {
+    closeUserMenu();
+  }
+
+  if (!caseStatusOptions.contains(event.target)) {
+    closeCaseStatusMenu();
+  }
 });
 
 visibilityToggleButton.addEventListener("click", toggleSessionVisibility);
+openInvestigationPromptButton.addEventListener("click", openInvestigationPrompt);
+closeInvestigationPromptButton.addEventListener("click", closeInvestigationPrompt);
+investigationPromptCancelButton.addEventListener("click", closeInvestigationPrompt);
+sendInvestigationPromptButton.addEventListener("click", sendInvestigationPrompt);
+
+investigationPromptList.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-prompt-key]");
+
+  if (!button) {
+    return;
+  }
+
+  selectInvestigationPrompt(button.dataset.promptKey);
+});
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !workStatusPopover.hidden) {
     closeWorkStatusMenu();
+  }
+
+  if (event.key === "Escape" && !headerUserPopover.hidden) {
+    closeUserMenu();
   }
 
   if (event.key === "Escape" && !sessionSearchOverlay.hidden) {
@@ -1919,6 +2538,14 @@ document.addEventListener("keydown", (event) => {
     closeRenameSession();
   }
 
+  if (event.key === "Escape" && !investigationPromptOverlay.hidden) {
+    closeInvestigationPrompt();
+  }
+
+  if (event.key === "Escape" && !caseStatusPopover.hidden) {
+    closeCaseStatusMenu();
+  }
+
   if (event.key === "Enter" && !sessionSearchOverlay.hidden) {
     renderSessionSearchResults();
   }
@@ -1928,14 +2555,20 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-caseStatusOptions.addEventListener("click", (event) => {
-  const button = event.target.closest(".case-status-option");
+currentCaseStatusButton.addEventListener("click", (event) => {
+  event.stopPropagation();
+  toggleCaseStatusMenu();
+});
+
+caseStatusPopover.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-status-option]");
 
   if (!button || !isOwnSession(activeSessionKey)) {
     return;
   }
 
   sessions[activeSessionKey].statusKey = button.dataset.statusOption;
+  closeCaseStatusMenu();
   renderSession(activeSessionKey);
   renderSessionStatusBadge(activeSessionKey);
   renderStatusCounts();
@@ -1997,7 +2630,7 @@ chatForm.addEventListener("submit", (event) => {
     session.messages.push({
       role: "claude",
       time: getCurrentTime(),
-      text: "受け取りました。保存済みの調査履歴と現在の担当者情報を踏まえて、次に確認すべき観点を整理します。",
+      text: "受け取りました。保存済みの調査履歴と現在のアナリスト情報を踏まえて、次に確認すべき観点を整理します。",
     });
     session.updatedAt = `2026/07/27 ${getCurrentTime()}`;
     setRunStatus("saving");
@@ -2010,6 +2643,7 @@ chatForm.addEventListener("submit", (event) => {
   }, 650);
 
   chatInput.value = "";
+  resizeChatInput();
   clearSelectedAttachments();
   renderSession(activeSessionKey);
 });
@@ -2025,3 +2659,6 @@ renderAnalystManagement();
 renderStatusCounts();
 renderSessionFilter();
 renderSession(activeSessionKey);
+window.setInterval(() => {
+  refreshAnalystRoster("auto");
+}, 60000);
