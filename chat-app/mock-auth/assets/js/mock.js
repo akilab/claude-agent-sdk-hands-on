@@ -159,6 +159,18 @@ const sessions = {
     product: "mde",
     sidebarTimeLabel: "今日 15:42",
     updatedAt: "2026/07/26 15:45",
+    notes: [
+      {
+        text: "MFA成功だが未管理端末。SharePoint閲覧範囲の確認を続ける。",
+        createdAt: "2026/07/26 15:56",
+        analystId: "tanaka",
+      },
+      {
+        text: "監視中へ移す前に、対象ユーザーのパスワード変更有無を確認。",
+        createdAt: "2026/07/26 16:04",
+        analystId: "sato",
+      },
+    ],
     messages: [
       {
         role: "user",
@@ -253,6 +265,13 @@ const sessions = {
     product: "crowdstrike",
     sidebarTimeLabel: "今日 14:18",
     updatedAt: "2026/07/26 14:19",
+    notes: [
+      {
+        text: "PowerShell実行元の端末利用者と直近プロセスを確認する。",
+        createdAt: "2026/07/26 14:22",
+        analystId: "hayashi",
+      },
+    ],
     messages: [
       {
         role: "user",
@@ -621,17 +640,12 @@ const settingsSaveStatus = document.querySelector("#settings-save-status");
 const settingsCurrentAnalyst = document.querySelector("#settings-current-analyst");
 const settingsNavButtons = document.querySelectorAll(".settings-nav-button");
 const settingsPanels = document.querySelectorAll(".settings-panel");
+const analystRosterToggle = document.querySelector("#analyst-roster-toggle");
+const analystRosterCount = document.querySelector("#analyst-roster-count");
 const analystRoster = document.querySelector("#analyst-roster");
 const settingsAnalystList = document.querySelector("#settings-analyst-list");
 const visibilityToggleButton = document.querySelector("#visibility-toggle-button");
 const attachFileButton = document.querySelector("#attach-file-button");
-const analystEditor = document.querySelector("#analyst-editor");
-const analystEditKey = document.querySelector("#analyst-edit-key");
-const analystEditorTitle = document.querySelector("#analyst-editor-title");
-const analystNameInput = document.querySelector("#analyst-name-input");
-const analystRoleSelect = document.querySelector("#analyst-role-select");
-const analystEditorReset = document.querySelector("#analyst-editor-reset");
-const analystEditorSubmit = document.querySelector("#analyst-editor-submit");
 const chatForm = document.querySelector("#chat-form");
 const chatInput = document.querySelector("#chat-input");
 const sendButton = document.querySelector("#send-button");
@@ -648,6 +662,10 @@ const workStatusPopover = document.querySelector("#work-status-popover");
 const runStatusDot = document.querySelector("#run-status-dot");
 const runStatusLabel = document.querySelector("#run-status-label");
 const runStatusText = document.querySelector("#run-status-text");
+const sessionNoteForm = document.querySelector("#session-note-form");
+const sessionNoteInput = document.querySelector("#session-note-input");
+const sessionNoteList = document.querySelector("#session-note-list");
+const sessionNoteStatus = document.querySelector("#session-note-status");
 
 // ============================================================
 // 状態（現在選択中のセッション・担当者・フィルタなど）
@@ -658,6 +676,8 @@ let activeAnalystKey = "tanaka";
 let activeStatusFilter = "all";
 let activeInvestigationMethod = "url";
 let sessionButtons = [];
+let analystRosterExpanded = localStorage.getItem("west-hawk-analyst-roster") === "open";
+let runStatusState = "idle";
 
 // ============================================================
 // メッセージ一覧の描画
@@ -753,6 +773,7 @@ function renderSession(sessionKey) {
   renderTitleEditAccess();
   renderVisibilityBadge();
   renderComposerAccess();
+  renderSessionNote();
   messageList.innerHTML = "";
 
   for (const message of session.messages) {
@@ -760,6 +781,46 @@ function renderSession(sessionKey) {
   }
 
   messageList.scrollTop = messageList.scrollHeight;
+}
+
+function renderSessionNote() {
+  const session = sessions[activeSessionKey];
+  const notes = session.notes ?? [];
+
+  sessionNoteList.innerHTML = "";
+  sessionNoteInput.value = "";
+  sessionNoteInput.disabled = false;
+  sessionNoteStatus.textContent = "担当者は誰でもこのセッションにメモを残せます。";
+
+  if (notes.length === 0) {
+    const emptyNote = document.createElement("p");
+    emptyNote.className = "session-note-empty";
+    emptyNote.textContent = "まだ調査メモはありません。";
+    sessionNoteList.appendChild(emptyNote);
+    return;
+  }
+
+  for (const note of notes) {
+    sessionNoteList.appendChild(createSessionNoteElement(note));
+  }
+}
+
+function createSessionNoteElement(note) {
+  const analyst = analysts[note.analystId] ?? {
+    name: "不明な担当者",
+  };
+  const article = document.createElement("article");
+  article.className = "session-note-item";
+  article.setAttribute("role", "listitem");
+
+  const text = document.createElement("p");
+  text.textContent = note.text;
+
+  const meta = document.createElement("small");
+  meta.textContent = `${note.createdAt} ${analyst.name}`;
+
+  article.append(text, meta);
+  return article;
 }
 
 function renderCaseStatusOptions(statusKey) {
@@ -973,18 +1034,21 @@ function renderSessionOwner(ownerAnalystId) {
   currentAnalystRole.textContent = `${analyst.role}${analyst.disabled ? " / 無効" : ""}`;
 }
 
-function getAnalystInitial(name) {
-  return name.trim().slice(0, 1).toUpperCase() || "A";
-}
-
-function createAnalystKey(name) {
-  const baseKey = `analyst-${Date.now()}`;
-  const initial = getAnalystInitial(name);
-  return `${baseKey}-${initial}`;
-}
-
 function getActiveAnalysts() {
   return Object.entries(analysts).filter(([, analyst]) => !analyst.disabled);
+}
+
+function renderAnalystRosterToggle() {
+  analystRoster.hidden = !analystRosterExpanded;
+  analystRosterToggle.classList.toggle("is-open", analystRosterExpanded);
+  analystRosterToggle.setAttribute("aria-expanded", String(analystRosterExpanded));
+  analystRosterCount.textContent = String(getActiveAnalysts().length);
+}
+
+function setAnalystRosterExpanded(expanded) {
+  analystRosterExpanded = expanded;
+  localStorage.setItem("west-hawk-analyst-roster", expanded ? "open" : "closed");
+  renderAnalystRosterToggle();
 }
 
 function renderAnalystRoster() {
@@ -1004,14 +1068,8 @@ function renderAnalystRoster() {
     `;
     analystRoster.appendChild(row);
   }
-}
 
-function resetAnalystEditor() {
-  analystEditKey.value = "";
-  analystNameInput.value = "";
-  analystRoleSelect.value = "Tier2";
-  analystEditorTitle.textContent = "新規追加";
-  analystEditorSubmit.textContent = "追加";
+  renderAnalystRosterToggle();
 }
 
 function renderSettingsAnalystList() {
@@ -1028,10 +1086,14 @@ function renderSettingsAnalystList() {
         <span>${analyst.role}</span>
       </span>
       <span class="settings-analyst-status">${analyst.disabled ? "無効" : "有効"}</span>
-      <span class="settings-analyst-actions">
-        <button type="button" data-analyst-action="edit" data-analyst-key="${analystKey}">変更</button>
-        <button type="button" class="is-danger" data-analyst-action="disable" data-analyst-key="${analystKey}" ${analyst.disabled ? "disabled" : ""}>削除</button>
-      </span>
+      <label class="settings-role-control">
+        <span>役割</span>
+        <select data-analyst-role="${analystKey}" ${analyst.disabled ? "disabled" : ""}>
+          <option ${analyst.role === "Tier2" ? "selected" : ""}>Tier2</option>
+          <option ${analyst.role === "Tier2 Senior" ? "selected" : ""}>Tier2 Senior</option>
+          <option ${analyst.role === "Tier2 Chief" ? "selected" : ""}>Tier2 Chief</option>
+        </select>
+      </label>
     `;
     settingsAnalystList.appendChild(row);
   }
@@ -1043,14 +1105,6 @@ function renderAnalystManagement() {
   renderSessionOwner(sessions[activeSessionKey].ownerAnalystId);
   renderSettingsAnalystList();
   renderInvestigationPreview();
-}
-
-function chooseFallbackAnalyst() {
-  const firstActiveAnalyst = getActiveAnalysts()[0];
-
-  if (firstActiveAnalyst) {
-    activeAnalystKey = firstActiveAnalyst[0];
-  }
 }
 
 // ============================================================
@@ -1205,6 +1259,7 @@ function startInvestigation() {
     product: productKey,
     sidebarTimeLabel: `今日 ${now}`,
     updatedAt: `2026/07/29 ${now}`,
+    notes: [],
     messages: [
     {
       role: "user",
@@ -1419,6 +1474,15 @@ function renderComposerAccess() {
   sendButton.disabled = !owned;
   sendButton.innerHTML = `${owned ? sendButtonIcons.enabled : sendButtonIcons.disabled}送信`;
   chatInput.placeholder = owned ? "Claudeに質問する" : "他の担当者のセッションのため閲覧のみです";
+
+  if (!owned) {
+    setRunStatus("readonly");
+    return;
+  }
+
+  if (runStatusState === "readonly") {
+    setRunStatus("idle");
+  }
 }
 
 // ============================================================
@@ -1478,7 +1542,15 @@ function renameActiveSession(newTitle) {
 // ============================================================
 
 function setRunStatus(status) {
+  runStatusState = status;
   runStatusDot.className = "";
+
+  if (status === "readonly") {
+    runStatusDot.classList.add("is-readonly");
+    runStatusLabel.textContent = "閲覧のみ";
+    runStatusText.textContent = "他の担当者のセッションでは、会話の確認と調査メモの投稿ができます。";
+    return;
+  }
 
   if (status === "running") {
     runStatusDot.classList.add("is-running");
@@ -1507,6 +1579,14 @@ function setActiveButton(sessionKey) {
 function getCurrentTime() {
   const now = new Date();
   return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+}
+
+function getCurrentDateTimeLabel() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}/${month}/${day} ${getCurrentTime()}`;
 }
 
 // ============================================================
@@ -1596,87 +1676,33 @@ workStatusPopover.addEventListener("click", (event) => {
   updateActiveWorkStatus(button.dataset.workStatus);
 });
 
+analystRosterToggle.addEventListener("click", () => {
+  setAnalystRosterExpanded(!analystRosterExpanded);
+});
+
 for (const button of settingsNavButtons) {
   button.addEventListener("click", () => {
     renderSettingsTab(button.dataset.settingsTab);
   });
 }
 
-settingsAnalystList.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-analyst-action]");
+settingsAnalystList.addEventListener("change", (event) => {
+  const select = event.target.closest("[data-analyst-role]");
 
-  if (!button) {
+  if (!select) {
     return;
   }
 
-  const analystKey = button.dataset.analystKey;
+  const analystKey = select.dataset.analystRole;
   const analyst = analysts[analystKey];
 
-  if (button.dataset.analystAction === "edit") {
-    analystEditKey.value = analystKey;
-    analystNameInput.value = analyst.name;
-    analystRoleSelect.value = analyst.role;
-    analystEditorTitle.textContent = "担当者を変更";
-    analystEditorSubmit.textContent = "変更を保存";
-    analystNameInput.focus();
+  if (!analyst) {
     return;
   }
 
-  if (getActiveAnalysts().length <= 1) {
-    settingsSaveStatus.textContent = "有効な担当者は1名以上必要です";
-    return;
-  }
-
-  analyst.disabled = true;
-
-  if (activeAnalystKey === analystKey) {
-    chooseFallbackAnalyst();
-  }
-
-  settingsSaveStatus.textContent = `${analyst.name} を削除しました。過去の履歴には残ります。`;
-  resetAnalystEditor();
+  analyst.role = select.value;
+  settingsSaveStatus.textContent = `${analyst.name} の役割を ${analyst.role} に変更しました`;
   renderAnalystManagement();
-});
-
-analystEditor.addEventListener("submit", (event) => {
-  event.preventDefault();
-
-  const name = analystNameInput.value.trim();
-
-  if (!name) {
-    settingsSaveStatus.textContent = "担当者名を入力してください";
-    analystNameInput.focus();
-    return;
-  }
-
-  const role = analystRoleSelect.value;
-  const editingKey = analystEditKey.value;
-
-  if (editingKey) {
-    analysts[editingKey].name = name;
-    analysts[editingKey].shortName = name;
-    analysts[editingKey].avatar = getAnalystInitial(name);
-    analysts[editingKey].role = role;
-    settingsSaveStatus.textContent = `${name} の変更を保存しました`;
-  } else {
-    const analystKey = createAnalystKey(name);
-    analysts[analystKey] = {
-      name,
-      shortName: name,
-      avatar: getAnalystInitial(name),
-      role,
-      workStatus: "office",
-    };
-    settingsSaveStatus.textContent = `${name} を追加しました`;
-  }
-
-  resetAnalystEditor();
-  renderAnalystManagement();
-});
-
-analystEditorReset.addEventListener("click", () => {
-  resetAnalystEditor();
-  settingsSaveStatus.textContent = "新規入力に戻しました";
 });
 
 sessionSearchOverlay.addEventListener("click", (event) => {
@@ -1754,6 +1780,30 @@ caseStatusOptions.addEventListener("click", (event) => {
   renderStatusCounts();
   renderSessionFilter();
   renderSessionSearchResults();
+});
+
+sessionNoteForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+
+  const text = sessionNoteInput.value.trim();
+
+  if (!text) {
+    sessionNoteStatus.textContent = "投稿するメモを入力してください。";
+    sessionNoteInput.focus();
+    return;
+  }
+
+  const session = sessions[activeSessionKey];
+  const notes = session.notes ?? [];
+
+  notes.push({
+    text,
+    createdAt: getCurrentDateTimeLabel(),
+    analystId: activeAnalystKey,
+  });
+  session.notes = notes;
+  renderSessionNote();
+  sessionNoteStatus.textContent = "調査メモを追加しました。";
 });
 
 chatForm.addEventListener("submit", (event) => {

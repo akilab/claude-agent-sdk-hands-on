@@ -384,7 +384,7 @@
               <section class="settings-panel" data-settings-panel="analysts">
                 <div class="settings-panel-heading">
                   <h3>担当者</h3>
-                  <p>会話に記録する調査担当者を管理します。削除した担当者は新しい会話では選べなくなりますが、過去の履歴には名前が残ります。</p>
+                  <p>認証済みユーザーの一覧を確認し、このアプリ内で使う業務上の役割だけを変更します。</p>
                 </div>
                 <div class="settings-list">
                   <div>
@@ -400,34 +400,10 @@
                   <div>
                     <div class="settings-subheading">
                       <h4>担当者一覧</h4>
-                      <p>削除した担当者は新しい会話では選べなくなります。過去の履歴には名前が残ります。</p>
+                      <p>ユーザーの追加や削除は認証基盤側で行います。この画面では役割だけを変更できます。</p>
                     </div>
                     <div class="settings-analyst-list" id="settings-analyst-list"></div>
                   </div>
-
-                  <form class="analyst-editor" id="analyst-editor">
-                    <input type="hidden" id="analyst-edit-key">
-                    <div class="settings-subheading">
-                      <h4 id="analyst-editor-title">新規追加</h4>
-                      <p>担当者名と役割だけを登録します。</p>
-                    </div>
-                    <label class="setting-field">
-                      <span>名前</span>
-                      <input id="analyst-name-input" type="text" placeholder="例: 山田 花子">
-                    </label>
-                    <label class="setting-field">
-                      <span>役割</span>
-                      <select id="analyst-role-select">
-                        <option>Tier2</option>
-                        <option>Tier2 Chief</option>
-                        <option>Tier2 Senior</option>
-                      </select>
-                    </label>
-                    <div class="analyst-editor-actions">
-                      <button type="button" class="settings-secondary" id="analyst-editor-reset">新規入力に戻す</button>
-                      <button type="submit" class="settings-primary" id="analyst-editor-submit">追加</button>
-                    </div>
-                  </form>
                 </div>
               </section>
 
@@ -532,7 +508,7 @@
       <main class="chat-layout">
         <header class="topbar">
           <div class="topbar-title">
-            <p class="breadcrumb">調査ワークスペース / 担当者切替可</p>
+            <p class="breadcrumb">調査ワークスペース</p>
             <div class="conversation-title-row">
               <h2 id="conversation-title">Impossible Travel alert</h2>
               <button type="button" class="title-edit-button" id="open-rename-session" aria-label="セッションタイトルを変更">
@@ -571,6 +547,14 @@
 
         <section class="chat-panel" aria-label="会話">
           <div id="message-list" class="message-list" aria-live="polite"></div>
+
+          <div class="composer-run-status run-status" aria-live="polite">
+            <span id="run-status-dot"></span>
+            <div>
+              <strong id="run-status-label">待機中</strong>
+              <p id="run-status-text">入力を送信するとClaudeへの問い合わせを開始します。</p>
+            </div>
+          </div>
 
           <form id="chat-form" class="composer">
             <label class="visually-hidden" for="chat-input">メッセージ</label>
@@ -657,8 +641,14 @@
               </div>
             </div>
 
-            <p class="field-label">登録担当者一覧</p>
-            <div class="analyst-roster" id="analyst-roster" role="list" aria-label="登録担当者一覧"></div>
+            <button type="button" class="analyst-roster-toggle" id="analyst-roster-toggle" aria-expanded="false" aria-controls="analyst-roster">
+              <span>登録担当者一覧</span>
+              <strong id="analyst-roster-count">0</strong>
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="m7 10 5 5 5-5"></path>
+              </svg>
+            </button>
+            <div class="analyst-roster" id="analyst-roster" role="list" aria-label="登録担当者一覧" hidden></div>
           </div>
         </section>
 
@@ -666,17 +656,20 @@
           <div class="detail-heading">
             <span class="detail-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" focusable="false">
-                <path d="M4.5 12h3l2-5 4.5 10 2-5h3.5"></path>
+                <path d="M6 4.5h12A1.5 1.5 0 0 1 19.5 6v12A1.5 1.5 0 0 1 18 19.5H6A1.5 1.5 0 0 1 4.5 18V6A1.5 1.5 0 0 1 6 4.5Z"></path>
+                <path d="M8 8.5h8M8 12h8M8 15.5h5"></path>
               </svg>
             </span>
-            <h2>実行ステータス</h2>
+            <h2>調査メモ</h2>
           </div>
-          <div class="run-status">
-            <span id="run-status-dot"></span>
-            <div>
-              <strong id="run-status-label">待機中</strong>
-              <p id="run-status-text">入力を送信するとClaudeへの問い合わせを開始します。</p>
-            </div>
+          <div class="session-note">
+            <form class="session-note-form" id="session-note-form">
+              <label class="visually-hidden" for="session-note-input">調査メモ</label>
+              <input id="session-note-input" type="text" maxlength="120" placeholder="調査メモを一言で残す">
+              <button type="submit">投稿</button>
+            </form>
+            <div class="session-note-list" id="session-note-list" role="list" aria-label="調査メモ一覧"></div>
+            <p id="session-note-status">担当者は誰でもこのセッションにメモを残せます。</p>
           </div>
         </section>
       </aside>
