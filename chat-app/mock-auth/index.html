@@ -558,6 +558,7 @@
 
           <form id="chat-form" class="composer">
             <label class="visually-hidden" for="chat-input">メッセージ</label>
+            <input id="attachment-input" class="visually-hidden" type="file" multiple>
             <button type="button" class="icon-button" id="attach-file-button" aria-label="ファイルを添付">
               <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                 <path d="m20 11.5-8.3 8.3a5.1 5.1 0 0 1-7.2-7.2l9-9a3.3 3.3 0 0 1 4.7 4.7l-9.1 9.1a1.7 1.7 0 0 1-2.4-2.4l8.3-8.3"></path>
@@ -571,6 +572,7 @@
               </svg>
               送信
             </button>
+            <div class="attachment-tray" id="attachment-tray" aria-live="polite" hidden></div>
           </form>
         </section>
       </main>

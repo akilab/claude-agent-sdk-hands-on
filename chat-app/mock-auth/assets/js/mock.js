@@ -646,6 +646,8 @@ const analystRoster = document.querySelector("#analyst-roster");
 const settingsAnalystList = document.querySelector("#settings-analyst-list");
 const visibilityToggleButton = document.querySelector("#visibility-toggle-button");
 const attachFileButton = document.querySelector("#attach-file-button");
+const attachmentInput = document.querySelector("#attachment-input");
+const attachmentTray = document.querySelector("#attachment-tray");
 const chatForm = document.querySelector("#chat-form");
 const chatInput = document.querySelector("#chat-input");
 const sendButton = document.querySelector("#send-button");
@@ -678,6 +680,7 @@ let activeInvestigationMethod = "url";
 let sessionButtons = [];
 let analystRosterExpanded = localStorage.getItem("west-hawk-analyst-roster") === "open";
 let runStatusState = "idle";
+let selectedAttachments = [];
 
 // ============================================================
 // メッセージ一覧の描画
@@ -712,10 +715,50 @@ function createMessageElement(message) {
   body.innerHTML = `
     <div class="message-header">
       <span>${author.name}</span>
-      <span class="message-time">${message.time}</span>
+      <span class="message-meta">
+        <span class="message-time">${message.time}</span>
+      </span>
     </div>
     <p>${message.text}</p>
   `;
+
+  if (message.role === "claude") {
+    const copyButton = document.createElement("button");
+    copyButton.type = "button";
+    copyButton.className = "message-copy-button";
+    copyButton.setAttribute("aria-label", "Claudeの返答をコピー");
+    copyButton.title = "Claudeの返答をコピー";
+    copyButton.innerHTML = `
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <rect x="8" y="8" width="11" height="11" rx="2"></rect>
+        <path d="M5 15.5V6.5A1.5 1.5 0 0 1 6.5 5H15"></path>
+      </svg>
+    `;
+    copyButton.addEventListener("click", () => {
+      copyClaudeMessage(copyButton, message.text);
+    });
+    body.querySelector(".message-meta").appendChild(copyButton);
+  }
+
+  if (message.attachments?.length) {
+    const attachmentList = document.createElement("div");
+    attachmentList.className = "message-attachments";
+
+    for (const attachment of message.attachments) {
+      const attachmentItem = document.createElement("span");
+      attachmentItem.className = "message-attachment";
+      attachmentItem.innerHTML = `
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="m20 11.5-8.3 8.3a5.1 5.1 0 0 1-7.2-7.2l9-9a3.3 3.3 0 0 1 4.7 4.7l-9.1 9.1a1.7 1.7 0 0 1-2.4-2.4l8.3-8.3"></path>
+        </svg>
+        <strong>${attachment.name}</strong>
+        <small>${attachment.sizeLabel}</small>
+      `;
+      attachmentList.appendChild(attachmentItem);
+    }
+
+    body.appendChild(attachmentList);
+  }
 
   if (message.code) {
     const codePreview = document.createElement("div");
@@ -733,6 +776,92 @@ function createMessageElement(message) {
   article.appendChild(avatar);
   article.appendChild(body);
   return article;
+}
+
+async function copyTextToClipboard(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    const temporaryInput = document.createElement("textarea");
+    temporaryInput.value = text;
+    temporaryInput.setAttribute("readonly", "");
+    temporaryInput.style.position = "fixed";
+    temporaryInput.style.inset = "0 auto auto 0";
+    temporaryInput.style.opacity = "0";
+    document.body.appendChild(temporaryInput);
+    temporaryInput.select();
+
+    const copied = document.execCommand("copy");
+    temporaryInput.remove();
+    return copied;
+  }
+}
+
+async function copyClaudeMessage(button, text) {
+  const copied = await copyTextToClipboard(text);
+
+  if (!copied) {
+    button.classList.add("is-error");
+    button.setAttribute("aria-label", "コピーできませんでした");
+    button.title = "コピーできませんでした";
+    window.setTimeout(() => {
+      button.classList.remove("is-error");
+      button.setAttribute("aria-label", "Claudeの返答をコピー");
+      button.title = "Claudeの返答をコピー";
+    }, 1400);
+    return;
+  }
+
+  button.classList.add("is-copied");
+  button.setAttribute("aria-label", "コピー済み");
+  button.title = "コピー済み";
+  window.setTimeout(() => {
+    button.classList.remove("is-copied");
+    button.setAttribute("aria-label", "Claudeの返答をコピー");
+    button.title = "Claudeの返答をコピー";
+  }, 1400);
+}
+
+function formatAttachmentSize(size) {
+  if (size >= 1024 * 1024) {
+    return `${(size / 1024 / 1024).toFixed(1)} MB`;
+  }
+
+  if (size >= 1024) {
+    return `${Math.ceil(size / 1024)} KB`;
+  }
+
+  return `${size} B`;
+}
+
+function renderAttachmentTray() {
+  attachmentTray.innerHTML = "";
+  attachmentTray.hidden = selectedAttachments.length === 0;
+
+  for (const [index, attachment] of selectedAttachments.entries()) {
+    const item = document.createElement("span");
+    item.className = "attachment-chip";
+    item.innerHTML = `
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="m20 11.5-8.3 8.3a5.1 5.1 0 0 1-7.2-7.2l9-9a3.3 3.3 0 0 1 4.7 4.7l-9.1 9.1a1.7 1.7 0 0 1-2.4-2.4l8.3-8.3"></path>
+      </svg>
+      <strong>${attachment.name}</strong>
+      <small>${attachment.sizeLabel}</small>
+      <button type="button" data-attachment-index="${index}" aria-label="${attachment.name} を取り外す">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M6 6l12 12M18 6 6 18"></path>
+        </svg>
+      </button>
+    `;
+    attachmentTray.appendChild(item);
+  }
+}
+
+function clearSelectedAttachments() {
+  selectedAttachments = [];
+  attachmentInput.value = "";
+  renderAttachmentTray();
 }
 
 // ============================================================
@@ -1680,6 +1809,38 @@ analystRosterToggle.addEventListener("click", () => {
   setAnalystRosterExpanded(!analystRosterExpanded);
 });
 
+attachFileButton.addEventListener("click", () => {
+  if (attachFileButton.disabled) {
+    return;
+  }
+
+  attachmentInput.click();
+});
+
+attachmentInput.addEventListener("change", () => {
+  selectedAttachments = Array.from(attachmentInput.files).map((file) => ({
+    name: file.name,
+    sizeLabel: formatAttachmentSize(file.size),
+  }));
+  renderAttachmentTray();
+});
+
+attachmentTray.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-attachment-index]");
+
+  if (!button) {
+    return;
+  }
+
+  selectedAttachments.splice(Number(button.dataset.attachmentIndex), 1);
+
+  if (selectedAttachments.length === 0) {
+    attachmentInput.value = "";
+  }
+
+  renderAttachmentTray();
+});
+
 for (const button of settingsNavButtons) {
   button.addEventListener("click", () => {
     renderSettingsTab(button.dataset.settingsTab);
@@ -1814,7 +1975,9 @@ chatForm.addEventListener("submit", (event) => {
   }
 
   const text = chatInput.value.trim();
-  if (!text) {
+  const attachments = [...selectedAttachments];
+
+  if (!text && attachments.length === 0) {
     return;
   }
 
@@ -1824,7 +1987,8 @@ chatForm.addEventListener("submit", (event) => {
     role: "user",
     analystId: activeAnalystKey,
     time: currentTime,
-    text,
+    text: text || "添付ファイルを共有します。",
+    attachments,
   });
 
   setRunStatus("running");
@@ -1846,6 +2010,7 @@ chatForm.addEventListener("submit", (event) => {
   }, 650);
 
   chatInput.value = "";
+  clearSelectedAttachments();
   renderSession(activeSessionKey);
 });
 
