@@ -8,48 +8,83 @@ const analysts = {
     shortName: "田中",
     avatar: "T",
     role: "Tier2",
+    workStatus: "office",
   },
   sato: {
     name: "佐藤 美咲",
     shortName: "佐藤",
     avatar: "S",
     role: "Tier2 Senior",
+    workStatus: "remote",
   },
   suzuki: {
     name: "鈴木 健",
     shortName: "鈴木",
     avatar: "U",
     role: "Tier2 Chief",
+    workStatus: "busy",
   },
   hayashi: {
     name: "林 涼",
     shortName: "林",
     avatar: "H",
     role: "Tier2",
+    workStatus: "night",
   },
   mori: {
     name: "森 愛",
     shortName: "森",
     avatar: "M",
     role: "Tier2 Senior",
+    workStatus: "away",
   },
   onodera: {
     name: "小野寺 健太郎",
     shortName: "小野寺",
     avatar: "O",
     role: "Tier2 Chief",
+    workStatus: "office",
   },
   hasegawa: {
     name: "長谷川 奈津美",
     shortName: "長谷川",
     avatar: "N",
     role: "Tier2 Senior",
+    workStatus: "leave",
   },
   fujiwara: {
     name: "藤原 真由",
     shortName: "藤原",
     avatar: "F",
     role: "Tier2",
+    workStatus: "night",
+  },
+};
+
+const workStatuses = {
+  office: {
+    label: "出勤",
+    className: "is-office",
+  },
+  remote: {
+    label: "在宅",
+    className: "is-remote",
+  },
+  busy: {
+    label: "対応中",
+    className: "is-busy",
+  },
+  away: {
+    label: "一時離席",
+    className: "is-away",
+  },
+  night: {
+    label: "夜勤",
+    className: "is-night",
+  },
+  leave: {
+    label: "休暇",
+    className: "is-leave",
   },
 };
 
@@ -99,6 +134,21 @@ const products = {
   },
 };
 
+const customers = {
+  alpha: {
+    name: "アルファ商事",
+  },
+  beta: {
+    name: "ベータ物流",
+  },
+  gamma: {
+    name: "ガンマ製薬",
+  },
+  delta: {
+    name: "デルタ興業",
+  },
+};
+
 const sessions = {
   fastapi: {
     title: "Impossible Travel alert",
@@ -107,7 +157,6 @@ const sessions = {
     ownerAnalystId: "tanaka",
     customer: "アルファ商事",
     product: "mde",
-    preview: "異常なサインインを調査中",
     sidebarTimeLabel: "今日 15:42",
     updatedAt: "2026/07/26 15:45",
     messages: [
@@ -202,7 +251,6 @@ const sessions = {
     ownerAnalystId: "hayashi",
     customer: "ベータ物流",
     product: "crowdstrike",
-    preview: "端末上の不審な実行を確認",
     sidebarTimeLabel: "今日 14:18",
     updatedAt: "2026/07/26 14:19",
     messages: [
@@ -226,7 +274,6 @@ const sessions = {
     ownerAnalystId: "mori",
     customer: "アルファ商事",
     product: "sentinel",
-    preview: "ログオン失敗の集中を分析",
     sidebarTimeLabel: "昨日 18:04",
     updatedAt: "2026/07/25 18:05",
     messages: [
@@ -250,7 +297,6 @@ const sessions = {
     ownerAnalystId: "onodera",
     customer: "ガンマ製薬",
     product: "mde",
-    preview: "添付ファイル検知を確認",
     sidebarTimeLabel: "昨日 11:20",
     updatedAt: "2026/07/25 11:21",
     messages: [
@@ -274,7 +320,6 @@ const sessions = {
     ownerAnalystId: "hasegawa",
     customer: "アルファ商事",
     product: "sentinel",
-    preview: "不審な同意許可を確認",
     sidebarTimeLabel: "昨日 09:48",
     updatedAt: "2026/07/26 09:48",
     messages: [
@@ -296,7 +341,6 @@ const sessions = {
     sessionId: "3a7b7903-b884-4d83-92f1-c79aa88c1b42",
     statusKey: "investigating",
     ownerAnalystId: "fujiwara",
-    preview: "未管理端末からのアクセス",
     sidebarTimeLabel: "07/25 17:32",
     updatedAt: "2026/07/25 17:32",
     messages: [
@@ -320,7 +364,6 @@ const sessions = {
     ownerAnalystId: "sato",
     customer: "ベータ物流",
     product: "mde",
-    preview: "外部転送ルールを確認",
     sidebarTimeLabel: "07/25 13:06",
     updatedAt: "2026/07/25 13:06",
     messages: [
@@ -344,7 +387,6 @@ const sessions = {
     ownerAnalystId: "mori",
     customer: "ガンマ製薬",
     product: "sentinelone",
-    preview: "ユーザーリスク上昇を確認",
     sidebarTimeLabel: "07/24 16:40",
     updatedAt: "2026/07/24 16:40",
     messages: [
@@ -369,7 +411,6 @@ const sessions = {
     isPrivate: true,
     customer: "アルファ商事",
     product: "sentinel",
-    preview: "特権ロールの有効化を確認",
     sidebarTimeLabel: "07/24 10:15",
     updatedAt: "2026/07/24 10:15",
     messages: [
@@ -393,7 +434,6 @@ const sessions = {
     ownerAnalystId: "onodera",
     customer: "ベータ物流",
     product: "sentinelone",
-    preview: "大量ダウンロードを確認済み",
     sidebarTimeLabel: "07/23 19:22",
     updatedAt: "2026/07/23 19:22",
     messages: [
@@ -562,9 +602,11 @@ const newInvestigationOverlay = document.querySelector("#new-investigation-overl
 const investigationMethods = document.querySelectorAll(".investigation-method");
 const investigationPanels = document.querySelectorAll(".investigation-panel");
 const incidentUrlInput = document.querySelector("#incident-url-input");
+const investigationCustomerSelect = document.querySelector("#investigation-customer-select");
 const incidentProductSelect = document.querySelector("#incident-product-select");
 const incidentIdInput = document.querySelector("#incident-id-input");
 const detectedProduct = document.querySelector("#detected-product");
+const investigationPreviewCustomer = document.querySelector("#investigation-preview-customer");
 const investigationPreviewMethod = document.querySelector("#investigation-preview-method");
 const investigationPreviewProduct = document.querySelector("#investigation-preview-product");
 const investigationPreviewAnalyst = document.querySelector("#investigation-preview-analyst");
@@ -598,6 +640,11 @@ const currentAnalystName = document.querySelector("#current-analyst-name");
 const currentAnalystRole = document.querySelector("#current-analyst-role");
 const headerUserAvatar = document.querySelector("#header-user-avatar");
 const headerUserName = document.querySelector("#header-user-name");
+const headerWorkStatus = document.querySelector("#header-work-status");
+const headerWorkStatusButton = document.querySelector("#header-work-status-button");
+const headerWorkStatusDot = document.querySelector("#header-work-status-dot");
+const headerWorkStatusLabel = document.querySelector("#header-work-status-label");
+const workStatusPopover = document.querySelector("#work-status-popover");
 const runStatusDot = document.querySelector("#run-status-dot");
 const runStatusLabel = document.querySelector("#run-status-label");
 const runStatusText = document.querySelector("#run-status-text");
@@ -740,7 +787,6 @@ function renderSidebarSessionList() {
     button.innerHTML = `
       <span class="session-icon" aria-hidden="true">${SESSION_ICON_SVG}</span>
       <span class="session-title">${session.title}</span>
-      <span class="session-preview">${session.preview}</span>
       <span class="session-meta">
         <span class="session-status ${status.className}">${status.label}</span>
         <span class="session-time">${session.sidebarTimeLabel}</span>
@@ -839,6 +885,8 @@ function renderAnalyst() {
   headerUserAvatar.textContent = analyst.avatar;
   headerUserName.textContent = analyst.name;
 
+  renderHeaderWorkStatus();
+  renderWorkStatusMenu();
   renderSessionFilter();
   renderStatusCounts();
   renderOwnedSessionIcons();
@@ -846,6 +894,68 @@ function renderAnalyst() {
   renderComposerAccess();
   renderVisibilityBadge();
   renderSessionSearchResults();
+}
+
+function getActiveWorkStatus() {
+  const analyst = analysts[activeAnalystKey];
+  return workStatuses[analyst.workStatus] ?? workStatuses.office;
+}
+
+function renderHeaderWorkStatus() {
+  const status = getActiveWorkStatus();
+  headerWorkStatusButton.className = `header-work-status-button ${status.className}`;
+  headerWorkStatusDot.className = `work-status-dot ${status.className}`;
+  headerWorkStatusLabel.textContent = status.label;
+}
+
+function renderWorkStatusMenu() {
+  const activeStatusKey = analysts[activeAnalystKey].workStatus;
+  workStatusPopover.innerHTML = "";
+
+  for (const [statusKey, status] of Object.entries(workStatuses)) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `work-status-option ${status.className}`;
+    button.classList.toggle("is-active", statusKey === activeStatusKey);
+    button.dataset.workStatus = statusKey;
+    button.setAttribute("role", "menuitem");
+    button.innerHTML = `
+      <span class="work-status-dot ${status.className}" aria-hidden="true"></span>
+      <strong>${status.label}</strong>
+    `;
+    workStatusPopover.appendChild(button);
+  }
+}
+
+function openWorkStatusMenu() {
+  workStatusPopover.hidden = false;
+  headerWorkStatusButton.setAttribute("aria-expanded", "true");
+}
+
+function closeWorkStatusMenu() {
+  workStatusPopover.hidden = true;
+  headerWorkStatusButton.setAttribute("aria-expanded", "false");
+}
+
+function toggleWorkStatusMenu() {
+  if (workStatusPopover.hidden) {
+    openWorkStatusMenu();
+    return;
+  }
+
+  closeWorkStatusMenu();
+}
+
+function updateActiveWorkStatus(statusKey) {
+  if (!workStatuses[statusKey]) {
+    return;
+  }
+
+  analysts[activeAnalystKey].workStatus = statusKey;
+  renderHeaderWorkStatus();
+  renderWorkStatusMenu();
+  renderAnalystRoster();
+  closeWorkStatusMenu();
 }
 
 function renderSessionOwner(ownerAnalystId) {
@@ -881,6 +991,7 @@ function renderAnalystRoster() {
   analystRoster.innerHTML = "";
 
   for (const [analystKey, analyst] of getActiveAnalysts()) {
+    const workStatus = workStatuses[analyst.workStatus] ?? workStatuses.office;
     const row = document.createElement("div");
     row.className = "analyst-record";
     row.classList.toggle("is-login-user", analystKey === activeAnalystKey);
@@ -889,7 +1000,7 @@ function renderAnalystRoster() {
       <span>${analyst.avatar}</span>
       <strong>${analyst.name}</strong>
       <em>${analyst.role}</em>
-      ${analystKey === activeAnalystKey ? '<small>ログイン中</small>' : ""}
+      <small class="work-status ${workStatus.className}">${workStatus.label}</small>
     `;
     analystRoster.appendChild(row);
   }
@@ -1005,6 +1116,7 @@ function renderInvestigationMethod(methodKey) {
 function renderInvestigationPreview() {
   const productKey = getInvestigationProductKey();
   const productLabel = getProductLabel(productKey);
+  const customer = customers[investigationCustomerSelect.value];
   const analyst = analysts[activeAnalystKey];
   const methodLabels = {
     blank: "空で開始",
@@ -1012,6 +1124,7 @@ function renderInvestigationPreview() {
     id: "製品とIDから開始",
   };
 
+  investigationPreviewCustomer.textContent = customer?.name ?? "未選択";
   investigationPreviewMethod.textContent = methodLabels[activeInvestigationMethod];
   investigationPreviewProduct.textContent = activeInvestigationMethod === "blank" ? "未指定" : productLabel;
   investigationPreviewAnalyst.textContent = analyst.name;
@@ -1019,6 +1132,7 @@ function renderInvestigationPreview() {
 }
 
 function resetNewInvestigationForm() {
+  investigationCustomerSelect.value = "";
   incidentUrlInput.value = "";
   incidentProductSelect.value = "mde";
   incidentIdInput.value = "";
@@ -1029,7 +1143,7 @@ function resetNewInvestigationForm() {
 function openNewInvestigation() {
   newInvestigationOverlay.hidden = false;
   renderInvestigationPreview();
-  incidentUrlInput.focus();
+  investigationCustomerSelect.focus();
 }
 
 function closeNewInvestigation() {
@@ -1050,6 +1164,13 @@ function createMockSessionId() {
 
 function startInvestigation() {
   const productKey = getInvestigationProductKey();
+  const customer = customers[investigationCustomerSelect.value];
+
+  if (!customer) {
+    newInvestigationStatus.textContent = "顧客を選択してください。";
+    investigationCustomerSelect.focus();
+    return;
+  }
 
   if (activeInvestigationMethod === "url" && !productKey) {
     newInvestigationStatus.textContent = "製品を推測できません。製品とIDから開始してください。";
@@ -1065,10 +1186,10 @@ function startInvestigation() {
   const productLabel = getProductLabel(productKey);
   const isBlankInvestigation = activeInvestigationMethod === "blank";
   const sourceLabel = activeInvestigationMethod === "url" ? "URL" : `ID: ${incidentIdInput.value.trim()}`;
-  const sessionTitle = isBlankInvestigation ? "New investigation" : `${productLabel} investigation`;
+  const sessionTitle = isBlankInvestigation ? `${customer.name} investigation` : `${customer.name} ${productLabel} investigation`;
   const userMessage = isBlankInvestigation
-    ? "まだ製品やインシデント情報は指定せず、新しい調査セッションを開始します。"
-    : `${productLabel} の ${sourceLabel} から新しい調査を開始します。`;
+    ? `${customer.name} の調査として、まだ製品やインシデント情報は指定せず、新しい調査セッションを開始します。`
+    : `${customer.name} の ${productLabel} ${sourceLabel} から新しい調査を開始します。`;
   const claudeMessage = isBlankInvestigation
     ? "新しい調査セッションを開始しました。調査対象が分かり次第、URL、製品名、インシデントID、気になっている事象のいずれかを入力してください。"
     : "調査対象を受け取りました。対象製品から取得すべき概要、主要エンティティ、初動確認の観点を整理します。";
@@ -1080,9 +1201,8 @@ function startInvestigation() {
     sessionId: createMockSessionId(),
     statusKey: "new",
     ownerAnalystId: activeAnalystKey,
-    customer: "",
+    customer: customer.name,
     product: productKey,
-    preview: "新しい調査を開始",
     sidebarTimeLabel: `今日 ${now}`,
     updatedAt: `2026/07/29 ${now}`,
     messages: [
@@ -1428,6 +1548,7 @@ openNewInvestigationButton.addEventListener("click", openNewInvestigation);
 closeNewInvestigationButton.addEventListener("click", closeNewInvestigation);
 newInvestigationCancelButton.addEventListener("click", closeNewInvestigation);
 startInvestigationButton.addEventListener("click", startInvestigation);
+investigationCustomerSelect.addEventListener("change", renderInvestigationPreview);
 incidentUrlInput.addEventListener("input", renderInvestigationPreview);
 incidentProductSelect.addEventListener("change", renderInvestigationPreview);
 incidentIdInput.addEventListener("input", renderInvestigationPreview);
@@ -1458,6 +1579,21 @@ closeSettingsButton.addEventListener("click", closeSettings);
 settingsCancelButton.addEventListener("click", closeSettings);
 settingsSaveButton.addEventListener("click", () => {
   settingsSaveStatus.textContent = "設定を保存しました";
+});
+
+headerWorkStatusButton.addEventListener("click", (event) => {
+  event.stopPropagation();
+  toggleWorkStatusMenu();
+});
+
+workStatusPopover.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-work-status]");
+
+  if (!button) {
+    return;
+  }
+
+  updateActiveWorkStatus(button.dataset.workStatus);
 });
 
 for (const button of settingsNavButtons) {
@@ -1529,6 +1665,7 @@ analystEditor.addEventListener("submit", (event) => {
       shortName: name,
       avatar: getAnalystInitial(name),
       role,
+      workStatus: "office",
     };
     settingsSaveStatus.textContent = `${name} を追加しました`;
   }
@@ -1566,9 +1703,19 @@ renameSessionOverlay.addEventListener("click", (event) => {
   }
 });
 
+document.addEventListener("click", (event) => {
+  if (!headerWorkStatus.contains(event.target)) {
+    closeWorkStatusMenu();
+  }
+});
+
 visibilityToggleButton.addEventListener("click", toggleSessionVisibility);
 
 document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !workStatusPopover.hidden) {
+    closeWorkStatusMenu();
+  }
+
   if (event.key === "Escape" && !sessionSearchOverlay.hidden) {
     closeSessionSearch();
   }

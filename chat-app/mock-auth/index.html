@@ -50,6 +50,16 @@
             </svg>
             設定
           </button>
+          <div class="header-work-status" id="header-work-status">
+            <button type="button" class="header-work-status-button" id="header-work-status-button" aria-haspopup="true" aria-expanded="false">
+              <span class="work-status-dot" id="header-work-status-dot" aria-hidden="true"></span>
+              <span id="header-work-status-label">出勤</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="m7 10 5 5 5-5"></path>
+              </svg>
+            </button>
+            <div class="work-status-popover" id="work-status-popover" role="menu" hidden></div>
+          </div>
           <div class="header-user" id="header-user" aria-label="ログイン中のユーザー">
             <span class="header-user-avatar" id="header-user-avatar">T</span>
             <span class="header-user-name" id="header-user-name">田中 明</span>
@@ -140,6 +150,17 @@
           </header>
 
           <div class="new-investigation-body">
+            <label class="investigation-field investigation-customer-field">
+              <span>顧客</span>
+              <select id="investigation-customer-select" required>
+                <option value="">顧客を選択してください</option>
+                <option value="alpha">アルファ商事</option>
+                <option value="beta">ベータ物流</option>
+                <option value="gamma">ガンマ製薬</option>
+                <option value="delta">デルタ興業</option>
+              </select>
+            </label>
+
             <div class="investigation-methods" role="tablist" aria-label="調査開始方法">
               <button type="button" class="investigation-method" data-investigation-method="blank" aria-pressed="false">
                 空で開始
@@ -190,6 +211,10 @@
             </form>
 
             <section class="investigation-preview" aria-label="作成される調査">
+              <div>
+                <span>顧客</span>
+                <strong id="investigation-preview-customer">未選択</strong>
+              </div>
               <div>
                 <span>開始方法</span>
                 <strong id="investigation-preview-method">URLから開始</strong>
