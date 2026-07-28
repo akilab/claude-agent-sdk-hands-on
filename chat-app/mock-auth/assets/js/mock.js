@@ -533,7 +533,6 @@ const sessionId = document.querySelector("#session-id");
 const sessionCustomer = document.querySelector("#session-customer");
 const sessionProduct = document.querySelector("#session-product");
 const updatedAt = document.querySelector("#updated-at");
-const ownClientId = document.querySelector("#own-client-id");
 const sessionListContainer = document.querySelector("#session-list");
 const statusFilterButtons = document.querySelectorAll(".status-filter-button");
 const visibleSessionCount = document.querySelector("#visible-session-count");
@@ -573,7 +572,7 @@ const settingsSaveStatus = document.querySelector("#settings-save-status");
 const settingsCurrentAnalyst = document.querySelector("#settings-current-analyst");
 const settingsNavButtons = document.querySelectorAll(".settings-nav-button");
 const settingsPanels = document.querySelectorAll(".settings-panel");
-const analystSwitcher = document.querySelector("#analyst-switcher");
+const analystRoster = document.querySelector("#analyst-roster");
 const settingsAnalystList = document.querySelector("#settings-analyst-list");
 const visibilityToggleButton = document.querySelector("#visibility-toggle-button");
 const attachFileButton = document.querySelector("#attach-file-button");
@@ -604,6 +603,7 @@ let activeSessionKey = "fastapi";
 let activeAnalystKey = "tanaka";
 let activeStatusFilter = "all";
 let activeInvestigationMethod = "url";
+let sessionButtons = [];
 
 // ============================================================
 // メッセージ一覧の描画
@@ -694,6 +694,7 @@ function renderSession(sessionKey) {
   sessionId.textContent = session.sessionId;
   renderSessionCustomer(session.customer);
   renderSessionProduct(session.product);
+  renderSessionOwner(session.ownerAnalystId);
   updatedAt.textContent = session.updatedAt;
   renderVisibilityBadge();
   renderComposerAccess();
@@ -739,6 +740,8 @@ function renderSidebarSessionList() {
     `;
     sessionListContainer.appendChild(button);
   }
+
+  sessionButtons = document.querySelectorAll(".session-item");
 }
 
 function renderSessionStatusBadge(sessionKey) {
@@ -823,21 +826,14 @@ function renderSessionFilter() {
 }
 
 // ============================================================
-// ログイン中の担当者表示・担当者の切り替え・担当者マスタ管理
+// ログイン中の担当者表示・セッション担当者表示・担当者マスタ管理
 // ============================================================
 
 function renderAnalyst() {
   const analyst = analysts[activeAnalystKey];
-  currentAnalystAvatar.textContent = analyst.avatar;
-  currentAnalystName.textContent = analyst.name;
-  currentAnalystRole.textContent = analyst.role;
   settingsCurrentAnalyst.textContent = `${analyst.name} / ${analyst.role}`;
   headerUserAvatar.textContent = analyst.avatar;
   headerUserName.textContent = analyst.name;
-
-  for (const button of document.querySelectorAll(".analyst-button")) {
-    button.classList.toggle("is-active", button.dataset.analyst === activeAnalystKey);
-  }
 
   renderSessionFilter();
   renderStatusCounts();
@@ -846,6 +842,21 @@ function renderAnalyst() {
   renderComposerAccess();
   renderVisibilityBadge();
   renderSessionSearchResults();
+}
+
+function renderSessionOwner(ownerAnalystId) {
+  const analyst = analysts[ownerAnalystId];
+
+  if (!analyst) {
+    currentAnalystAvatar.textContent = "?";
+    currentAnalystName.textContent = "未設定";
+    currentAnalystRole.textContent = "担当者情報が見つかりません";
+    return;
+  }
+
+  currentAnalystAvatar.textContent = analyst.avatar;
+  currentAnalystName.textContent = analyst.name;
+  currentAnalystRole.textContent = `${analyst.role}${analyst.disabled ? " / 無効" : ""}`;
 }
 
 function getAnalystInitial(name) {
@@ -862,21 +873,21 @@ function getActiveAnalysts() {
   return Object.entries(analysts).filter(([, analyst]) => !analyst.disabled);
 }
 
-function renderAnalystSwitcher() {
-  analystSwitcher.innerHTML = "";
+function renderAnalystRoster() {
+  analystRoster.innerHTML = "";
 
   for (const [analystKey, analyst] of getActiveAnalysts()) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "analyst-button";
-    button.classList.toggle("is-active", analystKey === activeAnalystKey);
-    button.dataset.analyst = analystKey;
-    button.innerHTML = `
+    const row = document.createElement("div");
+    row.className = "analyst-record";
+    row.classList.toggle("is-login-user", analystKey === activeAnalystKey);
+    row.setAttribute("role", "listitem");
+    row.innerHTML = `
       <span>${analyst.avatar}</span>
       <strong>${analyst.name}</strong>
       <em>${analyst.role}</em>
+      ${analystKey === activeAnalystKey ? '<small>ログイン中</small>' : ""}
     `;
-    analystSwitcher.appendChild(button);
+    analystRoster.appendChild(row);
   }
 }
 
@@ -912,8 +923,9 @@ function renderSettingsAnalystList() {
 }
 
 function renderAnalystManagement() {
-  renderAnalystSwitcher();
+  renderAnalystRoster();
   renderAnalyst();
+  renderSessionOwner(sessions[activeSessionKey].ownerAnalystId);
   renderSettingsAnalystList();
   renderInvestigationPreview();
 }
@@ -1020,6 +1032,18 @@ function closeNewInvestigation() {
   newInvestigationOverlay.hidden = true;
 }
 
+function createMockSessionKey() {
+  return `investigation-${Date.now()}`;
+}
+
+function createMockSessionId() {
+  if (window.crypto?.randomUUID) {
+    return window.crypto.randomUUID();
+  }
+
+  return `mock-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 function startInvestigation() {
   const productKey = getInvestigationProductKey();
 
@@ -1045,13 +1069,19 @@ function startInvestigation() {
     ? "新しい調査セッションを開始しました。調査対象が分かり次第、URL、製品名、インシデントID、気になっている事象のいずれかを入力してください。"
     : "調査対象を受け取りました。対象製品から取得すべき概要、主要エンティティ、初動確認の観点を整理します。";
   const now = getCurrentTime();
+  const newSessionKey = createMockSessionKey();
 
-  sessions.fastapi.title = sessionTitle;
-  sessions.fastapi.statusKey = "new";
-  sessions.fastapi.preview = "新しい調査を開始";
-  sessions.fastapi.sidebarTimeLabel = `今日 ${now}`;
-  sessions.fastapi.updatedAt = `2026/07/27 ${now}`;
-  sessions.fastapi.messages = [
+  sessions[newSessionKey] = {
+    title: sessionTitle,
+    sessionId: createMockSessionId(),
+    statusKey: "new",
+    ownerAnalystId: activeAnalystKey,
+    customer: "",
+    product: productKey,
+    preview: "新しい調査を開始",
+    sidebarTimeLabel: `今日 ${now}`,
+    updatedAt: `2026/07/29 ${now}`,
+    messages: [
     {
       role: "user",
       analystId: activeAnalystKey,
@@ -1063,18 +1093,14 @@ function startInvestigation() {
       time: now,
       text: claudeMessage,
     },
-  ];
+    ],
+  };
 
-  const activeSidebarTitle = document.querySelector('[data-session="fastapi"] .session-title');
-  const activeSidebarPreview = document.querySelector('[data-session="fastapi"] .session-preview');
-  const activeSidebarTime = document.querySelector('[data-session="fastapi"] .session-time');
-
-  activeSidebarTitle.textContent = sessionTitle;
-  activeSidebarPreview.textContent = "新しい調査を開始";
-  activeSidebarTime.textContent = `今日 ${now}`;
-  setActiveButton("fastapi");
-  renderSession("fastapi");
-  renderSessionStatusBadge("fastapi");
+  RECENT_SESSION_ORDER.unshift(newSessionKey);
+  activeStatusFilter = "all";
+  renderSidebarSessionList();
+  setActiveButton(newSessionKey);
+  renderSession(newSessionKey);
   renderStatusCounts();
   renderSessionFilter();
   renderSessionSearchResults();
@@ -1275,26 +1301,6 @@ function renderComposerAccess() {
 }
 
 // ============================================================
-// 自身のクライアントUUID（localStorageで永続化）
-// ============================================================
-
-function getOrCreateOwnClientId() {
-  const storageKey = "west-hawk-client-id";
-  let clientId = window.localStorage.getItem(storageKey);
-
-  if (!clientId) {
-    clientId = crypto.randomUUID();
-    window.localStorage.setItem(storageKey, clientId);
-  }
-
-  return clientId;
-}
-
-function renderOwnClientId() {
-  ownClientId.textContent = getOrCreateOwnClientId();
-}
-
-// ============================================================
 // 実行ステータス（待機中/問い合わせ中/保存中）表示
 // ============================================================
 
@@ -1334,24 +1340,24 @@ function getCurrentTime() {
 // イベントリスナー
 // ============================================================
 
-analystSwitcher.addEventListener("click", (event) => {
-  const button = event.target.closest(".analyst-button");
-
-  if (!button) {
-    return;
-  }
-
-  activeAnalystKey = button.dataset.analyst;
-  renderAnalyst();
-  renderInvestigationPreview();
-});
-
 for (const button of statusFilterButtons) {
   button.addEventListener("click", () => {
     activeStatusFilter = button.dataset.statusFilter;
     renderSessionFilter();
   });
 }
+
+sessionListContainer.addEventListener("click", (event) => {
+  const button = event.target.closest(".session-item");
+
+  if (!button) {
+    return;
+  }
+
+  const sessionKey = button.dataset.session;
+  setActiveButton(sessionKey);
+  renderSession(sessionKey);
+});
 
 openSessionSearchButton.addEventListener("click", openSessionSearch);
 closeSessionSearchButton.addEventListener("click", closeSessionSearch);
@@ -1580,20 +1586,9 @@ chatForm.addEventListener("submit", (event) => {
 // ============================================================
 
 renderSidebarSessionList();
-const sessionButtons = document.querySelectorAll(".session-item");
-
-for (const button of sessionButtons) {
-  button.addEventListener("click", () => {
-    const sessionKey = button.dataset.session;
-    setActiveButton(sessionKey);
-    renderSession(sessionKey);
-  });
-}
-
 setActiveButton(activeSessionKey);
 renderSessionSearchOwnerOptions();
 renderAnalystManagement();
 renderStatusCounts();
 renderSessionFilter();
 renderSession(activeSessionKey);
-renderOwnClientId();

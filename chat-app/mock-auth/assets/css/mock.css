@@ -1747,8 +1747,7 @@ svg {
 .topbar-actions button:focus-visible,
 .send-button:focus-visible,
 .icon-button:focus-visible,
-.new-session-button:focus-visible,
-.analyst-button:focus-visible {
+.new-session-button:focus-visible {
   outline: 3px solid rgba(0, 114, 188, 0.22);
   outline-offset: 2px;
 }
@@ -1977,8 +1976,18 @@ svg {
   background: var(--gray-700);
 }
 
+.case-status-option.is-active:hover:not(:disabled),
+.case-status-option.is-active:focus-visible:not(:disabled) {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.38);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.24),
+    0 0 0 3px rgba(0, 114, 188, 0.16);
+  outline: none;
+}
+
 /* ============================================================
-   右パネル: 調査担当者（切り替え・自身のUUID）
+   右パネル: 調査担当者（セッション担当者・登録者一覧）
    ============================================================ */
 
 .analyst-panel {
@@ -2006,7 +2015,7 @@ svg {
 }
 
 .active-analyst span,
-.analyst-button span {
+.analyst-record span {
   display: grid;
   place-items: center;
   width: 34px;
@@ -2034,52 +2043,43 @@ svg {
   line-height: 1.6;
 }
 
-.analyst-switcher {
+.analyst-roster {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
-.own-client-id {
-  margin: 0;
-  color: var(--ink-950);
-  font-size: 12px;
-  font-weight: 800;
-  overflow-wrap: anywhere;
-}
-
-.analyst-button {
+.analyst-record {
   display: grid;
-  grid-template-columns: 32px minmax(0, 1fr);
+  grid-template-columns: 34px minmax(0, 1fr) auto;
   gap: 2px 8px;
   align-items: center;
-  min-height: 64px;
+  min-height: 52px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #ffffff;
   color: var(--ink-800);
-  padding: 9px;
+  padding: 9px 10px;
   font-size: 12px;
   font-weight: 800;
   text-align: left;
 }
 
-.analyst-button.is-active {
+.analyst-record.is-login-user {
   border-color: #b9cff1;
   background: var(--blue-100);
   color: var(--blue-700);
 }
 
-.analyst-button.is-active span {
+.analyst-record.is-login-user span {
   background: var(--blue-700);
 }
 
-.analyst-button span {
+.analyst-record span {
   grid-row: 1 / span 2;
 }
 
-.analyst-button strong,
-.analyst-button em {
+.analyst-record strong,
+.analyst-record em {
   display: block;
   min-width: 0;
   overflow: hidden;
@@ -2087,15 +2087,27 @@ svg {
   white-space: nowrap;
 }
 
-.analyst-button em {
+.analyst-record em {
   color: var(--ink-500);
   font-size: 11px;
   font-style: normal;
   font-weight: 800;
 }
 
-.analyst-button.is-active em {
+.analyst-record.is-login-user em {
   color: var(--blue-700);
+}
+
+.analyst-record small {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  align-self: center;
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--blue-700);
+  padding: 3px 7px;
+  font-size: 10px;
+  font-weight: 900;
 }
 
 .run-status {
