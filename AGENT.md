@@ -9,7 +9,7 @@
 - 学習サイト本体は静的HTML/CSS/JSで構成されています。
 - Python教材は `python-labs/` にあり、uvとPythonのみを前提にしています。
 - 現在の新セクションは `chat-app/` です。既存の `python-labs/` とは切り離し、FastAPI連携を見据えたチャット型調査アプリを作ります。
-- まずは学習コンテンツではなく、完成形に近い画面Mockを `chat-app/mock/` に作っています。
+- まずは学習コンテンツではなく、完成形に近い画面Mockを作っています。**現在アクティブなのは `chat-app/mock-auth/` です**（下記参照）。`chat-app/mock/` はセッションロック機能ありの旧設計のスナップショットとして残していますが、以後の主な作業対象ではありません。
 
 ## 重要な設計判断
 
@@ -20,14 +20,18 @@
 - `python-labs/outputs/`、`.venv/`、`__pycache__/`、`.pytest_cache/` はGit管理対象外です。
 - コードブロックのハイライトには Prism.js を使います。CDNではなく `assets/vendor/prism/` にローカル同梱する方針です。
 
-## chat-app/mock の現在地
+## chat-app/mock-auth（アクティブ）と chat-app/mock（旧・参考用）の関係
 
-対象フォルダ:
+- 2026-07-28に「セッションロック機能」から「認証＋所有権ベースの権限モデル」へ方針転換しました。理由: 1インシデントを複数人が同じセッションで共有することはほぼなく、各アナリストが同じインシデントに対して各自別セッションを立てる実態に合わせたためです。
+- `chat-app/mock/` は方針転換前のスナップショット（ログイン機能なし、担当者切り替えUI、セッションロック機能あり）としてそのまま残しています。以後の作業対象ではありません。
+- `chat-app/mock-auth/` は `chat-app/mock/` の複製から始めた、認証あり前提の派生版です。**今後はこちらを編集してください。**
 
-- `chat-app/mock/index.html`
-- `chat-app/mock/assets/css/mock.css`
-- `chat-app/mock/assets/js/mock.js`
-- `chat-app/mock/assets/img/logo-design.svg`
+対象フォルダ（mock-auth）:
+
+- `chat-app/mock-auth/index.html`
+- `chat-app/mock-auth/assets/css/mock.css`
+- `chat-app/mock-auth/assets/js/mock.js`
+- `chat-app/mock-auth/assets/img/logo-design.svg`
 
 画面の目的:
 
@@ -40,7 +44,7 @@
 - サービス領域: `AI Incident Analysis`
 - アプリ名: `West Hawk`
 - アクセントカラー: `#0072bc`
-- ロゴ: `chat-app/mock/assets/img/logo-design.svg`
+- ロゴ: `chat-app/mock-auth/assets/img/logo-design.svg`
 
 UI方針:
 
@@ -49,17 +53,21 @@ UI方針:
 - かわいい配色、派手な装飾、説明用Mock感は避けます。
 - Mockであることを画面上で強調しません。本番画面のように見せます。
 
-## chat-app/mock の主な仕様
+## chat-app/mock-auth の主な仕様
 
 - ヘッダー左に `AI Incident Analysis` / `West Hawk` を表示します。
 - `West Hawk` のロゴ文字は Google Fonts の `Zen Antique Soft` を使っています。
 - ヘッダーナビは `セッション`、`API`、`ログ` です。
+- ヘッダー右、設定ボタンの右に**ログイン中ユーザー表示**（アバター＋名前）を追加済みです。Mockなので常時ログイン済み状態で、実ログインは未実装（将来Entra IDを想定、下記参照）。
 - 設定はヘッダー右上のボタンから開きます。
 - 左下の設定/ログメニューは削除済みです。
-- ログイン機能は作りません。右上のユーザー表示も削除済みです。
-- `users` はログインユーザーではなく、調査担当者マスタとして扱います。
-- `sessions` と `users` は直接紐づけません。
-- 将来DBでは、`messages` に `session_id` と `user_id` を持たせ、誰がその発言をしたかを残します。
+- `users`（＝調査担当者）は認証ユーザーとして扱う前提に変わりました（旧`mock/`では「ログインユーザーではなく調査担当者マスタ」でしたが、認証あり前提への転換によりユーザー＝ログインアカウントという扱いになります）。
+- `sessions` には所有者（`ownerAnalystId`）を持たせ、投稿・ステータス変更・公開範囲変更はすべて所有者のみに制限しています（上位者の例外なし）。
+- 将来DBでは、`messages` に `session_id` と `user_id` を持たせ、誰がその発言をしたかを残す方針は変わりません。
+- **セッションロック機能は廃止**し、代わりに所有者のみ切替可能な「公開/非公開」visibilityトグルに置き換えました（トップバーの旧ロックバッジの位置）。非公開セッションは他人のサイドバー・検索結果から完全に非表示になります。デフォルトは公開です。
+- 左サイドバーは全員のセッションを表示し、自分が所有するセッションには「自分」バッジを表示します（自分のセッションだけに絞り込む機能はまだありません）。
+- セッション検索に「担当者」フィルタを追加済みです（ステータスと更新日Fromの間）。
+- 「調査担当者」パネル（担当者切り替えUI）は今のところ現状維持ですが、実ログイン導入時にどう扱うか（廃止/別用途への転用）は未決定・保留中です。
 
 調査担当者:
 
@@ -97,8 +105,15 @@ UI方針:
 セッション検索:
 
 - 検索はリアルタイムではなく、検索ボタン式です。
-- 検索項目はキーワード、ステータス、更新日From、更新日Toです。
+- 検索項目はキーワード、ステータス、**担当者**、更新日From、更新日Toです（担当者フィルタはmock-authで追加）。
 - 検索ボタンはフォーム下段に置き、狭い幅でも崩れにくくしています。
+- 非公開セッションは、所有者以外のログインでは検索結果からも除外されます。
+
+右パネル「現在の状態」（mock-authで拡張）:
+
+- 項目は `調査セッション`（ステータス、2列グリッドのボタン。所有者以外は無効化）、`セッションID`、`顧客`、`製品`（MDE/Sentinel/CrowdStrike/SentinelOneのバッジ）、`最終更新` の順です。
+- `顧客`/`製品`が未設定のセッションは「未設定」のグレー表示になります。
+- 自身のUUID（`localStorage`永続化）は、この右パネルではなく「調査担当者」パネルの「担当者を切り替える」の下に表示しています。
 
 新しい調査:
 
@@ -115,20 +130,23 @@ UI方針:
 
 ## 次に触るときの入口
 
-1. `chat-app/mock/index.html` をブラウザで開き、現状の画面を確認します。
-2. ヘッダー、セッション検索、新規調査、設定ダイアログ、担当者切替、ステータス変更を触って崩れを見ます。
-3. 変更する場合は、HTML、CSS、JSを分けて編集します。
-4. 画面Mockが固まったら、次のセクションでFastAPI側に進みます。
+1. `chat-app/mock-auth/index.html` をブラウザで開き、現状の画面を確認します（`chat-app/mock/` ではありません）。
+2. ヘッダーのログイン表示、サイドバー全員分のセッション一覧＋自分バッジ、非公開セッションの非表示、公開/非公開トグル、所有者以外での投稿・ステータス変更のdisabled状態、セッション検索の担当者フィルタを一通り触って確認します。
+3. 変更する場合は、HTML、CSS、JSを分けて編集します。セッションのタイトル・ステータス・時刻・プレビュー文言などは `assets/js/mock.js` の `sessions` オブジェクトが唯一の情報源です（サイドバーはそこから`renderSidebarSessionList()`が生成するため、HTML側は直接編集しません）。
+4. 未決定・保留中の論点: 「調査担当者」パネル（担当者切り替えUI）を実ログイン後にどう扱うか。決まり次第 `decisions.md` と本ファイルを更新してください。
+5. 画面Mockが固まったら、次はFastAPIバックエンド（認証はEntra IDが第一候補。アーキテクチャ方針は `working-memory/decisions.md` の2026-07-28分を参照）に進みます。
 
 ## 検証メモ
 
-- 静的Mockなので、通常は `chat-app/mock/index.html` を直接ブラウザで開けば確認できます。
+- 静的Mockなので、通常は `chat-app/mock-auth/index.html` を直接ブラウザで開けば確認できます。
 - レイアウト変更後は、横幅だけでなく高さを低くしたブラウザでも確認してください。
 - コミット前に `git diff --check` を実行すると、空白崩れを確認できます。
 - PowerShell環境ではGitがLF/CRLF警告を出すことがあります。現在は大きな問題として扱っていません。
+- 【重要】埋め込みBrowserプレビューpaneで同一タブに何度も`navigate`/JS評価を繰り返すと、古いキャッシュや多重イベントリスナーが残り、挙動確認が信用できなくなることがあります。怪しい挙動に遭遇したら、(1) `fetch(url+'?bust='+Math.random(), {cache:'no-store'})`で強制的に最新のCSS/JSを読み込み直す、(2) Node.jsで最小限の疑似DOMを組み該当関数を単体テストする、のどちらかで環境要因かどうか切り分けてください。
 
 ## Gitメモ
 
-- 直近の作業は `chat-app/mock` のUI調整です。
-- 前回確認済みのコミット: `ea041d6 Add investigation start dialog and stabilize mock layout`
+- 直近の作業は `chat-app/mock-auth` の認証・所有権モデル実装とリファクタリングです。
+- 前回確認済みのコミット: `8cbbc49 Restrict status changes to session owners in mock-auth`
+- リポジトリルートの `.env`（Entra ID App RegistrationのPoC用client_id/tenant_id/client_secret）は `.gitignore` で管理対象外にしています。誤って`git add`しないよう注意してください。
 - `working-memory/` はGit管理対象外ですが、作業の前後で更新します。
