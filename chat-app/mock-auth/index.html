@@ -312,6 +312,30 @@
         </section>
       </div>
 
+      <div class="delete-session-overlay" id="delete-session-overlay" hidden>
+        <section class="delete-session-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-session-title">
+          <header class="delete-session-header">
+            <div>
+              <p>Danger Zone</p>
+              <h2 id="delete-session-title">このセッションを削除</h2>
+            </div>
+            <button type="button" class="icon-button" id="close-delete-session" aria-label="削除確認を閉じる">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M6 6l12 12M18 6 6 18"></path>
+              </svg>
+            </button>
+          </header>
+          <div class="delete-session-body">
+            <p id="delete-session-message">この操作は取り消せません。会話、調査メモ、添付情報の表示はこのMockから削除されます。</p>
+            <strong id="delete-session-name">Impossible Travel alert</strong>
+          </div>
+          <footer class="delete-session-footer">
+            <button type="button" class="settings-secondary" id="delete-session-cancel">キャンセル</button>
+            <button type="button" class="danger-confirm-button" id="confirm-delete-session">削除する</button>
+          </footer>
+        </section>
+      </div>
+
       <div class="settings-overlay" id="settings-overlay" hidden>
         <section class="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title">
           <header class="settings-header">
@@ -738,6 +762,20 @@
             <div class="session-note-list" id="session-note-list" role="list" aria-label="調査メモ一覧"></div>
             <p id="session-note-status">アナリストは誰でもこのセッションにメモを残せます。</p>
           </div>
+        </section>
+
+        <section class="danger-zone" aria-label="危険な操作">
+          <p>危険な操作</p>
+          <button type="button" class="delete-session-button" id="open-delete-session">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M4 7h16"></path>
+              <path d="M10 11v6M14 11v6"></path>
+              <path d="M6 7l1 13h10l1-13"></path>
+              <path d="M9 7V4.8h6V7"></path>
+            </svg>
+            このセッションを削除
+          </button>
+          <small id="delete-session-hint">削除前に確認ダイアログを表示します。</small>
         </section>
       </aside>
     </div>

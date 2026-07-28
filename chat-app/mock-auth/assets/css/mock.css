@@ -723,6 +723,25 @@ svg {
   box-shadow: 0 30px 76px rgba(4, 19, 41, 0.34);
 }
 
+.delete-session-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  background: rgba(74, 12, 12, 0.52);
+}
+
+.delete-session-dialog {
+  width: min(520px, calc(100vw - 64px));
+  overflow: hidden;
+  border: 1px solid rgba(248, 192, 192, 0.98);
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 30px 76px rgba(74, 12, 12, 0.34);
+}
+
 .new-investigation-header {
   display: flex;
   align-items: center;
@@ -775,6 +794,18 @@ svg {
     #ffffff;
 }
 
+.delete-session-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 22px 16px;
+  border-bottom: 1px solid #f3c4c4;
+  background:
+    linear-gradient(90deg, rgba(185, 28, 28, 0.12), transparent 52%),
+    #ffffff;
+}
+
 .rename-session-header p {
   margin: 0 0 4px;
   color: var(--blue-700);
@@ -793,6 +824,15 @@ svg {
   text-transform: uppercase;
 }
 
+.delete-session-header p {
+  margin: 0 0 4px;
+  color: #b91c1c;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .rename-session-header h2 {
   margin: 0;
   color: var(--ink-950);
@@ -804,6 +844,13 @@ svg {
   margin: 0;
   color: var(--ink-950);
   font-size: 22px;
+  letter-spacing: 0;
+}
+
+.delete-session-header h2 {
+  margin: 0;
+  color: #7f1d1d;
+  font-size: 21px;
   letter-spacing: 0;
 }
 
@@ -829,6 +876,61 @@ svg {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+}
+
+.delete-session-body {
+  display: grid;
+  gap: 14px;
+  padding: 20px 22px;
+}
+
+.delete-session-body p {
+  margin: 0;
+  color: var(--ink-700);
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.7;
+}
+
+.delete-session-body strong {
+  display: block;
+  overflow: hidden;
+  border: 1px solid #f3c4c4;
+  border-radius: 8px;
+  background: #fff5f5;
+  color: #7f1d1d;
+  padding: 11px 12px;
+  font-size: 14px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.delete-session-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 22px 20px;
+  border-top: 1px solid #f3c4c4;
+  background: #fffafa;
+}
+
+.danger-confirm-button {
+  min-height: 40px;
+  border: 1px solid #b91c1c;
+  border-radius: 7px;
+  background: #b91c1c;
+  color: #ffffff;
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.danger-confirm-button:hover,
+.danger-confirm-button:focus-visible {
+  background: #991b1b;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.16);
 }
 
 .investigation-prompt-body {
@@ -2711,17 +2813,19 @@ svg {
   position: relative;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 12px;
   width: 100%;
   min-width: 150px;
   min-height: 36px;
   border: 1px solid var(--line-strong);
   border-radius: 7px;
-  padding: 0 38px;
-  font-size: 12px;
+  background: #ffffff;
+  color: var(--ink-900);
+  padding: 0 38px 0 12px;
+  font-size: 14px;
   font-weight: 900;
-  text-align: center;
+  text-align: left;
 }
 
 .case-status-current svg {
@@ -2740,39 +2844,10 @@ svg {
 .case-status-current:hover:not(:disabled),
 .case-status-current:focus-visible:not(:disabled),
 .case-status-current[aria-expanded="true"] {
+  border-color: var(--blue-700);
+  color: var(--ink-950);
   outline: none;
   box-shadow: 0 0 0 3px rgba(0, 114, 188, 0.14);
-}
-
-.case-status-current.is-new,
-.case-status-current.is-monitoring {
-  border-color: var(--blue-700);
-  background: var(--blue-700);
-  color: #ffffff;
-}
-
-.case-status-current.is-investigating {
-  border-color: var(--green-700);
-  background: var(--green-700);
-  color: #ffffff;
-}
-
-.case-status-current.is-reviewing {
-  border-color: var(--amber-700);
-  background: var(--amber-700);
-  color: #ffffff;
-}
-
-.case-status-current.is-paused {
-  border-color: var(--orange-700);
-  background: var(--orange-700);
-  color: #ffffff;
-}
-
-.case-status-current.is-closed {
-  border-color: var(--gray-700);
-  background: var(--gray-700);
-  color: #ffffff;
 }
 
 .case-status-popover {
@@ -3165,6 +3240,105 @@ svg {
   font-size: 11px;
   font-weight: 800;
   line-height: 1.6;
+}
+
+.danger-zone {
+  display: grid;
+  gap: 9px;
+  border: 1px solid #f3c4c4;
+  border-radius: 8px;
+  background: #fffafa;
+  padding: 13px;
+}
+
+.danger-zone p {
+  margin: 0;
+  color: #991b1b;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.delete-session-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  border: 1px solid #dc2626;
+  border-radius: 8px;
+  background: #b91c1c;
+  color: #ffffff;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.delete-session-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.delete-session-button:hover:not(:disabled),
+.delete-session-button:focus-visible:not(:disabled) {
+  background: #991b1b;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.16);
+}
+
+.delete-session-button:disabled {
+  cursor: not-allowed;
+  border-color: var(--line);
+  background: var(--gray-100);
+  color: var(--ink-500);
+}
+
+.danger-zone small {
+  color: var(--ink-600);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.empty-session-state {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  min-height: 100%;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.empty-session-state span {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #ffffff;
+  color: var(--blue-700);
+  box-shadow: 0 14px 34px rgba(13, 53, 96, 0.08);
+}
+
+.empty-session-state svg {
+  width: 24px;
+  height: 24px;
+}
+
+.empty-session-state h3 {
+  margin: 16px 0 8px;
+  color: var(--ink-950);
+  font-size: 20px;
+  letter-spacing: 0;
+}
+
+.empty-session-state p {
+  max-width: 420px;
+  margin: 0;
+  color: var(--ink-600);
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.8;
 }
 
 .run-status {

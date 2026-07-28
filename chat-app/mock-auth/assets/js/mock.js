@@ -721,6 +721,13 @@ const sessionNoteForm = document.querySelector("#session-note-form");
 const sessionNoteInput = document.querySelector("#session-note-input");
 const sessionNoteList = document.querySelector("#session-note-list");
 const sessionNoteStatus = document.querySelector("#session-note-status");
+const openDeleteSessionButton = document.querySelector("#open-delete-session");
+const closeDeleteSessionButton = document.querySelector("#close-delete-session");
+const deleteSessionOverlay = document.querySelector("#delete-session-overlay");
+const deleteSessionCancelButton = document.querySelector("#delete-session-cancel");
+const confirmDeleteSessionButton = document.querySelector("#confirm-delete-session");
+const deleteSessionName = document.querySelector("#delete-session-name");
+const deleteSessionHint = document.querySelector("#delete-session-hint");
 
 // ============================================================
 // 状態（現在選択中のセッション・アナリスト・フィルタなど）
@@ -1076,6 +1083,12 @@ function renderSessionProduct(productKey) {
 
 function renderSession(sessionKey) {
   const session = sessions[sessionKey];
+
+  if (!session) {
+    renderEmptySession();
+    return;
+  }
+
   activeSessionKey = sessionKey;
   conversationTitle.textContent = session.title;
   renderCaseStatusOptions(session.statusKey);
@@ -1088,6 +1101,7 @@ function renderSession(sessionKey) {
   renderVisibilityBadge();
   renderInvestigationPromptAccess();
   renderComposerAccess();
+  renderDeleteSessionAccess();
   renderSessionNote();
   messageList.innerHTML = "";
 
@@ -1098,7 +1112,50 @@ function renderSession(sessionKey) {
   messageList.scrollTop = messageList.scrollHeight;
 }
 
+function renderEmptySession() {
+  activeSessionKey = null;
+  closeCaseStatusMenu();
+  conversationTitle.textContent = "セッション未選択";
+  currentCaseStatusButton.className = "case-status-current";
+  currentCaseStatusButton.disabled = true;
+  currentCaseStatusButton.title = "セッションを選択すると調査ステータスを確認できます";
+  currentCaseStatusLabel.textContent = "未選択";
+  caseStatusPopover.innerHTML = "";
+  sessionId.textContent = "-";
+  renderSessionCustomer("");
+  renderSessionProduct("");
+  renderSessionOwner(null);
+  updatedAt.textContent = "-";
+  renderTitleEditAccess();
+  renderVisibilityBadge();
+  renderInvestigationPromptAccess();
+  renderComposerAccess();
+  renderSessionNote();
+  renderDeleteSessionAccess();
+  setActiveButton(null);
+  messageList.innerHTML = `
+    <section class="empty-session-state" aria-label="セッション未選択">
+      <span aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false">
+          <path d="M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v10A1.5 1.5 0 0 1 19 17.5h-5.5L9 21v-3.5H5A1.5 1.5 0 0 1 3.5 16V6A1.5 1.5 0 0 1 5 4.5Z"></path>
+          <path d="M7.5 9h9M7.5 12.5H14"></path>
+        </svg>
+      </span>
+      <h3>セッションが開かれていません</h3>
+      <p>左の最近のセッションから選択するか、新しい調査を開始してください。</p>
+    </section>
+  `;
+}
+
 function renderSessionNote() {
+  if (!hasActiveSession()) {
+    sessionNoteList.innerHTML = "";
+    sessionNoteInput.value = "";
+    sessionNoteInput.disabled = true;
+    sessionNoteStatus.textContent = "セッションを選択すると調査メモを表示できます。";
+    return;
+  }
+
   const session = sessions[activeSessionKey];
   const notes = session.notes ?? [];
 
@@ -1139,6 +1196,15 @@ function createSessionNoteElement(note) {
 }
 
 function renderCaseStatusOptions(statusKey) {
+  if (!hasActiveSession()) {
+    currentCaseStatusButton.className = "case-status-current";
+    currentCaseStatusButton.disabled = true;
+    currentCaseStatusButton.title = "セッションを選択すると調査ステータスを確認できます";
+    currentCaseStatusLabel.textContent = "未選択";
+    caseStatusPopover.innerHTML = "";
+    return;
+  }
+
   const owned = isOwnSession(activeSessionKey);
   const status = caseStatuses[statusKey];
 
@@ -1193,6 +1259,11 @@ function renderSidebarSessionList() {
 
   for (const sessionKey of RECENT_SESSION_ORDER) {
     const session = sessions[sessionKey];
+
+    if (!session) {
+      continue;
+    }
+
     const status = caseStatuses[session.statusKey];
     const button = document.createElement("button");
     button.type = "button";
@@ -1230,6 +1301,11 @@ function renderSessionStatusBadge(sessionKey) {
 function renderOwnedSessionIcons() {
   for (const button of sessionButtons) {
     const session = sessions[button.dataset.session];
+
+    if (!session) {
+      continue;
+    }
+
     button.classList.toggle("is-owned", session.ownerAnalystId === activeAnalystKey);
   }
 }
@@ -1246,7 +1322,7 @@ function countSessionsByStatus() {
   for (const button of sessionButtons) {
     const session = sessions[button.dataset.session];
 
-    if (!isSessionVisibleToCurrentUser(session)) {
+    if (!session || !isSessionVisibleToCurrentUser(session)) {
       continue;
     }
 
@@ -1274,6 +1350,11 @@ function renderSessionFilter() {
 
   for (const button of sessionButtons) {
     const session = sessions[button.dataset.session];
+    if (!session) {
+      button.hidden = true;
+      continue;
+    }
+
     const matchesStatus = activeStatusFilter === "all" || session.statusKey === activeStatusFilter;
     const shouldShow = matchesStatus && isSessionVisibleToCurrentUser(session);
     button.hidden = !shouldShow;
@@ -1322,9 +1403,14 @@ function renderAnalyst() {
   renderSessionFilter();
   renderStatusCounts();
   renderOwnedSessionIcons();
-  renderCaseStatusOptions(sessions[activeSessionKey].statusKey);
+  if (hasActiveSession()) {
+    renderCaseStatusOptions(sessions[activeSessionKey].statusKey);
+  } else {
+    renderCaseStatusOptions(null);
+  }
   renderComposerAccess();
   renderVisibilityBadge();
+  renderDeleteSessionAccess();
   renderSessionSearchResults();
 }
 
@@ -1527,7 +1613,7 @@ function renderSettingsAnalystList() {
 function renderAnalystManagement() {
   renderAnalystRoster();
   renderAnalyst();
-  renderSessionOwner(sessions[activeSessionKey].ownerAnalystId);
+  renderSessionOwner(hasActiveSession() ? sessions[activeSessionKey].ownerAnalystId : null);
   renderSettingsAnalystList();
   renderInvestigationPreview();
 }
@@ -1686,17 +1772,17 @@ function startInvestigation() {
     updatedAt: `2026/07/29 ${now}`,
     notes: [],
     messages: [
-    {
-      role: "user",
-      analystId: activeAnalystKey,
-      time: now,
-      text: userMessage,
-    },
-    {
-      role: "claude",
-      time: now,
-      text: claudeMessage,
-    },
+      {
+        role: "user",
+        analystId: activeAnalystKey,
+        time: now,
+        text: userMessage,
+      },
+      {
+        role: "claude",
+        time: now,
+        text: claudeMessage,
+      },
     ],
   };
 
@@ -1858,8 +1944,12 @@ const sendButtonIcons = {
     '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>',
 };
 
+function hasActiveSession() {
+  return Boolean(activeSessionKey && sessions[activeSessionKey]);
+}
+
 function isOwnSession(sessionKey) {
-  return sessions[sessionKey].ownerAnalystId === activeAnalystKey;
+  return Boolean(sessionKey && sessions[sessionKey]?.ownerAnalystId === activeAnalystKey);
 }
 
 function isSessionVisibleToCurrentUser(session) {
@@ -1867,6 +1957,13 @@ function isSessionVisibleToCurrentUser(session) {
 }
 
 function renderVisibilityBadge() {
+  if (!hasActiveSession()) {
+    visibilityToggleButton.classList.remove("is-public", "is-private");
+    visibilityToggleButton.disabled = true;
+    visibilityToggleButton.innerHTML = `${visibilityIcons.public}未選択`;
+    return;
+  }
+
   const session = sessions[activeSessionKey];
   const owned = isOwnSession(activeSessionKey);
   const isPrivate = Boolean(session.isPrivate);
@@ -1880,6 +1977,12 @@ function renderVisibilityBadge() {
 }
 
 function renderInvestigationPromptAccess() {
+  if (!hasActiveSession()) {
+    openInvestigationPromptButton.disabled = true;
+    openInvestigationPromptButton.title = "セッションを選択すると調査プロンプトを送信できます";
+    return;
+  }
+
   const owned = isOwnSession(activeSessionKey);
   const busy = runStatusState === "running" || runStatusState === "saving" || runStatusState === "summarizing";
 
@@ -1902,6 +2005,17 @@ function toggleSessionVisibility() {
 }
 
 function renderComposerAccess() {
+  if (!hasActiveSession()) {
+    chatInput.disabled = true;
+    attachFileButton.disabled = true;
+    sendButton.disabled = true;
+    sendButton.innerHTML = `${sendButtonIcons.disabled}送信`;
+    chatInput.placeholder = "セッションを選択してください";
+    resizeChatInput();
+    setRunStatus("empty");
+    return;
+  }
+
   const owned = isOwnSession(activeSessionKey);
 
   chatInput.disabled = !owned;
@@ -1916,7 +2030,7 @@ function renderComposerAccess() {
     return;
   }
 
-  if (runStatusState === "readonly") {
+  if (runStatusState === "readonly" || runStatusState === "empty") {
     setRunStatus("idle");
   }
 }
@@ -2158,8 +2272,71 @@ function sendInvestigationPrompt() {
       setRunStatus("idle");
       sendInvestigationPromptButton.disabled = false;
       renderInvestigationPromptAccess();
+      renderDeleteSessionAccess();
     }, 700);
   }, 650);
+}
+
+// ============================================================
+// セッション削除（所有者のみ）
+// ============================================================
+
+function renderDeleteSessionAccess() {
+  if (!hasActiveSession()) {
+    openDeleteSessionButton.disabled = true;
+    openDeleteSessionButton.title = "削除するセッションが選択されていません";
+    deleteSessionHint.textContent = "セッションを選択すると削除操作を確認できます。";
+    return;
+  }
+
+  const owned = isOwnSession(activeSessionKey);
+  const busy = runStatusState === "running" || runStatusState === "saving" || runStatusState === "summarizing";
+  openDeleteSessionButton.disabled = !owned || busy;
+  openDeleteSessionButton.title = owned
+    ? "このセッションを削除"
+    : "他のアナリストのセッションは削除できません";
+  deleteSessionHint.textContent = owned
+    ? "削除前に確認ダイアログを表示します。"
+    : "他のアナリストのセッションは削除できません。";
+
+  if (owned && busy) {
+    deleteSessionHint.textContent = "Claudeへの問い合わせ中は削除できません。";
+  }
+}
+
+function openDeleteSession() {
+  if (!hasActiveSession() || !isOwnSession(activeSessionKey)) {
+    return;
+  }
+
+  deleteSessionName.textContent = sessions[activeSessionKey].title;
+  deleteSessionOverlay.hidden = false;
+  confirmDeleteSessionButton.focus();
+}
+
+function closeDeleteSession() {
+  deleteSessionOverlay.hidden = true;
+}
+
+function deleteActiveSession() {
+  if (!hasActiveSession() || !isOwnSession(activeSessionKey)) {
+    return;
+  }
+
+  const sessionKey = activeSessionKey;
+  delete sessions[sessionKey];
+
+  const recentIndex = RECENT_SESSION_ORDER.indexOf(sessionKey);
+  if (recentIndex >= 0) {
+    RECENT_SESSION_ORDER.splice(recentIndex, 1);
+  }
+
+  closeDeleteSession();
+  renderSidebarSessionList();
+  renderStatusCounts();
+  renderSessionFilter();
+  renderSessionSearchResults();
+  renderEmptySession();
 }
 
 // ============================================================
@@ -2167,6 +2344,12 @@ function sendInvestigationPrompt() {
 // ============================================================
 
 function renderTitleEditAccess() {
+  if (!hasActiveSession()) {
+    openRenameSessionButton.disabled = true;
+    openRenameSessionButton.title = "セッションを選択するとタイトルを変更できます";
+    return;
+  }
+
   const owned = isOwnSession(activeSessionKey);
   openRenameSessionButton.disabled = !owned;
   openRenameSessionButton.title = owned ? "セッションタイトルを変更" : "他のアナリストのセッションは変更できません";
@@ -2221,6 +2404,13 @@ function renameActiveSession(newTitle) {
 function setRunStatus(status) {
   runStatusState = status;
   runStatusDot.className = "";
+
+  if (status === "empty") {
+    runStatusDot.classList.add("is-readonly");
+    runStatusLabel.textContent = "未選択";
+    runStatusText.textContent = "セッションを選択すると会話を確認できます。";
+    return;
+  }
 
   if (status === "readonly") {
     runStatusDot.classList.add("is-readonly");
@@ -2483,6 +2673,12 @@ investigationPromptOverlay.addEventListener("click", (event) => {
   }
 });
 
+deleteSessionOverlay.addEventListener("click", (event) => {
+  if (event.target === deleteSessionOverlay) {
+    closeDeleteSession();
+  }
+});
+
 document.addEventListener("click", (event) => {
   if (!headerWorkStatus.contains(event.target)) {
     closeWorkStatusMenu();
@@ -2502,6 +2698,10 @@ openInvestigationPromptButton.addEventListener("click", openInvestigationPrompt)
 closeInvestigationPromptButton.addEventListener("click", closeInvestigationPrompt);
 investigationPromptCancelButton.addEventListener("click", closeInvestigationPrompt);
 sendInvestigationPromptButton.addEventListener("click", sendInvestigationPrompt);
+openDeleteSessionButton.addEventListener("click", openDeleteSession);
+closeDeleteSessionButton.addEventListener("click", closeDeleteSession);
+deleteSessionCancelButton.addEventListener("click", closeDeleteSession);
+confirmDeleteSessionButton.addEventListener("click", deleteActiveSession);
 
 investigationPromptList.addEventListener("click", (event) => {
   const button = event.target.closest("[data-prompt-key]");
@@ -2542,6 +2742,10 @@ document.addEventListener("keydown", (event) => {
     closeInvestigationPrompt();
   }
 
+  if (event.key === "Escape" && !deleteSessionOverlay.hidden) {
+    closeDeleteSession();
+  }
+
   if (event.key === "Escape" && !caseStatusPopover.hidden) {
     closeCaseStatusMenu();
   }
@@ -2578,6 +2782,10 @@ caseStatusPopover.addEventListener("click", (event) => {
 
 sessionNoteForm.addEventListener("submit", (event) => {
   event.preventDefault();
+
+  if (!hasActiveSession()) {
+    return;
+  }
 
   const text = sessionNoteInput.value.trim();
 
@@ -2639,6 +2847,7 @@ chatForm.addEventListener("submit", (event) => {
 
     window.setTimeout(() => {
       setRunStatus("idle");
+      renderDeleteSessionAccess();
     }, 700);
   }, 650);
 
