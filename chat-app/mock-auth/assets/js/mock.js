@@ -1,3 +1,7 @@
+// ============================================================
+// データ: 調査担当者・ステータス種別・製品種別・セッション本体
+// ============================================================
+
 const analysts = {
   tanaka: {
     name: "田中 明",
@@ -103,6 +107,8 @@ const sessions = {
     ownerAnalystId: "tanaka",
     customer: "アルファ商事",
     product: "mde",
+    preview: "異常なサインインを調査中",
+    sidebarTimeLabel: "今日 15:42",
     updatedAt: "2026/07/26 15:45",
     messages: [
       {
@@ -196,6 +202,8 @@ const sessions = {
     ownerAnalystId: "hayashi",
     customer: "ベータ物流",
     product: "crowdstrike",
+    preview: "端末上の不審な実行を確認",
+    sidebarTimeLabel: "今日 14:18",
     updatedAt: "2026/07/26 14:19",
     messages: [
       {
@@ -218,6 +226,8 @@ const sessions = {
     ownerAnalystId: "mori",
     customer: "アルファ商事",
     product: "sentinel",
+    preview: "ログオン失敗の集中を分析",
+    sidebarTimeLabel: "昨日 18:04",
     updatedAt: "2026/07/25 18:05",
     messages: [
       {
@@ -240,6 +250,8 @@ const sessions = {
     ownerAnalystId: "onodera",
     customer: "ガンマ製薬",
     product: "mde",
+    preview: "添付ファイル検知を確認",
+    sidebarTimeLabel: "昨日 11:20",
     updatedAt: "2026/07/25 11:21",
     messages: [
       {
@@ -262,6 +274,8 @@ const sessions = {
     ownerAnalystId: "hasegawa",
     customer: "アルファ商事",
     product: "sentinel",
+    preview: "不審な同意許可を確認",
+    sidebarTimeLabel: "昨日 09:48",
     updatedAt: "2026/07/26 09:48",
     messages: [
       {
@@ -282,6 +296,8 @@ const sessions = {
     sessionId: "3a7b7903-b884-4d83-92f1-c79aa88c1b42",
     statusKey: "investigating",
     ownerAnalystId: "fujiwara",
+    preview: "未管理端末からのアクセス",
+    sidebarTimeLabel: "07/25 17:32",
     updatedAt: "2026/07/25 17:32",
     messages: [
       {
@@ -304,6 +320,8 @@ const sessions = {
     ownerAnalystId: "sato",
     customer: "ベータ物流",
     product: "mde",
+    preview: "外部転送ルールを確認",
+    sidebarTimeLabel: "07/25 13:06",
     updatedAt: "2026/07/25 13:06",
     messages: [
       {
@@ -326,6 +344,8 @@ const sessions = {
     ownerAnalystId: "mori",
     customer: "ガンマ製薬",
     product: "sentinelone",
+    preview: "ユーザーリスク上昇を確認",
+    sidebarTimeLabel: "07/24 16:40",
     updatedAt: "2026/07/24 16:40",
     messages: [
       {
@@ -349,6 +369,8 @@ const sessions = {
     isPrivate: true,
     customer: "アルファ商事",
     product: "sentinel",
+    preview: "特権ロールの有効化を確認",
+    sidebarTimeLabel: "07/24 10:15",
     updatedAt: "2026/07/24 10:15",
     messages: [
       {
@@ -371,6 +393,8 @@ const sessions = {
     ownerAnalystId: "onodera",
     customer: "ベータ物流",
     product: "sentinelone",
+    preview: "大量ダウンロードを確認済み",
+    sidebarTimeLabel: "07/23 19:22",
     updatedAt: "2026/07/23 19:22",
     messages: [
       {
@@ -476,6 +500,32 @@ const sessions = {
   },
 };
 
+// Order of sessions shown in the sidebar's "最近のセッション" list. Sessions not
+// listed here still exist in `sessions` and remain reachable via session search.
+const RECENT_SESSION_ORDER = [
+  "fastapi",
+  "sqlite",
+  "stream",
+  "client",
+  "oauth",
+  "impossible-device",
+  "mail-forwarding",
+  "risky-user",
+  "admin-role",
+  "data-download",
+];
+
+const SESSION_ICON_SVG = `
+  <svg viewBox="0 0 24 24" focusable="false">
+    <path d="M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v10A1.5 1.5 0 0 1 19 17.5h-5.5L9 21v-3.5H5A1.5 1.5 0 0 1 3.5 16V6A1.5 1.5 0 0 1 5 4.5Z"></path>
+    <path d="M7.5 9h9M7.5 12.5H14"></path>
+  </svg>
+`;
+
+// ============================================================
+// DOM要素の参照
+// ============================================================
+
 const messageList = document.querySelector("#message-list");
 const conversationTitle = document.querySelector("#conversation-title");
 const caseStatusOptions = document.querySelector("#case-status-options");
@@ -484,7 +534,7 @@ const sessionCustomer = document.querySelector("#session-customer");
 const sessionProduct = document.querySelector("#session-product");
 const updatedAt = document.querySelector("#updated-at");
 const ownClientId = document.querySelector("#own-client-id");
-const sessionButtons = document.querySelectorAll(".session-item");
+const sessionListContainer = document.querySelector("#session-list");
 const statusFilterButtons = document.querySelectorAll(".status-filter-button");
 const visibleSessionCount = document.querySelector("#visible-session-count");
 const openSessionSearchButton = document.querySelector("#open-session-search");
@@ -546,10 +596,18 @@ const runStatusDot = document.querySelector("#run-status-dot");
 const runStatusLabel = document.querySelector("#run-status-label");
 const runStatusText = document.querySelector("#run-status-text");
 
+// ============================================================
+// 状態（現在選択中のセッション・担当者・フィルタなど）
+// ============================================================
+
 let activeSessionKey = "fastapi";
 let activeAnalystKey = "tanaka";
 let activeStatusFilter = "all";
 let activeInvestigationMethod = "url";
+
+// ============================================================
+// メッセージ一覧の描画
+// ============================================================
 
 function getMessageAuthor(message) {
   if (message.role === "claude") {
@@ -603,6 +661,10 @@ function createMessageElement(message) {
   return article;
 }
 
+// ============================================================
+// セッション詳細（右パネル）・サイドバー一覧・ステータス表示
+// ============================================================
+
 function renderSessionCustomer(customerName) {
   if (customerName) {
     sessionCustomer.textContent = customerName;
@@ -652,6 +714,30 @@ function renderCaseStatusOptions(statusKey) {
     button.classList.toggle("is-active", isActive);
     button.setAttribute("aria-pressed", String(isActive));
     button.disabled = !owned;
+  }
+}
+
+function renderSidebarSessionList() {
+  sessionListContainer.innerHTML = "";
+
+  for (const sessionKey of RECENT_SESSION_ORDER) {
+    const session = sessions[sessionKey];
+    const status = caseStatuses[session.statusKey];
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "session-item";
+    button.dataset.session = sessionKey;
+    button.innerHTML = `
+      <span class="session-icon" aria-hidden="true">${SESSION_ICON_SVG}</span>
+      <span class="session-title">${session.title}</span>
+      <span class="session-preview">${session.preview}</span>
+      <span class="session-meta">
+        <span class="session-status ${status.className}">${status.label}</span>
+        <span class="session-time">${session.sidebarTimeLabel}</span>
+        <span class="session-owner-badge" hidden>自分</span>
+      </span>
+    `;
+    sessionListContainer.appendChild(button);
   }
 }
 
@@ -735,6 +821,10 @@ function renderSessionFilter() {
     button.classList.toggle("is-active", button.dataset.statusFilter === activeStatusFilter);
   }
 }
+
+// ============================================================
+// ログイン中の担当者表示・担当者の切り替え・担当者マスタ管理
+// ============================================================
 
 function renderAnalyst() {
   const analyst = analysts[activeAnalystKey];
@@ -835,6 +925,10 @@ function chooseFallbackAnalyst() {
     activeAnalystKey = firstActiveAnalyst[0];
   }
 }
+
+// ============================================================
+// 新しい調査ダイアログ
+// ============================================================
 
 function getProductLabel(productKey) {
   const productLabels = {
@@ -954,6 +1048,8 @@ function startInvestigation() {
 
   sessions.fastapi.title = sessionTitle;
   sessions.fastapi.statusKey = "new";
+  sessions.fastapi.preview = "新しい調査を開始";
+  sessions.fastapi.sidebarTimeLabel = `今日 ${now}`;
   sessions.fastapi.updatedAt = `2026/07/27 ${now}`;
   sessions.fastapi.messages = [
     {
@@ -985,6 +1081,10 @@ function startInvestigation() {
   closeNewInvestigation();
   resetNewInvestigationForm();
 }
+
+// ============================================================
+// セッション検索ダイアログ
+// ============================================================
 
 function getSessionOwner(session) {
   const analyst = analysts[session.ownerAnalystId] ?? analysts.tanaka;
@@ -1089,6 +1189,10 @@ function closeSessionSearch() {
   sessionSearchOverlay.hidden = true;
 }
 
+// ============================================================
+// 設定ダイアログ
+// ============================================================
+
 function renderSettingsTab(tabKey) {
   for (const button of settingsNavButtons) {
     button.classList.toggle("is-active", button.dataset.settingsTab === tabKey);
@@ -1108,6 +1212,10 @@ function openSettings() {
 function closeSettings() {
   settingsOverlay.hidden = true;
 }
+
+// ============================================================
+// 公開範囲トグル・投稿権限（所有者のみ操作可能にする一連のロジック）
+// ============================================================
 
 const visibilityIcons = {
   public:
@@ -1166,6 +1274,10 @@ function renderComposerAccess() {
   chatInput.placeholder = owned ? "Claudeに質問する" : "他の担当者のセッションのため閲覧のみです";
 }
 
+// ============================================================
+// 自身のクライアントUUID（localStorageで永続化）
+// ============================================================
+
 function getOrCreateOwnClientId() {
   const storageKey = "west-hawk-client-id";
   let clientId = window.localStorage.getItem(storageKey);
@@ -1181,6 +1293,10 @@ function getOrCreateOwnClientId() {
 function renderOwnClientId() {
   ownClientId.textContent = getOrCreateOwnClientId();
 }
+
+// ============================================================
+// 実行ステータス（待機中/問い合わせ中/保存中）表示
+// ============================================================
 
 function setRunStatus(status) {
   runStatusDot.className = "";
@@ -1214,13 +1330,9 @@ function getCurrentTime() {
   return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 }
 
-for (const button of sessionButtons) {
-  button.addEventListener("click", () => {
-    const sessionKey = button.dataset.session;
-    setActiveButton(sessionKey);
-    renderSession(sessionKey);
-  });
-}
+// ============================================================
+// イベントリスナー
+// ============================================================
 
 analystSwitcher.addEventListener("click", (event) => {
   const button = event.target.closest(".analyst-button");
@@ -1463,6 +1575,22 @@ chatForm.addEventListener("submit", (event) => {
   renderSession(activeSessionKey);
 });
 
+// ============================================================
+// 初期化
+// ============================================================
+
+renderSidebarSessionList();
+const sessionButtons = document.querySelectorAll(".session-item");
+
+for (const button of sessionButtons) {
+  button.addEventListener("click", () => {
+    const sessionKey = button.dataset.session;
+    setActiveButton(sessionKey);
+    renderSession(sessionKey);
+  });
+}
+
+setActiveButton(activeSessionKey);
 renderSessionSearchOwnerOptions();
 renderAnalystManagement();
 renderStatusCounts();
