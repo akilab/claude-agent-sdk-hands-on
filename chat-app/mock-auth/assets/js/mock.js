@@ -1284,20 +1284,6 @@ function renderSidebarSessionList() {
   sessionButtons = document.querySelectorAll(".session-item");
 }
 
-function renderSessionStatusBadge(sessionKey) {
-  const session = sessions[sessionKey];
-  const status = caseStatuses[session.statusKey];
-  const button = document.querySelector(`[data-session="${sessionKey}"]`);
-  const badge = button?.querySelector(".session-status");
-
-  if (!badge) {
-    return;
-  }
-
-  badge.textContent = status.label;
-  badge.className = `session-status ${status.className}`;
-}
-
 function renderOwnedSessionIcons() {
   for (const button of sessionButtons) {
     const session = sessions[button.dataset.session];
@@ -1379,10 +1365,7 @@ function refreshRecentSessions() {
   sessionRefreshStatus.textContent = "最近のセッションを更新しています...";
 
   window.setTimeout(() => {
-    renderSidebarSessionList();
-    renderStatusCounts();
-    renderSessionFilter();
-    setActiveButton(activeSessionKey);
+    renderSessionIndexes(hasActiveSession() ? activeSessionKey : null);
     sessionRefreshStatus.textContent = `更新しました ${getCurrentTime()}`;
     refreshRecentSessionsButton.disabled = false;
   }, 450);
@@ -1788,12 +1771,8 @@ function startInvestigation() {
 
   RECENT_SESSION_ORDER.unshift(newSessionKey);
   activeStatusFilter = "all";
-  renderSidebarSessionList();
-  setActiveButton(newSessionKey);
+  renderSessionIndexes(newSessionKey);
   renderSession(newSessionKey);
-  renderStatusCounts();
-  renderSessionFilter();
-  renderSessionSearchResults();
   closeNewInvestigation();
   resetNewInvestigationForm();
 }
@@ -1883,8 +1862,7 @@ function renderSessionSearchResults() {
     `;
 
     resultButton.addEventListener("click", () => {
-      setActiveButton(sessionKey);
-      renderSession(sessionKey);
+      selectSession(sessionKey);
       closeSessionSearch();
     });
 
@@ -1948,12 +1926,29 @@ function hasActiveSession() {
   return Boolean(activeSessionKey && sessions[activeSessionKey]);
 }
 
+function isAgentBusy() {
+  return runStatusState === "running" || runStatusState === "saving" || runStatusState === "summarizing";
+}
+
 function isOwnSession(sessionKey) {
   return Boolean(sessionKey && sessions[sessionKey]?.ownerAnalystId === activeAnalystKey);
 }
 
 function isSessionVisibleToCurrentUser(session) {
   return !session.isPrivate || session.ownerAnalystId === activeAnalystKey;
+}
+
+function renderSessionIndexes(selectedSessionKey = activeSessionKey) {
+  renderSidebarSessionList();
+  renderStatusCounts();
+  renderSessionFilter();
+  setActiveButton(selectedSessionKey);
+  renderSessionSearchResults();
+}
+
+function selectSession(sessionKey) {
+  setActiveButton(sessionKey);
+  renderSession(sessionKey);
 }
 
 function renderVisibilityBadge() {
@@ -1984,7 +1979,7 @@ function renderInvestigationPromptAccess() {
   }
 
   const owned = isOwnSession(activeSessionKey);
-  const busy = runStatusState === "running" || runStatusState === "saving" || runStatusState === "summarizing";
+  const busy = isAgentBusy();
 
   openInvestigationPromptButton.disabled = !owned || busy;
   openInvestigationPromptButton.title = owned
@@ -1999,9 +1994,7 @@ function toggleSessionVisibility() {
 
   sessions[activeSessionKey].isPrivate = !sessions[activeSessionKey].isPrivate;
   renderVisibilityBadge();
-  renderSessionFilter();
-  renderStatusCounts();
-  renderSessionSearchResults();
+  renderSessionIndexes(activeSessionKey);
 }
 
 function renderComposerAccess() {
@@ -2263,10 +2256,8 @@ function sendInvestigationPrompt() {
     session.sidebarTimeLabel = "たった今";
 
     setRunStatus("saving");
-    renderSidebarSessionList();
-    setActiveButton(activeSessionKey);
+    renderSessionIndexes(activeSessionKey);
     renderSession(activeSessionKey);
-    renderSessionSearchResults();
 
     window.setTimeout(() => {
       setRunStatus("idle");
@@ -2290,7 +2281,7 @@ function renderDeleteSessionAccess() {
   }
 
   const owned = isOwnSession(activeSessionKey);
-  const busy = runStatusState === "running" || runStatusState === "saving" || runStatusState === "summarizing";
+  const busy = isAgentBusy();
   openDeleteSessionButton.disabled = !owned || busy;
   openDeleteSessionButton.title = owned
     ? "このセッションを削除"
@@ -2332,10 +2323,7 @@ function deleteActiveSession() {
   }
 
   closeDeleteSession();
-  renderSidebarSessionList();
-  renderStatusCounts();
-  renderSessionFilter();
-  renderSessionSearchResults();
+  renderSessionIndexes(null);
   renderEmptySession();
 }
 
@@ -2388,12 +2376,8 @@ function renameActiveSession(newTitle) {
 
   sessions[activeSessionKey].title = title;
   sessions[activeSessionKey].updatedAt = `2026/07/29 ${getCurrentTime()}`;
-  renderSidebarSessionList();
-  setActiveButton(activeSessionKey);
+  renderSessionIndexes(activeSessionKey);
   renderSession(activeSessionKey);
-  renderStatusCounts();
-  renderSessionFilter();
-  renderSessionSearchResults();
   closeRenameSession();
 }
 
@@ -2484,8 +2468,7 @@ sessionListContainer.addEventListener("click", (event) => {
   }
 
   const sessionKey = button.dataset.session;
-  setActiveButton(sessionKey);
-  renderSession(sessionKey);
+  selectSession(sessionKey);
 });
 
 openSessionSearchButton.addEventListener("click", openSessionSearch);
@@ -2774,10 +2757,7 @@ caseStatusPopover.addEventListener("click", (event) => {
   sessions[activeSessionKey].statusKey = button.dataset.statusOption;
   closeCaseStatusMenu();
   renderSession(activeSessionKey);
-  renderSessionStatusBadge(activeSessionKey);
-  renderStatusCounts();
-  renderSessionFilter();
-  renderSessionSearchResults();
+  renderSessionIndexes(activeSessionKey);
 });
 
 sessionNoteForm.addEventListener("submit", (event) => {
@@ -2842,8 +2822,8 @@ chatForm.addEventListener("submit", (event) => {
     });
     session.updatedAt = `2026/07/27 ${getCurrentTime()}`;
     setRunStatus("saving");
+    renderSessionIndexes(activeSessionKey);
     renderSession(activeSessionKey);
-    renderSessionSearchResults();
 
     window.setTimeout(() => {
       setRunStatus("idle");

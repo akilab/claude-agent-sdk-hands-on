@@ -433,11 +433,35 @@ svg {
    セッション検索ダイアログ
    ============================================================ */
 
-.session-search-overlay {
+.session-search-overlay,
+.new-investigation-overlay,
+.rename-session-overlay,
+.investigation-prompt-overlay,
+.delete-session-overlay {
   position: fixed;
   inset: 0;
-  z-index: 20;
   display: grid;
+}
+
+.new-investigation-overlay,
+.rename-session-overlay,
+.investigation-prompt-overlay,
+.delete-session-overlay {
+  place-items: center;
+  padding: 32px;
+}
+
+.session-search-dialog,
+.new-investigation-dialog,
+.rename-session-dialog,
+.investigation-prompt-dialog,
+.delete-session-dialog {
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.session-search-overlay {
+  z-index: 20;
   place-items: start center;
   padding: 92px 24px 32px;
   background: rgba(4, 19, 41, 0.48);
@@ -446,9 +470,7 @@ svg {
 .session-search-dialog {
   width: min(940px, calc(100vw - 48px));
   max-height: calc(100vh - 124px);
-  overflow: hidden;
   border: 1px solid rgba(216, 226, 238, 0.96);
-  border-radius: 10px;
   background: var(--surface);
   box-shadow: 0 28px 72px rgba(4, 19, 41, 0.32);
 }
@@ -661,12 +683,7 @@ svg {
    ============================================================ */
 
 .new-investigation-overlay {
-  position: fixed;
-  inset: 0;
   z-index: 22;
-  display: grid;
-  place-items: center;
-  padding: 32px;
   background: rgba(4, 19, 41, 0.52);
 }
 
@@ -675,39 +692,25 @@ svg {
   grid-template-rows: auto 1fr auto;
   width: min(760px, calc(100vw - 64px));
   max-height: calc(100vh - 64px);
-  overflow: hidden;
   border: 1px solid rgba(216, 226, 238, 0.96);
-  border-radius: 10px;
   background: var(--surface);
   box-shadow: 0 30px 76px rgba(4, 19, 41, 0.34);
 }
 
 .rename-session-overlay {
-  position: fixed;
-  inset: 0;
   z-index: 23;
-  display: grid;
-  place-items: center;
-  padding: 32px;
   background: rgba(4, 19, 41, 0.42);
 }
 
 .rename-session-dialog {
   width: min(520px, calc(100vw - 64px));
-  overflow: hidden;
   border: 1px solid rgba(216, 226, 238, 0.96);
-  border-radius: 10px;
   background: var(--surface);
   box-shadow: 0 28px 72px rgba(4, 19, 41, 0.32);
 }
 
 .investigation-prompt-overlay {
-  position: fixed;
-  inset: 0;
   z-index: 24;
-  display: grid;
-  place-items: center;
-  padding: 32px;
   background: rgba(4, 19, 41, 0.52);
 }
 
@@ -716,37 +719,34 @@ svg {
   grid-template-rows: auto 1fr auto;
   width: min(880px, calc(100vw - 64px));
   max-height: calc(100vh - 64px);
-  overflow: hidden;
   border: 1px solid rgba(216, 226, 238, 0.96);
-  border-radius: 10px;
   background: var(--surface);
   box-shadow: 0 30px 76px rgba(4, 19, 41, 0.34);
 }
 
 .delete-session-overlay {
-  position: fixed;
-  inset: 0;
   z-index: 25;
-  display: grid;
-  place-items: center;
-  padding: 32px;
   background: rgba(74, 12, 12, 0.52);
 }
 
 .delete-session-dialog {
   width: min(520px, calc(100vw - 64px));
-  overflow: hidden;
   border: 1px solid rgba(248, 192, 192, 0.98);
-  border-radius: 10px;
   background: #ffffff;
   box-shadow: 0 30px 76px rgba(74, 12, 12, 0.34);
 }
 
-.new-investigation-header {
+.new-investigation-header,
+.rename-session-header,
+.investigation-prompt-header,
+.delete-session-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
+}
+
+.new-investigation-header {
   padding: 22px 24px 18px;
   border-bottom: 1px solid var(--line);
   background:
@@ -754,7 +754,9 @@ svg {
     #ffffff;
 }
 
-.new-investigation-header p {
+.new-investigation-header p,
+.rename-session-header p,
+.investigation-prompt-header p {
   margin: 0 0 4px;
   color: var(--blue-700);
   font-size: 11px;
@@ -763,7 +765,8 @@ svg {
   text-transform: uppercase;
 }
 
-.new-investigation-header h2 {
+.new-investigation-header h2,
+.investigation-prompt-header h2 {
   margin: 0;
   color: var(--ink-950);
   font-size: 22px;
@@ -771,10 +774,6 @@ svg {
 }
 
 .rename-session-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
   padding: 20px 22px 16px;
   border-bottom: 1px solid var(--line);
   background:
@@ -783,10 +782,6 @@ svg {
 }
 
 .investigation-prompt-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
   padding: 22px 24px 18px;
   border-bottom: 1px solid var(--line);
   background:
@@ -795,33 +790,11 @@ svg {
 }
 
 .delete-session-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
   padding: 20px 22px 16px;
   border-bottom: 1px solid #f3c4c4;
   background:
     linear-gradient(90deg, rgba(185, 28, 28, 0.12), transparent 52%),
     #ffffff;
-}
-
-.rename-session-header p {
-  margin: 0 0 4px;
-  color: var(--blue-700);
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.investigation-prompt-header p {
-  margin: 0 0 4px;
-  color: var(--blue-700);
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 .delete-session-header p {
@@ -837,13 +810,6 @@ svg {
   margin: 0;
   color: var(--ink-950);
   font-size: 21px;
-  letter-spacing: 0;
-}
-
-.investigation-prompt-header h2 {
-  margin: 0;
-  color: var(--ink-950);
-  font-size: 22px;
   letter-spacing: 0;
 }
 
