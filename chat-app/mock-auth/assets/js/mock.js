@@ -742,8 +742,11 @@ let sessionButtons = [];
 let analystRosterExpanded = localStorage.getItem("west-hawk-analyst-roster") === "open";
 let runStatusState = "idle";
 let selectedAttachments = [];
+let isSessionLoading = false;
+let sessionLoadingTimer = null;
 
 const CHAT_INPUT_MAX_HEIGHT = 156;
+const SESSION_LOAD_DELAY_MS = 900;
 
 // ============================================================
 // メッセージ一覧の描画
@@ -1090,6 +1093,8 @@ function renderSession(sessionKey) {
   }
 
   activeSessionKey = sessionKey;
+  sessionListContainer.classList.remove("is-loading");
+  document.querySelector(".details-panel")?.classList.remove("is-loading");
   conversationTitle.textContent = session.title;
   renderCaseStatusOptions(session.statusKey);
   sessionId.textContent = session.sessionId;
@@ -1115,6 +1120,8 @@ function renderSession(sessionKey) {
 function renderEmptySession() {
   activeSessionKey = null;
   closeCaseStatusMenu();
+  sessionListContainer.classList.remove("is-loading");
+  document.querySelector(".details-panel")?.classList.remove("is-loading");
   conversationTitle.textContent = "セッション未選択";
   currentCaseStatusButton.className = "case-status-current";
   currentCaseStatusButton.disabled = true;
@@ -1143,6 +1150,42 @@ function renderEmptySession() {
       </span>
       <h3>セッションが開かれていません</h3>
       <p>左の最近のセッションから選択するか、新しい調査を開始してください。</p>
+    </section>
+  `;
+}
+
+function renderSessionLoading(sessionKey) {
+  activeSessionKey = null;
+  closeCaseStatusMenu();
+  conversationTitle.textContent = "セッション読み込み中";
+  currentCaseStatusButton.className = "case-status-current";
+  currentCaseStatusButton.disabled = true;
+  currentCaseStatusButton.title = "セッション情報を読み込んでいます";
+  currentCaseStatusLabel.textContent = "読み込み中";
+  caseStatusPopover.innerHTML = "";
+  sessionId.textContent = "-";
+  renderSessionCustomer("");
+  renderSessionProduct("");
+  renderSessionOwner(null);
+  updatedAt.textContent = "-";
+  renderTitleEditAccess();
+  renderVisibilityBadge();
+  renderInvestigationPromptAccess();
+  renderComposerAccess();
+  renderDeleteSessionAccess();
+  setRunStatus("loading");
+  setActiveButton(sessionKey);
+  sessionNoteList.innerHTML = "";
+  sessionNoteInput.value = "";
+  sessionNoteInput.disabled = true;
+  sessionNoteStatus.textContent = "セッション情報を読み込んでいます。";
+  sessionListContainer.classList.add("is-loading");
+  document.querySelector(".details-panel")?.classList.add("is-loading");
+  messageList.innerHTML = `
+    <section class="session-loading-state" aria-label="セッション読み込み中">
+      <span aria-hidden="true"></span>
+      <h3>セッションを読み込んでいます</h3>
+      <p>会話履歴、調査メモ、現在の状態を取得しています。</p>
     </section>
   `;
 }
@@ -1733,11 +1776,8 @@ function startInvestigation() {
 
   const productLabel = getProductLabel(productKey);
   const isBlankInvestigation = activeInvestigationMethod === "blank";
-  const sourceLabel = activeInvestigationMethod === "url" ? "URL" : `ID: ${incidentIdInput.value.trim()}`;
-  const sessionTitle = isBlankInvestigation ? `${customer.name} investigation` : `${customer.name} ${productLabel} investigation`;
-  const userMessage = isBlankInvestigation
-    ? `${customer.name} の調査として、まだ製品やインシデント情報は指定せず、新しい調査セッションを開始します。`
-    : `${customer.name} の ${productLabel} ${sourceLabel} から新しい調査を開始します。`;
+  const sessionTitle = isBlankInvestigation ? "New investigation" : `${productLabel} investigation`;
+  const userMessage = "新しいセッションを開始します。";
   const claudeMessage = isBlankInvestigation
     ? "新しい調査セッションを開始しました。調査対象が分かり次第、URL、製品名、インシデントID、気になっている事象のいずれかを入力してください。"
     : "調査対象を受け取りました。対象製品から取得すべき概要、主要エンティティ、初動確認の観点を整理します。";
@@ -1927,7 +1967,12 @@ function hasActiveSession() {
 }
 
 function isAgentBusy() {
-  return runStatusState === "running" || runStatusState === "saving" || runStatusState === "summarizing";
+  return (
+    runStatusState === "loading" ||
+    runStatusState === "running" ||
+    runStatusState === "saving" ||
+    runStatusState === "summarizing"
+  );
 }
 
 function isOwnSession(sessionKey) {
@@ -1947,8 +1992,24 @@ function renderSessionIndexes(selectedSessionKey = activeSessionKey) {
 }
 
 function selectSession(sessionKey) {
-  setActiveButton(sessionKey);
-  renderSession(sessionKey);
+  if (!sessions[sessionKey] || isSessionLoading) {
+    return;
+  }
+
+  if (sessionKey === activeSessionKey) {
+    setActiveButton(sessionKey);
+    return;
+  }
+
+  isSessionLoading = true;
+  window.clearTimeout(sessionLoadingTimer);
+  renderSessionLoading(sessionKey);
+
+  sessionLoadingTimer = window.setTimeout(() => {
+    isSessionLoading = false;
+    sessionLoadingTimer = null;
+    renderSession(sessionKey);
+  }, SESSION_LOAD_DELAY_MS);
 }
 
 function renderVisibilityBadge() {
@@ -2023,7 +2084,7 @@ function renderComposerAccess() {
     return;
   }
 
-  if (runStatusState === "readonly" || runStatusState === "empty") {
+  if (runStatusState === "readonly" || runStatusState === "empty" || runStatusState === "loading") {
     setRunStatus("idle");
   }
 }
@@ -2393,6 +2454,13 @@ function setRunStatus(status) {
     runStatusDot.classList.add("is-readonly");
     runStatusLabel.textContent = "未選択";
     runStatusText.textContent = "セッションを選択すると会話を確認できます。";
+    return;
+  }
+
+  if (status === "loading") {
+    runStatusDot.classList.add("is-running");
+    runStatusLabel.textContent = "読み込み中";
+    runStatusText.textContent = "セッションの会話履歴と調査情報を取得しています。";
     return;
   }
 

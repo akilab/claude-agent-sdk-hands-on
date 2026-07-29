@@ -1828,6 +1828,10 @@ svg {
   padding-right: 4px;
 }
 
+.session-list.is-loading .session-item {
+  cursor: wait;
+}
+
 .session-list::-webkit-scrollbar {
   width: 7px;
 }
@@ -2193,6 +2197,40 @@ svg {
   min-height: 0;
   overflow: auto;
   padding: 28px 34px;
+}
+
+.session-loading-state {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  min-height: 100%;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.session-loading-state span {
+  width: 42px;
+  height: 42px;
+  border: 3px solid var(--blue-100);
+  border-top-color: var(--blue-700);
+  border-radius: 50%;
+  animation: refresh-spin 0.8s linear infinite;
+}
+
+.session-loading-state h3 {
+  margin: 18px 0 8px;
+  color: var(--ink-950);
+  font-size: 20px;
+  letter-spacing: 0;
+}
+
+.session-loading-state p {
+  max-width: 420px;
+  margin: 0;
+  color: var(--ink-600);
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.8;
 }
 
 .message {
@@ -2641,6 +2679,10 @@ svg {
   scrollbar-gutter: stable;
   padding: 18px;
   background: #f7faff;
+}
+
+.details-panel.is-loading .detail-card {
+  opacity: 0.72;
 }
 
 .detail-card {
