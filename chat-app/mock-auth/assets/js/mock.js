@@ -1104,8 +1104,8 @@ function renderSession(sessionKey) {
   updatedAt.textContent = session.updatedAt;
   renderTitleEditAccess();
   renderVisibilityBadge();
-  renderInvestigationPromptAccess();
   renderComposerAccess();
+  renderInvestigationPromptAccess();
   renderDeleteSessionAccess();
   renderSessionNote();
   messageList.innerHTML = "";
