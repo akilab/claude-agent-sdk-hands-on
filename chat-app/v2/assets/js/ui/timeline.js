@@ -6,13 +6,12 @@ export function timelineHtml(item, { dateKey, esc, evidenceById, formatDate, for
     const key = dateKey(entry.at);
     const divider = key === previous ? '' : `<div class="timeline-date-divider"><span>${esc(formatDate(entry.at))}</span></div>`;
     previous = key;
-    return `${divider}${timelineEntryHtml(entry)}`;
+    return `${divider}${timelineEntryHtml(entry, { esc, evidenceById, formatTime, initialsFor, multiline })}`;
   }).join('');
   return `<div class="timeline">${entries || '<p class="timeline-empty">まだ調査記録はありません。AIへの質問、または調査記録を投稿して開始してください。</p>'}</div>`;
-  $('#content-stage').scrollTop = $('#content-stage').scrollHeight;
 }
 
-function timelineEntryHtml(entry) {
+function timelineEntryHtml(entry, { esc, evidenceById, formatTime, initialsFor, multiline }) {
   const author = entry.type === 'run' ? 'West Hawk' : entry.author;
   const meta = `<div class="timeline-entry__meta"><strong>${esc(author)}</strong><time title="${esc(entry.at)}">${esc(formatTime(entry.at))}</time></div>`;
   const marker = entry.type === 'assistant' ? '<span class="timeline-marker timeline-marker--assistant"><img src="assets/img/logo-design.svg" alt="West Hawk"></span>' : entry.type === 'run' ? '<span class="timeline-marker timeline-marker--run"><img src="assets/img/logo-design.svg" alt="West Hawk"></span>' : entry.type === 'decision' ? `<span class="timeline-marker timeline-marker--decision">${esc(initialsFor(entry.author || ''))}</span>` : entry.type === 'system' ? '<span class="timeline-marker timeline-marker--system">⌁</span>' : `<span class="timeline-marker">${esc(initialsFor(entry.author || ''))}</span>`;
@@ -28,4 +27,3 @@ function timelineEntryHtml(entry) {
   if (entry.type === 'finding') return `<article class="timeline-entry timeline-entry--note timeline-entry--finding">${marker}<div class="timeline-entry__content">${meta}<div class="timeline-entry__body analyst-note"><span class="analyst-finding-label">${command || 'アナリスト所見'}</span><p>${multiline(entry.text)}</p></div></div></article>`;
   return `<article class="timeline-entry timeline-entry--note">${marker}<div class="timeline-entry__content">${meta}<div class="timeline-entry__body analyst-note"><p>${command}${multiline(entry.text)}</p></div></div></article>`;
 }
-
