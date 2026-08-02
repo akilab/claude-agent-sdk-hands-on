@@ -1,0 +1,82 @@
+/* Mock-only alternate theme: a dark operations rail around the white investigation canvas. */
+body.theme-night-ops .app-header {
+  border-color: #1e5069;
+  background: #08273a;
+}
+
+body.theme-night-ops .product-lockup strong { color: #f4fbff; }
+body.theme-night-ops .product-lockup small { color: #9dbdcd; }
+body.theme-night-ops .product-lockup img { filter: brightness(1.18) saturate(1.08); }
+
+body.theme-night-ops .header-icon-button { color: #b8d1dd; }
+body.theme-night-ops .header-icon-button:hover,
+body.theme-night-ops .header-icon-button[aria-pressed="true"] {
+  border-color: #37718d;
+  color: #ffffff;
+  background: #16445d;
+}
+body.theme-night-ops .theme-toggle-button { color: #79c8f2; }
+body.theme-night-ops .profile-button { color: #e5f3fa; }
+body.theme-night-ops .profile-button:hover { border-color: #37718d; background: #16445d; }
+body.theme-night-ops .notification-dot,
+body.theme-night-ops .work-status-dot { border-color: #08273a; }
+
+body.theme-night-ops .incident-rail,
+body.theme-night-ops .context-panel { border-color: #1b4b63; background: #0b2e43; }
+body.theme-night-ops .rail-top,
+body.theme-night-ops .filter-section,
+body.theme-night-ops .session-heading,
+body.theme-night-ops .context-panel__header,
+body.theme-night-ops .context-section { border-color: #1b4b63; }
+
+body.theme-night-ops .session-heading p,
+body.theme-night-ops .context-panel__header p,
+body.theme-night-ops .section-caption,
+body.theme-night-ops .session-heading > span,
+body.theme-night-ops .context-section__head > span,
+body.theme-night-ops .analyst-roster__head-actions > span { color: #95b7c8; }
+body.theme-night-ops .session-heading strong,
+body.theme-night-ops .context-panel__header h2,
+body.theme-night-ops .context-section__head h3 { color: #f0f8fc; }
+
+body.theme-night-ops .new-incident-button { border-color: #178acd; background: #087dbe; }
+body.theme-night-ops .new-incident-button:hover { background: #1495d8; }
+body.theme-night-ops .status-filter { color: #c4dbe6; }
+body.theme-night-ops .status-filter:hover { background: #113d53; }
+body.theme-night-ops .status-filter.is-active { border-color: #2b7194; color: #dff4ff; background: #164d68; }
+body.theme-night-ops .status-filter strong { color: #98bdcf; }
+
+body.theme-night-ops .session-item:hover { background: #103d54; }
+body.theme-night-ops .session-item.is-selected { border-color: #2d7193; background: #12445e; box-shadow: inset 2px 0 0 #28a0df; }
+body.theme-night-ops .session-item.is-assigned .session-icon { box-shadow: 0 0 0 3px #17506c; }
+body.theme-night-ops .session-item.is-observed .session-icon { color: #9db7c4; background: #173e52; }
+body.theme-night-ops .session-item__top strong { color: #f3faff; }
+body.theme-night-ops .session-item__top time,
+body.theme-night-ops .session-item__title { color: #adc7d3; }
+
+body.theme-night-ops .detail-list dt { color: #9fc0d0; }
+body.theme-night-ops .detail-list dd,
+body.theme-night-ops .inline-state-select-trigger,
+body.theme-night-ops .assignee-select-trigger { color: #f0f8fc; }
+body.theme-night-ops .inline-state-select-trigger:hover,
+body.theme-night-ops .assignee-select-trigger:hover { border-color: #367393; color: #ffffff; background: #16465f; }
+body.theme-night-ops .assignment-actions { border-color: #1b4b63; }
+body.theme-night-ops .analyst-roster__item { border-color: #1b4b63; }
+body.theme-night-ops .analyst-roster__item.is-current-user { background: #113f57; }
+body.theme-night-ops .analyst-roster__avatar { color: #c6deea; background: #1a475e; }
+body.theme-night-ops .analyst-roster__identity strong { color: #f0f8fc; }
+body.theme-night-ops .analyst-roster__identity small b,
+body.theme-night-ops .analyst-roster__load,
+body.theme-night-ops .analyst-roster__summary { color: #a9c3d0; }
+body.theme-night-ops .analyst-roster__toggle { color: #a9c8d7!important; }
+body.theme-night-ops .analyst-roster__toggle:hover { border-color: #367393!important; color: #ffffff!important; background: #16465f!important; }
+body.theme-night-ops .analyst-drawer { border-color:#1b4b63; color:#c5dce7; background:#0b2e43; }
+body.theme-night-ops .analyst-drawer__header { border-color:#1b4b63; }
+body.theme-night-ops .analyst-drawer__header h2,
+body.theme-night-ops .analyst-drawer__list-heading,
+body.theme-night-ops .analyst-status-summary strong { color:#f0f8fc; }
+body.theme-night-ops .analyst-drawer__lead,
+body.theme-night-ops .analyst-drawer__list-heading strong,
+body.theme-night-ops .analyst-status-summary span,
+body.theme-night-ops .analyst-status-summary strong small { color:#a9c3d0; }
+body.theme-night-ops .analyst-status-summary li { border-color:#1b4b63; background:#103d54; }

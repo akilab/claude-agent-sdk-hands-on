@@ -1,0 +1,42 @@
+/* Mock-only alternate theme: dark navigation and context, white investigation canvas. */
+body.theme-night-ops .app-header { border-color: #1b4d68; background: #08273a; }
+body.theme-night-ops .product-lockup strong { color: #f2f8fb; }
+body.theme-night-ops .product-lockup small, body.theme-night-ops .workspace-switcher__label { color: #9fc0d1; }
+body.theme-night-ops .product-lockup img { filter: brightness(1.18) saturate(1.05); }
+body.theme-night-ops .workspace-switcher { border-color: #1b4d68; }
+body.theme-night-ops .workspace-switcher button, body.theme-night-ops .profile-button { color: #e5f2f8; }
+body.theme-night-ops .workspace-switcher button:hover, body.theme-night-ops .profile-button:hover { border-color: #346a84; background: #133e56; }
+body.theme-night-ops .icon-button { color: #b9d0dc; }
+body.theme-night-ops .icon-button:hover, body.theme-night-ops .icon-button[aria-pressed="true"] { border-color: #356d87; color: #fff; background: #153f56; }
+
+body.theme-night-ops .investigation-rail, body.theme-night-ops .context-panel { border-color: #1b4d68; background: #0b2e43; }
+body.theme-night-ops .rail-intro, body.theme-night-ops .investigation-filter, body.theme-night-ops .context-panel__header, body.theme-night-ops .context-section, body.theme-night-ops .rail-footnote { border-color: #1b4d68; }
+body.theme-night-ops .rail-intro h1, body.theme-night-ops .context-panel__header h2, body.theme-night-ops .context-section h3 { color: #eef8fc; }
+body.theme-night-ops .rail-list-heading, body.theme-night-ops .rail-footnote, body.theme-night-ops .investigation-item__meta, body.theme-night-ops .context-item small, body.theme-night-ops .reference-row span { color: #a5c0ce; }
+body.theme-night-ops .investigation-filter button { color: #b6d1dd; }
+body.theme-night-ops .investigation-filter button.is-active, body.theme-night-ops .investigation-filter button.is-active span { color: #7ed0fa; }
+body.theme-night-ops .investigation-filter button span { color: #87aabd; }
+body.theme-night-ops .investigation-item:hover { background: #103d54; }
+body.theme-night-ops .investigation-item.is-selected { border-color: #2b7395; background: #12465f; box-shadow: inset 2px 0 0 #2ba2e0; }
+body.theme-night-ops .investigation-item__key, body.theme-night-ops .investigation-item__title, body.theme-night-ops .context-item strong, body.theme-night-ops .reference-row strong { color: #f0f9fc; }
+body.theme-night-ops .investigation-item__time { color: #9ab8c6; }
+body.theme-night-ops .context-environment { background: #103e56; }
+body.theme-night-ops .context-environment strong { color: #edf8fc; }
+body.theme-night-ops .context-environment span { color: #b4d0dc; }
+body.theme-night-ops .context-environment__products span { color: #a8d9f2; background: #0b2e43; }
+body.theme-night-ops .context-item__icon { color: #90d2f2; background: #123e55; }
+body.theme-night-ops .ownership-card strong { color: #edf8fc; }
+body.theme-night-ops .finding, body.theme-night-ops .reference-row { border-color: #1b4d68; background: transparent; }
+body.theme-night-ops .finding p, body.theme-night-ops .decision-context p { color: #d3e5ed; }
+body.theme-night-ops .decision-context { border-color: #2c8563; background: #0e3b31; }
+body.theme-night-ops .context-section__head button { color: #82d1f5; }
+
+body.theme-night-ops .new-investigation-button { border-color: #168cd0; background: #087fbe; }
+body.theme-night-ops .new-investigation-button:hover { background: #1596d7; }
+body.theme-night-ops .analyst-directory-drawer { border-color: #1b4b63; background: #0b2e43; }
+body.theme-night-ops .analyst-directory-drawer__header { border-color: #1b4b63; }
+body.theme-night-ops .analyst-directory-drawer__header h2, body.theme-night-ops .analyst-directory-item strong { color: #eef8fc; }
+body.theme-night-ops .analyst-directory-lead { color: #a9c3d0; }
+body.theme-night-ops .analyst-directory-item { border-color: #1b4b63; background: #103d54; }
+body.theme-night-ops .analyst-directory-item.is-current-user { border-color: #2b7395; background: #12465f; }
+body.theme-night-ops .analyst-directory-avatar { color: #c6deea; background: #1a475e; }

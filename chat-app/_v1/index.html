@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="West Hawk - SOCアナリスト向けAIインシデント調査ワークスペースのUIモック">
+    <title>West Hawk</title>
+    <link rel="stylesheet" href="assets/css/default.css">
+    <link rel="stylesheet" href="assets/css/night-ops.css" id="night-ops-theme" disabled>
+    <script src="assets/js/app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="app-header">
+        <a class="product-lockup" href="../index.htm" aria-label="Mock一覧へ戻る">
+          <img src="assets/img/logo-design.svg" alt="">
+          <span>
+            <strong>West Hawk</strong>
+            <small>AI INCIDENT ANALYSIS</small>
+          </span>
+        </a>
+
+        <div class="header-actions">
+          <button class="header-icon-button theme-toggle-button" id="theme-toggle-button" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="濃色の表示テーマに切り替え" title="濃色テーマを試す（Mock）">
+            <span class="icon" data-icon="theme"></span>
+          </button>
+          <button class="header-icon-button" type="button" data-action="open-search" aria-label="インシデントを検索" title="インシデントを検索">
+            <span class="icon" data-icon="search"></span>
+          </button>
+          <button class="header-icon-button" type="button" data-action="notify" aria-label="通知を確認" title="通知を確認">
+            <span class="icon" data-icon="bell"></span><span class="notification-dot" aria-hidden="true"></span>
+          </button>
+          <button class="header-icon-button work-status-button" id="work-status-button" type="button" data-action="open-work-status" aria-label="勤務状況を変更" title="勤務状況">
+            <span class="icon" data-icon="availability"></span><span class="work-status-dot" aria-hidden="true"></span>
+          </button>
+          <button class="header-icon-button" id="analyst-drawer-button" type="button" data-action="open-analyst-drawer" aria-expanded="false" aria-controls="analyst-drawer" aria-label="アナリスト状況を開く" title="アナリスト状況">
+            <span class="icon" data-icon="team"></span>
+          </button>
+          <button class="header-icon-button" type="button" data-action="toggle-panel" aria-label="詳細パネルを閉じる" title="詳細パネルを開閉">
+            <span class="icon" data-icon="panel"></span>
+          </button>
+          <button class="header-icon-button" type="button" data-action="open-settings" aria-label="設定を開く" title="設定">
+            <span class="icon" data-icon="settings"></span>
+          </button>
+          <button class="profile-button" type="button" data-action="profile" aria-label="田中 明のプロフィール">
+            <span class="profile-avatar">T</span><span>田中 明</span><span class="icon" data-icon="chevron"></span>
+          </button>
+        </div>
+      </header>
+
+      <div class="workspace-grid" id="workspace-grid">
+        <aside class="incident-rail" aria-label="インシデント一覧">
+          <div class="rail-top">
+            <button class="new-incident-button" type="button" data-action="open-new">
+              <span class="icon" data-icon="plus"></span>新しいインシデント
+            </button>
+          </div>
+
+          <div class="filter-section">
+            <div class="section-caption"><span>調査状況</span><button type="button" data-action="clear-filter">すべて表示</button></div>
+            <div class="status-filters" id="status-filters" role="group" aria-label="ステータスで絞り込む"></div>
+          </div>
+
+          <div class="session-heading">
+            <div><strong>最近の調査</strong></div>
+            <span id="visible-count" aria-live="polite"></span>
+          </div>
+          <div class="session-list" id="session-list" role="list" aria-label="調査セッション一覧"></div>
+          <p class="rail-footnote"><span class="status-live-dot"></span>調査セッションは自動保存されます</p>
+        </aside>
+
+        <main class="investigation-workspace" aria-live="polite">
+          <header class="case-header" id="case-header"></header>
+          <nav class="workspace-tabs" id="workspace-tabs" aria-label="インシデント情報の表示切替">
+            <button class="is-active" type="button" data-tab="conversation">調査</button>
+            <button type="button" data-tab="team-chat">チャット</button>
+            <button type="button" data-tab="alerts">アラート <span id="alert-count"></span></button>
+            <button type="button" data-tab="related">関連インシデント</button>
+            <button type="button" data-tab="files">ファイル <span id="file-count"></span></button>
+          </nav>
+          <section class="content-stage" id="content-stage"></section>
+          <form class="composer" id="composer" aria-label="会話またはAIへのメッセージ">
+            <div class="composer-box">
+              <button class="composer-icon" type="button" data-action="attach" aria-label="ファイルを添付" title="ファイルを添付">
+                <span class="icon" data-icon="paperclip"></span>
+              </button>
+              <textarea id="message-input" rows="2" placeholder="AIに質問する…"></textarea>
+              <div class="composer-tools">
+                <button class="post-message-button" type="button" data-action="post-message">調査記録に投稿</button>
+                <button class="investigation-prompt-button" type="button" data-action="open-investigation-prompt" aria-haspopup="dialog" aria-label="調査プロンプトを選択" title="調査プロンプトを選択"><span class="icon" data-icon="spark"></span></button>
+                <button class="send-button" type="submit" aria-label="AIに質問" title="AIに質問"><span class="icon" data-icon="send"></span></button>
+              </div>
+            </div>
+            <p id="composer-hint">「調査記録に投稿」はAIへ問い合わせず、調査記録だけを残します。<span>Ctrl + Enter でAIに質問</span></p>
+          </form>
+          <form class="composer team-chat-composer is-hidden" id="team-chat-composer" aria-label="アナリストチャットへ投稿">
+            <div class="composer-box">
+              <span class="team-chat-composer__mark" aria-hidden="true"><span class="icon" data-icon="team"></span></span>
+              <div class="team-chat-input-wrap">
+                <textarea id="team-chat-input" rows="2" placeholder="アナリストへメッセージを投稿…" aria-autocomplete="list" aria-controls="mention-menu"></textarea>
+                <div class="mention-menu" id="mention-menu" role="listbox" aria-label="メンション候補" hidden></div>
+              </div>
+              <div class="composer-tools"><button class="send-button" type="submit" aria-label="チャットへ投稿" title="チャットへ投稿"><span class="icon" data-icon="send"></span></button></div>
+            </div>
+            <p>このチャットはアナリスト全員が投稿できます。<span>@ でメンション</span></p>
+          </form>
+        </main>
+
+        <aside class="context-panel" id="context-panel" aria-label="インシデント詳細">
+          <div class="context-panel__header">
+            <div><h2>調査コンテキスト</h2></div>
+            <button class="header-icon-button" type="button" data-action="toggle-panel" aria-label="詳細パネルを閉じる"><span class="icon" data-icon="close-panel"></span></button>
+          </div>
+          <div class="context-scroll" id="context-scroll"></div>
+        </aside>
+      </div>
+    </div>
+
+    <div class="analyst-drawer-layer" id="analyst-drawer-layer" aria-hidden="true">
+      <button class="analyst-drawer__scrim" type="button" data-action="close-analyst-drawer" aria-label="アナリスト状況を閉じる"></button>
+      <aside class="analyst-drawer" id="analyst-drawer" role="dialog" aria-modal="true" aria-labelledby="analyst-drawer-title">
+        <header class="analyst-drawer__header">
+          <div><h2 id="analyst-drawer-title">アナリスト状況</h2></div>
+          <button class="header-icon-button" id="analyst-drawer-close" type="button" data-action="close-analyst-drawer" aria-label="アナリスト状況を閉じる"><span class="icon" data-icon="close"></span></button>
+        </header>
+        <div class="analyst-drawer__body" id="analyst-drawer-content"></div>
+      </aside>
+    </div>
+
+    <dialog class="search-dialog" id="search-dialog" aria-labelledby="search-dialog-title">
+      <form id="search-form">
+        <div class="dialog-heading">
+          <div><h2 id="search-dialog-title">インシデント検索</h2></div>
+          <button class="header-icon-button" type="button" data-action="close-search" aria-label="検索を閉じる"><span class="icon" data-icon="close"></span></button>
+        </div>
+        <div class="search-dialog__fields">
+          <label>キーワード<input id="search-query" type="search" autocomplete="off" placeholder="番号、タイトル、担当者、製品を検索"></label>
+          <label>ステータス<select id="search-status"><option value="all">すべて</option><option value="investigating">調査中</option><option value="reviewing">追加確認中</option><option value="monitoring">監視中</option><option value="closed">クローズ</option></select></label>
+          <label>担当アナリスト<select id="search-analyst"><option value="all">すべて</option><option value="tanaka">田中 明</option><option value="satou">佐藤 美咲</option><option value="suzuki">鈴木 翔</option><option value="yamada">山田 健太</option><option value="mori">森 拓也</option><option value="takahashi">高橋 直樹</option><option value="kato">加藤 彩</option><option value="nakamura">中村 亮</option><option value="ito">伊藤 智也</option><option value="watanabe">渡辺 優子</option><option value="kobayashi">小林 大輔</option><option value="yoshida">吉田 真理</option><option value="saito">斎藤 浩司</option><option value="inoue">井上 由佳</option><option value="hashimoto">橋本 直人</option><option value="ishikawa">石川 玲奈</option><option value="okada">岡田 拓海</option><option value="fujita">藤田 遥</option><option value="maeda">前田 駿</option><option value="kondo">近藤 陽介</option></select></label>
+        </div>
+        <div class="search-dialog__actions"><button class="secondary-button" type="button" data-action="clear-search">条件をクリア</button><button class="primary-button" type="submit"><span class="icon" data-icon="search"></span>検索</button></div>
+        <div class="search-dialog__results"><p id="search-result-count" aria-live="polite"></p><div id="search-result-list" role="list" aria-label="検索結果"></div></div>
+      </form>
+    </dialog>
+
+    <dialog class="search-dialog related-dialog" id="related-dialog" aria-labelledby="related-dialog-title">
+      <form id="related-link-form">
+        <div class="dialog-heading">
+          <div><h2 id="related-dialog-title">関連インシデントを追加</h2></div>
+          <button class="header-icon-button" type="button" data-action="close-related-link" aria-label="関連付けを閉じる"><span class="icon" data-icon="close"></span></button>
+        </div>
+        <p class="related-dialog__lead">対象を選択すると、双方のインシデントへ関連付けを追加します。</p>
+        <div class="related-dialog__fields">
+          <label>キーワード<input id="related-query" type="search" autocomplete="off" placeholder="番号、タイトル、担当者、製品を検索"></label>
+          <label>関係の種類<select id="related-relation"><option>同一ユーザー</option><option>同一ホスト／IP</option><option>同一の攻撃活動</option><option>その他</option></select></label>
+        </div>
+        <div class="search-dialog__results related-dialog__results"><p id="related-link-count" aria-live="polite"></p><div id="related-link-list" role="list" aria-label="関連付けるインシデント"></div></div>
+        <div class="dialog-actions related-dialog__actions"><button class="secondary-button" type="button" data-action="close-related-link">キャンセル</button><button class="primary-button" id="link-related-submit" type="submit" disabled><span class="icon" data-icon="link"></span>関連付ける</button></div>
+      </form>
+    </dialog>
+
+    <dialog class="prompt-dialog" id="investigation-prompt-dialog" aria-labelledby="investigation-prompt-dialog-title">
+      <form id="investigation-prompt-form">
+        <div class="dialog-heading">
+          <div><h2 id="investigation-prompt-dialog-title">調査プロンプトを選択</h2></div>
+          <button class="header-icon-button" type="button" data-action="close-investigation-prompt" aria-label="調査プロンプトを閉じる"><span class="icon" data-icon="close"></span></button>
+        </div>
+        <div class="prompt-dialog__body">
+          <section class="prompt-dialog__choices" aria-label="調査プロンプト一覧"><div id="investigation-prompt-list" role="list"></div></section>
+          <section class="prompt-dialog__editor"><label for="investigation-prompt-text">プロンプト本文</label><p id="investigation-prompt-description"></p><textarea id="investigation-prompt-text" name="promptText" rows="9" required></textarea><p>選択・編集した内容は、田中 明からAIへの質問として調査記録に残ります。</p></section>
+        </div>
+        <div class="dialog-actions prompt-dialog__actions"><button class="secondary-button" type="button" data-action="close-investigation-prompt">キャンセル</button><button class="primary-button" type="submit"><span class="icon" data-icon="spark"></span>AIに質問</button></div>
+      </form>
+    </dialog>
+
+    <dialog class="new-dialog title-dialog" id="title-dialog" aria-labelledby="title-dialog-title">
+      <form id="edit-title-form">
+        <div class="dialog-heading">
+          <div><h2 id="title-dialog-title">調査タイトルを編集</h2></div>
+          <button class="header-icon-button" type="button" data-action="close-title-edit" aria-label="タイトル編集を閉じる"><span class="icon" data-icon="close"></span></button>
+        </div>
+        <p class="dialog-lead">会話、状態、ユーザー情報は変更せず、選択中の調査セッション名だけを更新します。</p>
+        <div class="dialog-fields"><label>調査タイトル<input id="edit-title-input" name="title" required maxlength="80"></label></div>
+        <div class="dialog-actions"><button class="secondary-button" type="button" data-action="close-title-edit">キャンセル</button><button class="primary-button" type="submit">変更を保存</button></div>
+      </form>
+    </dialog>
+
+    <dialog class="new-dialog work-status-dialog" id="work-status-dialog" aria-labelledby="work-status-dialog-title">
+      <form id="work-status-form">
+        <div class="dialog-heading">
+          <div><h2 id="work-status-dialog-title">勤務状況を変更</h2></div>
+          <button class="header-icon-button" type="button" data-action="close-work-status" aria-label="勤務状況の変更を閉じる"><span class="icon" data-icon="close"></span></button>
+        </div>
+        <p class="dialog-lead">現在の対応可否と勤務場所をアナリスト一覧へ反映します。</p>
+        <div class="dialog-fields"><label>勤務ステータス<select id="work-status-select"><option value="pre_shift">出勤前</option><option value="available">勤務中</option><option value="busy">対応中</option><option value="away">離席中</option><option value="offline">退勤</option></select></label><label>勤務場所<select id="work-location-select"><option value="office">出社</option><option value="remote">在宅</option></select></label></div>
+        <div class="dialog-actions"><button class="secondary-button" type="button" data-action="close-work-status">キャンセル</button><button class="primary-button" type="submit">変更を保存</button></div>
+      </form>
+    </dialog>
+
+    <dialog class="new-dialog" id="new-dialog" aria-labelledby="new-dialog-title">
+      <form id="new-incident-form">
+        <div class="dialog-heading">
+          <div><h2 id="new-dialog-title">新しい調査を開始</h2></div>
+          <button class="header-icon-button" type="button" data-action="close-new" aria-label="閉じる"><span class="icon" data-icon="close"></span></button>
+        </div>
+        <div class="dialog-intro"><span class="dialog-intro__step">01</span><div><strong>あなたへ割り当てて開始</strong><p>調査の会話、状態、外部アラートへのリンクをこのセッション内で記録します。</p></div></div>
+        <p class="dialog-lead">ServiceNowなどの番号、またはEDR／SIEMのアラートURLから調査を開始します。</p>
+        <div class="dialog-fields">
+          <label>インシデント番号 または アラートURL<input id="new-reference" name="reference" required autocomplete="off" placeholder="INC0012345 または https://…"></label>
+          <p class="dialog-field-note" id="new-reference-note" aria-live="polite">URLを入力すると、製品と調査タイトルを読み取った想定で入力を補助します。</p>
+          <label>アラート発出製品<select id="new-product" name="product" required><option value="">選択してください</option><option>Microsoft Defender for Endpoint</option><option>Microsoft Sentinel</option><option>CrowdStrike Falcon</option><option>SentinelOne</option></select></label>
+          <label>顧客／テナント<select name="customer" required><option value="">選択してください</option><option>Contoso Japan / contoso.com</option><option>Fabrikam / fabrikam.com</option><option>Northwind Traders / northwindtraders.com</option></select></label>
+          <label>調査タイトル <span>任意</span><input id="new-title" name="title" maxlength="80" placeholder="URLから開始する場合は自動入力"></label>
+        </div>
+        <p class="dialog-help">作成者: 田中 明　·　番号だけで開始する場合も、製品と顧客を選択してください。</p>
+        <div class="dialog-actions"><button class="secondary-button" type="button" data-action="close-new">キャンセル</button><button class="primary-button" type="submit">調査を開始 <span class="icon" data-icon="arrow"></span></button></div>
+      </form>
+    </dialog>
+
+    <dialog class="new-dialog alert-link-dialog" id="alert-link-dialog" aria-labelledby="alert-link-dialog-title">
+      <form id="alert-link-form">
+        <div class="dialog-heading">
+          <div><h2 id="alert-link-dialog-title">アラートURLを追加</h2></div>
+          <button class="header-icon-button" type="button" data-action="close-alert-link" aria-label="アラートURLの追加を閉じる"><span class="icon" data-icon="close"></span></button>
+        </div>
+        <p class="dialog-lead">調査で確認した外部アラートへのリンクを、判断根拠としてこの調査に残します。</p>
+        <div class="dialog-fields">
+          <label>アラートURL<input id="alert-link-url" name="url" type="url" required placeholder="https://…"></label>
+          <label>アラート名 <span>任意</span><input name="name" maxlength="80" placeholder="例：Impossible Travel"></label>
+          <label>アラート発出製品<select id="alert-link-product" name="product" required><option>Microsoft Defender for Endpoint</option><option>Microsoft Sentinel</option><option>CrowdStrike Falcon</option><option>SentinelOne</option></select></label>
+          <label>重要度<select name="level"><option>High</option><option selected>Medium</option><option>Low</option></select></label>
+        </div>
+        <p class="dialog-help">保存後はアラートリンク一覧から、該当する製品画面を別タブで開けます。</p>
+        <div class="dialog-actions"><button class="secondary-button" type="button" data-action="close-alert-link">キャンセル</button><button class="primary-button" type="submit"><span class="icon" data-icon="external"></span>リンクを保存</button></div>
+      </form>
+    </dialog>
+
+    <dialog class="settings-dialog" id="settings-dialog" aria-labelledby="settings-dialog-title">
+      <div class="dialog-heading">
+        <div><h2 id="settings-dialog-title">設定</h2></div>
+        <button class="header-icon-button" type="button" data-action="close-settings" aria-label="設定を閉じる"><span class="icon" data-icon="close"></span></button>
+      </div>
+      <div class="settings-summary">
+        <section><p>表示</p><strong>日本語 / 標準コントラスト</strong><span>読みやすさを優先した表示設定です。</span></section>
+        <section><p>AI連携</p><strong>接続先は未設定</strong><span>利用するAIサービスの決定後に設定します。</span></section>
+        <section><p>セッション権限</p><strong>担当アナリストのみ編集可能</strong><span>他のアナリストの調査は閲覧専用です。</span></section>
+      </div>
+      <div class="dialog-actions"><button class="primary-button" type="button" data-action="close-settings">閉じる</button></div>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>

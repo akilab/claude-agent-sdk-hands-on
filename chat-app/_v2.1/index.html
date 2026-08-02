@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="West Hawk - AI-assisted security investigation workspace mock">
+    <title>West Hawk | AI Incident Analysis</title>
+    <link rel="stylesheet" href="assets/css/default.css">
+    <link rel="stylesheet" href="assets/css/night-ops.css" id="night-ops-theme" disabled>
+    <script type="module" src="assets/js/app.js"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="app-header">
+        <a class="product-lockup" href="../index.htm" aria-label="Mock一覧へ戻る">
+          <img src="assets/img/logo-design.svg" alt="">
+          <span>
+            <strong>West Hawk</strong>
+            <small>AI INCIDENT ANALYSIS</small>
+          </span>
+        </a>
+
+        <div class="workspace-switcher" aria-label="現在の調査対象組織">
+          <button type="button" data-action="open-organization-switch" aria-haspopup="dialog"><span id="workspace-name">Contoso Japan</span><span class="chevron">⌄</span></button>
+        </div>
+
+        <div class="header-actions">
+          <button class="icon-button theme-toggle" type="button" data-action="toggle-theme" aria-pressed="false" aria-label="濃色テーマを試す" title="濃色テーマを試す（Mock）"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.7 14.2A8.8 8.8 0 0 1 9.8 3.3 8.8 8.8 0 1 0 20.7 14.2Z"></path></svg></button>
+          <button class="icon-button" type="button" data-action="open-search" aria-label="調査を検索" title="調査を検索"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="5.8"></circle><path d="m15.2 15.2 4.1 4.1"></path></svg></button>
+          <button class="icon-button" type="button" data-action="open-analyst-directory" aria-label="アナリスト一覧" title="アナリスト一覧"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.1"></circle><path d="M3.5 20c.8-3.6 2.7-5.5 5.5-5.5s4.7 1.9 5.5 5.5"></path><circle cx="17.2" cy="9.2" r="2.4"></circle><path d="M15.5 14.8c2.7.1 4.3 1.7 5 4.7"></path></svg></button>
+          <button class="icon-button context-toggle" type="button" data-action="toggle-context" aria-pressed="true" aria-label="調査コンテキストを隠す" title="調査コンテキストを開閉"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="1.5"></rect><path d="M14.5 5v14"></path></svg></button>
+          <button class="icon-button" type="button" data-action="open-settings" aria-label="設定" title="設定"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4"></path><circle cx="12" cy="12" r="3.5"></circle><circle cx="12" cy="12" r="8"></circle></svg></button>
+          <button class="profile-button" type="button" data-action="profile" aria-label="田中 明のプロフィール"><span class="profile-avatar">T</span><span>田中 明</span></button>
+        </div>
+      </header>
+
+      <div class="workspace-grid" id="workspace-grid">
+        <aside class="investigation-rail" aria-label="調査一覧">
+          <div class="rail-intro">
+            <button class="new-investigation-button" type="button" data-action="open-new"><span>＋</span>調査を開始</button>
+          </div>
+
+          <div class="rail-list-heading"><span>最近の調査</span><span id="visible-count"></span></div>
+          <div class="investigation-list" id="investigation-list" role="list" aria-label="調査一覧"></div>
+          <p class="rail-footnote">外部インシデントの状態は、元の製品で管理します。</p>
+        </aside>
+
+        <main class="investigation-workspace">
+          <header class="investigation-header" id="investigation-header"></header>
+          <nav class="workspace-tabs" aria-label="調査の表示を切り替える">
+            <button class="is-active" type="button" data-tab="timeline">記録</button>
+            <button type="button" data-tab="evidence">根拠 <span id="evidence-count"></span></button>
+            <button type="button" data-tab="related">関連 <span id="related-count"></span></button>
+          </nav>
+
+          <section class="content-stage" id="content-stage" aria-live="polite"></section>
+
+          <form class="composer" id="composer" aria-label="調査への投稿">
+            <div class="composer-shell">
+              <div class="composer-box">
+                <div class="slash-command-menu" id="slash-command-menu" role="listbox" aria-label="投稿コマンド" hidden></div>
+                <div class="composer-input-row">
+                  <span class="composer-command-token" id="active-command-token" hidden></span>
+                  <textarea id="message-input" rows="2" placeholder="AIに質問、または / で記録の種類を選択…"></textarea>
+                </div>
+                <div class="composer-toolbar">
+                  <p id="composer-hint"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v4l2.5 1.5"></path></svg>AIに質問します。<kbd>/</kbd> で情報・所見・判断を記録できます。</p>
+                  <div class="composer-actions">
+                    <button class="prompt-button" type="button" data-action="open-prompt" title="調査プロンプトを選択" aria-label="調査プロンプトを選択"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.6 5.4L19 10l-5.4 1.6L12 17l-1.6-5.4L5 10l5.4-1.6L12 3Z"></path></svg></button>
+                    <span class="composer-shortcut" aria-label="CtrlとEnterで送信"><kbd>Ctrl</kbd><span>+</span><kbd>Enter</kbd><span>で送信</span></span>
+                    <button class="send-button" type="submit" aria-label="AIに質問"><span id="send-label">AIに質問</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 14-7-4 14-3.3-5.7z"></path><path d="m11.7 13.3 3.8-3.8"></path></svg></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
+        </main>
+
+        <aside class="context-panel" aria-label="調査コンテキスト">
+          <div class="context-panel__header">
+            <div><h2>調査コンテキスト</h2></div>
+            <button class="icon-button context-toggle context-toggle--panel" type="button" data-action="toggle-context" aria-pressed="true" aria-label="調査コンテキストを隠す" title="調査コンテキストを隠す"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="1.5"></rect><path d="M14.5 5v14"></path></svg></button>
+          </div>
+          <div class="context-scroll" id="context-scroll"></div>
+        </aside>
+      </div>
+    </div>
+
+    <dialog class="modal" id="search-dialog" aria-labelledby="search-dialog-title">
+      <form id="search-form" method="dialog">
+        <header class="modal-header"><div><h2 id="search-dialog-title">調査を検索</h2></div><button class="icon-button" type="button" data-action="close-search" aria-label="閉じる">×</button></header>
+        <div class="search-fields">
+          <label class="form-span">キーワード<input id="search-query" type="search" autocomplete="off" placeholder="調査ID、タイトル、ユーザーを検索"></label>
+        </div>
+        <p class="search-scope-note">アーカイブ済みの調査も検索できます。</p>
+        <div class="search-result-summary" id="search-result-summary"></div>
+        <div class="search-result-list" id="search-result-list" role="list"></div>
+      </form>
+    </dialog>
+
+    <dialog class="modal organization-dialog" id="organization-dialog" aria-labelledby="organization-dialog-title">
+      <div>
+        <header class="modal-header"><div><h2 id="organization-dialog-title">調査対象組織を切り替え</h2></div><button class="icon-button" type="button" data-action="close-organization-switch" aria-label="閉じる">×</button></header>
+        <div class="organization-list" id="organization-list" role="list" aria-label="調査対象組織の一覧"></div>
+      </div>
+    </dialog>
+
+    <div class="analyst-directory-layer" id="analyst-directory-layer" aria-hidden="true">
+      <button class="analyst-directory-scrim" type="button" data-action="close-analyst-directory" aria-label="アナリスト一覧を閉じる"></button>
+      <aside class="analyst-directory-drawer" role="dialog" aria-modal="true" aria-labelledby="analyst-directory-dialog-title">
+        <header class="analyst-directory-drawer__header"><div><p>WEST INC</p><h2 id="analyst-directory-dialog-title">アナリスト一覧</h2></div><button class="icon-button" type="button" data-action="close-analyst-directory" aria-label="閉じる">×</button></header>
+        <div class="analyst-directory-drawer__body"><p class="analyst-directory-lead">登録されているアナリストを確認できます。</p><div class="analyst-directory-list" id="analyst-directory-list" role="list" aria-label="登録アナリスト一覧"></div></div>
+      </aside>
+    </div>
+
+    <dialog class="modal new-modal" id="new-dialog" aria-labelledby="new-dialog-title">
+      <form id="new-investigation-form">
+        <header class="modal-header"><div><h2 id="new-dialog-title">調査を開始</h2></div><button class="icon-button" type="button" data-action="close-new" aria-label="閉じる">×</button></header>
+        <p class="modal-lead">調査対象組織を選んで開始します。利用できる接続は組織ごとに自動で切り替わります。</p>
+        <div class="form-grid">
+          <label class="form-span">調査対象組織<select id="new-organization" required></select></label>
+          <label class="form-span">調査タイトル <span>任意</span><input id="new-title" maxlength="90" placeholder="例：Marketing端末で検出されたPowerShell実行"></label>
+          <label class="form-span">最初の外部参照 <span>任意</span><input id="new-reference" maxlength="180" placeholder="アラートURL、ServiceNow番号、外部IDなど"></label>
+        </div>
+        <p class="form-note">作成後にAIへ質問すると、対象環境で許可された調査手段を使って確認を始めます。</p>
+        <footer class="modal-actions"><button class="secondary-button" type="button" data-action="close-new">キャンセル</button><button class="primary-button" type="submit">調査を開始</button></footer>
+      </form>
+    </dialog>
+
+    <dialog class="modal new-modal" id="reference-dialog" aria-labelledby="reference-dialog-title">
+      <form id="reference-form">
+        <header class="modal-header"><div><h2 id="reference-dialog-title">外部参照を追加</h2></div><button class="icon-button" type="button" data-action="close-reference" aria-label="閉じる">×</button></header>
+        <p class="modal-lead">外部製品のアラート、チケット、URLを調査へ紐付けます。内容は外部システムで管理され、West Hawkには参照だけを保存します。</p>
+        <div class="form-grid">
+          <label>製品またはシステム<select id="reference-system" required><option>Microsoft Sentinel</option><option>Microsoft Defender XDR</option><option>CrowdStrike Falcon</option><option>ServiceNow</option><option>その他</option></select></label>
+          <label>参照番号またはURL<input id="reference-value" required maxlength="180" placeholder="Incident 4821 または https://…"></label>
+        </div>
+        <footer class="modal-actions"><button class="secondary-button" type="button" data-action="close-reference">キャンセル</button><button class="primary-button" type="submit">参照を追加</button></footer>
+      </form>
+    </dialog>
+
+    <dialog class="modal new-modal" id="title-dialog" aria-labelledby="title-dialog-title">
+      <form id="title-form">
+        <header class="modal-header"><div><h2 id="title-dialog-title">調査タイトルを編集</h2></div><button class="icon-button" type="button" data-action="close-title" aria-label="閉じる">×</button></header>
+        <div class="form-grid"><label class="form-span">調査タイトル<input id="title-value" required maxlength="90"></label></div>
+        <footer class="modal-actions"><button class="secondary-button" type="button" data-action="close-title">キャンセル</button><button class="primary-button" type="submit">変更を保存</button></footer>
+      </form>
+    </dialog>
+
+    <dialog class="modal evidence-modal" id="evidence-dialog" aria-labelledby="evidence-dialog-title">
+      <div>
+        <header class="modal-header"><div><h2 id="evidence-dialog-title">調査根拠</h2></div><button class="icon-button" type="button" data-action="close-evidence" aria-label="閉じる">×</button></header>
+        <div id="evidence-dialog-content"></div>
+      </div>
+    </dialog>
+
+    <dialog class="modal transfer-modal" id="transfer-dialog" aria-labelledby="transfer-dialog-title">
+      <form id="transfer-form">
+        <header class="modal-header"><div><h2 id="transfer-dialog-title">調査を引き継ぐ</h2></div><button class="icon-button" type="button" data-action="close-transfer" aria-label="閉じる">×</button></header>
+        <p class="modal-lead">この調査のAI対話と調査記録の担当を、田中 明へ変更します。変更はSystem記録として時系列に残ります。</p>
+        <footer class="modal-actions"><button class="secondary-button" type="button" data-action="close-transfer">キャンセル</button><button class="primary-button" type="submit">引き継ぐ</button></footer>
+      </form>
+    </dialog>
+
+    <dialog class="modal archive-modal" id="archive-dialog" aria-labelledby="archive-dialog-title">
+      <form id="archive-form">
+        <header class="modal-header"><div><h2 id="archive-dialog-title">調査をアーカイブ</h2></div><button class="icon-button" type="button" data-action="close-archive" aria-label="閉じる">×</button></header>
+        <p class="modal-lead" id="archive-dialog-message">この調査を一覧からアーカイブします。調査記録や根拠は削除されず、後から再開できます。</p>
+        <footer class="modal-actions"><button class="secondary-button" type="button" data-action="close-archive">キャンセル</button><button class="primary-button" id="archive-confirm-button" type="submit">アーカイブする</button></footer>
+      </form>
+    </dialog>
+
+    <dialog class="modal prompt-dialog" id="prompt-dialog" aria-labelledby="prompt-dialog-title">
+      <form id="prompt-form">
+        <header class="modal-header"><div><h2 id="prompt-dialog-title">調査プロンプトを選択</h2></div><button class="icon-button" type="button" data-action="close-prompt" aria-label="閉じる">×</button></header>
+        <div class="prompt-dialog__body">
+          <section class="prompt-dialog__choices" aria-label="調査プロンプト一覧"><div id="prompt-list" role="list"></div></section>
+          <section class="prompt-dialog__editor"><label for="prompt-value">質問内容</label><p id="prompt-description"></p><textarea id="prompt-value" rows="9" required></textarea><p>選択・編集した内容は、調査担当からAIへの質問として記録に残ります。</p></section>
+        </div>
+        <footer class="modal-actions prompt-dialog__actions"><button class="secondary-button" type="button" data-action="close-prompt">キャンセル</button><button class="primary-button" type="submit">AIに質問</button></footer>
+      </form>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>
